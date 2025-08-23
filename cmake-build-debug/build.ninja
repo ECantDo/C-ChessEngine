@@ -63,6 +63,13 @@ build CMakeFiles/chessEngine.dir/src/Board/board.cpp.obj: CXX_COMPILER__chessEng
   OBJECT_DIR = CMakeFiles\chessEngine.dir
   OBJECT_FILE_DIR = CMakeFiles\chessEngine.dir\src\Board
 
+build CMakeFiles/chessEngine.dir/src/Board/piece.cpp.obj: CXX_COMPILER__chessEngine_unscanned_Debug E$:/CLionProjects/chessEngine/src/Board/piece.cpp || cmake_object_order_depends_target_chessEngine
+  DEP_FILE = CMakeFiles\chessEngine.dir\src\Board\piece.cpp.obj.d
+  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always
+  INCLUDES = -IE:/CLionProjects/chessEngine/src
+  OBJECT_DIR = CMakeFiles\chessEngine.dir
+  OBJECT_FILE_DIR = CMakeFiles\chessEngine.dir\src\Board
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target chessEngine
@@ -71,7 +78,7 @@ build CMakeFiles/chessEngine.dir/src/Board/board.cpp.obj: CXX_COMPILER__chessEng
 #############################################
 # Link the executable chessEngine.exe
 
-build chessEngine.exe: CXX_EXECUTABLE_LINKER__chessEngine_Debug CMakeFiles/chessEngine.dir/src/main.cpp.obj CMakeFiles/chessEngine.dir/src/Board/board.cpp.obj
+build chessEngine.exe: CXX_EXECUTABLE_LINKER__chessEngine_Debug CMakeFiles/chessEngine.dir/src/main.cpp.obj CMakeFiles/chessEngine.dir/src/Board/board.cpp.obj CMakeFiles/chessEngine.dir/src/Board/piece.cpp.obj
   FLAGS = -g
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\chessEngine.dir
@@ -111,6 +118,13 @@ build CMakeFiles/testChessEngine.dir/src/Board/board.cpp.obj: CXX_COMPILER__test
   OBJECT_DIR = CMakeFiles\testChessEngine.dir
   OBJECT_FILE_DIR = CMakeFiles\testChessEngine.dir\src\Board
 
+build CMakeFiles/testChessEngine.dir/src/Board/piece.cpp.obj: CXX_COMPILER__testChessEngine_unscanned_Debug E$:/CLionProjects/chessEngine/src/Board/piece.cpp || cmake_object_order_depends_target_testChessEngine
+  DEP_FILE = CMakeFiles\testChessEngine.dir\src\Board\piece.cpp.obj.d
+  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always
+  INCLUDES = -IE:/CLionProjects/chessEngine/src
+  OBJECT_DIR = CMakeFiles\testChessEngine.dir
+  OBJECT_FILE_DIR = CMakeFiles\testChessEngine.dir\src\Board
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target testChessEngine
@@ -119,7 +133,7 @@ build CMakeFiles/testChessEngine.dir/src/Board/board.cpp.obj: CXX_COMPILER__test
 #############################################
 # Link the executable testChessEngine.exe
 
-build testChessEngine.exe: CXX_EXECUTABLE_LINKER__testChessEngine_Debug CMakeFiles/testChessEngine.dir/tests/test_all.cpp.obj CMakeFiles/testChessEngine.dir/tests/Board/test_base.cpp.obj CMakeFiles/testChessEngine.dir/src/Board/board.cpp.obj
+build testChessEngine.exe: CXX_EXECUTABLE_LINKER__testChessEngine_Debug CMakeFiles/testChessEngine.dir/tests/test_all.cpp.obj CMakeFiles/testChessEngine.dir/tests/Board/test_base.cpp.obj CMakeFiles/testChessEngine.dir/src/Board/board.cpp.obj CMakeFiles/testChessEngine.dir/src/Board/piece.cpp.obj
   FLAGS = -g
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\testChessEngine.dir

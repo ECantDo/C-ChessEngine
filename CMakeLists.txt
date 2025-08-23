@@ -9,6 +9,7 @@ add_executable(chessEngine src/main.cpp
         src/Board/board.h
         src/Board/board.cpp
         src/Board/piece.h
+        src/Board/piece.cpp
 )
 
 add_executable(testChessEngine tests/test_all.cpp
@@ -17,5 +18,7 @@ add_executable(testChessEngine tests/test_all.cpp
         tests/Board/test_base.h
         src/Board/board.h
         src/Board/board.cpp
+        src/Board/piece.h
+        src/Board/piece.cpp
 )
 

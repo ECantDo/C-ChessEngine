@@ -22,7 +22,7 @@ public:
     uint64_t getBitboard(char piece);
 
 private:
-    char pieceAtSquare(int square) const;
+    [[nodiscard]] char pieceAtSquare(int square) const;
 
     // Bitboards
     uint64_t whitePawns;
