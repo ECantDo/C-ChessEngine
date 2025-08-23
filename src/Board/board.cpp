@@ -3,6 +3,7 @@
 //
 
 #include "board.h"
+#include "piece.h"
 #include <iostream>
 
 Board::Board()
@@ -39,21 +40,21 @@ void Board::loadStartPosition() {
 char Board::pieceAtSquare(int square) const {
     uint64_t mask = 1ULL << square;
 
-    if (whitePawns & mask) return 'P';
-    if (whiteKnights & mask) return 'N';
-    if (whiteBishops & mask) return 'B';
-    if (whiteRooks & mask) return 'R';
-    if (whiteQueens & mask) return 'Q';
-    if (whiteKing & mask) return 'K';
+    if (whitePawns & mask) return WHITE_PAWN;
+    if (whiteKnights & mask) return WHITE_KNIGHT;
+    if (whiteBishops & mask) return WHITE_BISHOP;
+    if (whiteRooks & mask) return WHITE_ROOK;
+    if (whiteQueens & mask) return WHITE_QUEEN;
+    if (whiteKing & mask) return WHITE_KING;
 
-    if (blackPawns & mask) return 'p';
-    if (blackKnights & mask) return 'n';
-    if (blackBishops & mask) return 'b';
-    if (blackRooks & mask) return 'r';
-    if (blackQueens & mask) return 'q';
-    if (blackKing & mask) return 'k';
+    if (blackPawns & mask) return BLACK_PAWN;
+    if (blackKnights & mask) return BLACK_KNIGHT;
+    if (blackBishops & mask) return BLACK_BISHOP;
+    if (blackRooks & mask) return BLACK_ROOK;
+    if (blackQueens & mask) return BLACK_QUEEN;
+    if (blackKing & mask) return BLACK_KING;
 
-    return '.';
+    return NONE;
 }
 
 // Print Board
@@ -66,6 +67,40 @@ void Board::printBoard() const {
         std::cout << "\n";
     }
 }
+
+uint64_t Board::getBitboard(char piece) {
+    switch (piece) {
+        case WHITE_PAWN:
+            return whitePawns;
+        case WHITE_KNIGHT:
+            return whiteKnights;
+        case WHITE_ROOK:
+            return whiteRooks;
+        case WHITE_BISHOP:
+            return whiteBishops;
+        case WHITE_QUEEN:
+            return whiteQueens;
+        case WHITE_KING:
+            return whiteKing;
+        case BLACK_PAWN:
+            return blackPawns;
+        case BLACK_KNIGHT:
+            return blackKnights;
+        case BLACK_ROOK:
+            return blackRooks;
+        case BLACK_BISHOP:
+            return blackBishops;
+        case BLACK_QUEEN:
+            return blackQueens;
+        case BLACK_KING:
+            return blackKing;
+        default:
+            return 0;
+    }
+}
+//======================================================================================================================
+// Non-class
+//======================================================================================================================
 
 int getBoardIndex(int file, int rank) {
     if (file < 0 || file > 7 || rank < 0 || rank > 7)
@@ -80,8 +115,8 @@ int getBoardIndex(char file, char rank) {
 std::string getBoardPosition(int index) {
     if (index < 0 || index >= 64) return "";
 
-    int rank = index >> 3; // index / 8;
-    int file = index & 7; // index % 8;
+    int file = index >> 3; // index / 8;
+    int rank = index & 7; // index % 8;
 
     return std::string()
            + static_cast<char>(file + 'a')

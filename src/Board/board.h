@@ -10,6 +10,20 @@
 
 class Board {
 public:
+    // Constructor
+    Board();
+
+    // Load starting position
+    void loadStartPosition();
+
+    // Print Board
+    void printBoard() const;
+
+    uint64_t getBitboard(char piece);
+
+private:
+    char pieceAtSquare(int square) const;
+
     // Bitboards
     uint64_t whitePawns;
     uint64_t whiteKnights;
@@ -24,18 +38,6 @@ public:
     uint64_t blackRooks;
     uint64_t blackQueens;
     uint64_t blackKing;
-
-    // Constructor
-    Board();
-
-    // Load starting position
-    void loadStartPosition();
-
-    // Print Board
-    void printBoard() const;
-
-private:
-    char pieceAtSquare(int square) const;
 
 };
 

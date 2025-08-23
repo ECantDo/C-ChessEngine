@@ -127,5 +127,5 @@ void test_base() {
         }
     }
 
-    std::cout << "\nSummary: " << passed << "/" << (passed + failed) << " tests passed.\n";
+    std::cout << "\nSummary: " << passed << "/" << (passed + failed) << " tests passed for `Board/board`.\n";
 }
