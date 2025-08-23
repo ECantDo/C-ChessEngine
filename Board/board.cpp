@@ -66,3 +66,24 @@ void Board::printBoard() const {
         std::cout << "\n";
     }
 }
+
+int Board::getBoardIndex(int file, int rank) const {
+    if (file < 0 || file > 7 || rank < 0 || rank > 7)
+        return -1;
+    return file + rank * 8;
+}
+
+int Board::getBoardIndex(char file, char rank) const {
+    return getBoardIndex(file - 'a', rank - '1');
+}
+
+std::string Board::getBoardPosition(int index) const {
+    if (index < 0 || index >= 64) return "";
+
+    int rank = index >> 3; // Divide by 8
+    int file = index % 8;
+
+    return std::string()
+           + static_cast<char>(file + 'a')
+           + static_cast<char>(rank + '1');
+}
