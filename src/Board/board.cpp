@@ -67,17 +67,17 @@ void Board::printBoard() const {
     }
 }
 
-int Board::getBoardIndex(int file, int rank) {
+int getBoardIndex(int file, int rank) {
     if (file < 0 || file > 7 || rank < 0 || rank > 7)
         return -1;
-    return file + rank * 8;
+    return file * 8 + rank;
 }
 
-int Board::getBoardIndex(char file, char rank) {
+int getBoardIndex(char file, char rank) {
     return getBoardIndex(file - 'a', rank - '1');
 }
 
-std::string Board::getBoardPosition(int index) {
+std::string getBoardPosition(int index) {
     if (index < 0 || index >= 64) return "";
 
     int rank = index >> 3; // index / 8;

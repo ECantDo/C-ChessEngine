@@ -8,7 +8,13 @@ include_directories(${CMAKE_SOURCE_DIR}/src)
 add_executable(chessEngine src/main.cpp
         src/Board/board.h
         src/Board/board.cpp
-        tests/Board/testing_base.cpp
+)
+
+add_executable(testChessEngine tests/test_all.cpp
+        tests/Board/test_base.cpp
         tests/test_all.cpp
         tests/Board/test_base.h
+        src/Board/board.h
+        src/Board/board.cpp
 )
+

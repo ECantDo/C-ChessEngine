@@ -2,7 +2,7 @@
 // Created by ECanDo on 2025-08-23.
 //
 #include "Board/board.h"
-#include "testing_base.h"
+#include "test_base.h"
 #include <iostream>
 #include <vector>
 #include <string>
@@ -57,7 +57,7 @@ void test_base() {
     int passed = 0, failed = 0;
 
     for (auto &t: charIndexTests) {
-        int got = Board.getBoardIndex(t.file, t.rank);
+        int got = getBoardIndex(t.file, t.rank);
         if (got == t.expected) {
             passed++;
         } else {
@@ -77,7 +77,7 @@ void test_base() {
             {0,  5,  5},
             {0,  6,  6},
             {0,  7,  7},
-            {1,  0,  7},
+            {1,  0,  8},
             {7,  7,  63},
 
             // Fail Cases
@@ -88,7 +88,7 @@ void test_base() {
     };
 
     for (auto &t: intIndexTests) {
-        int got = Board.getBoardIndex(t.file, t.rank);
+        int got = getBoardIndex(t.file, t.rank);
         if (got == t.expected) {
             passed++;
         } else {
@@ -109,15 +109,15 @@ void test_base() {
             {6, "a7"},
             {7, "a8"},
             {8, "b1"},
-            {63, "h8"}
+            {63, "h8"},
 
             // Fail Cases
-            { -1, "" },
-            { 64, "" }
+            {-1, ""},
+            {64, ""}
     };
 
     for (auto &t: positionTests) {
-        std::string got = Board.getPosition(t.index);
+        std::string got = getBoardPosition(t.index);
         if (got == t.expected) {
             passed++;
         } else {
