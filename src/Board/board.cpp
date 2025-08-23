@@ -56,7 +56,7 @@ char Board::pieceAtSquare(int square) const {
     return '.';
 }
 
-// Print board
+// Print Board
 void Board::printBoard() const {
     for (int rank = 7; rank >= 0; --rank) {
         for (int file = 0; file < 8; ++file) {
@@ -67,21 +67,21 @@ void Board::printBoard() const {
     }
 }
 
-int Board::getBoardIndex(int file, int rank) const {
+int Board::getBoardIndex(int file, int rank) {
     if (file < 0 || file > 7 || rank < 0 || rank > 7)
         return -1;
     return file + rank * 8;
 }
 
-int Board::getBoardIndex(char file, char rank) const {
+int Board::getBoardIndex(char file, char rank) {
     return getBoardIndex(file - 'a', rank - '1');
 }
 
-std::string Board::getBoardPosition(int index) const {
+std::string Board::getBoardPosition(int index) {
     if (index < 0 || index >= 64) return "";
 
-    int rank = index >> 3; // Divide by 8
-    int file = index % 8;
+    int rank = index >> 3; // index / 8;
+    int file = index & 7; // index % 8;
 
     return std::string()
            + static_cast<char>(file + 'a')

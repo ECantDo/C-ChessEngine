@@ -49,17 +49,33 @@ cmake_ninja_workdir = E$:/CLionProjects/chessEngine/cmake-build-debug/
 
 build cmake_object_order_depends_target_chessEngine: phony || .
 
-build CMakeFiles/chessEngine.dir/main.cpp.obj: CXX_COMPILER__chessEngine_unscanned_Debug E$:/CLionProjects/chessEngine/main.cpp || cmake_object_order_depends_target_chessEngine
-  DEP_FILE = CMakeFiles\chessEngine.dir\main.cpp.obj.d
+build CMakeFiles/chessEngine.dir/src/main.cpp.obj: CXX_COMPILER__chessEngine_unscanned_Debug E$:/CLionProjects/chessEngine/src/main.cpp || cmake_object_order_depends_target_chessEngine
+  DEP_FILE = CMakeFiles\chessEngine.dir\src\main.cpp.obj.d
   FLAGS = -g -std=gnu++20 -fdiagnostics-color=always
+  INCLUDES = -IE:/CLionProjects/chessEngine/src
   OBJECT_DIR = CMakeFiles\chessEngine.dir
-  OBJECT_FILE_DIR = CMakeFiles\chessEngine.dir
+  OBJECT_FILE_DIR = CMakeFiles\chessEngine.dir\src
 
-build CMakeFiles/chessEngine.dir/Board/board.cpp.obj: CXX_COMPILER__chessEngine_unscanned_Debug E$:/CLionProjects/chessEngine/Board/board.cpp || cmake_object_order_depends_target_chessEngine
-  DEP_FILE = CMakeFiles\chessEngine.dir\Board\board.cpp.obj.d
+build CMakeFiles/chessEngine.dir/src/Board/board.cpp.obj: CXX_COMPILER__chessEngine_unscanned_Debug E$:/CLionProjects/chessEngine/src/Board/board.cpp || cmake_object_order_depends_target_chessEngine
+  DEP_FILE = CMakeFiles\chessEngine.dir\src\Board\board.cpp.obj.d
   FLAGS = -g -std=gnu++20 -fdiagnostics-color=always
+  INCLUDES = -IE:/CLionProjects/chessEngine/src
   OBJECT_DIR = CMakeFiles\chessEngine.dir
-  OBJECT_FILE_DIR = CMakeFiles\chessEngine.dir\Board
+  OBJECT_FILE_DIR = CMakeFiles\chessEngine.dir\src\Board
+
+build CMakeFiles/chessEngine.dir/tests/Board/testing_base.cpp.obj: CXX_COMPILER__chessEngine_unscanned_Debug E$:/CLionProjects/chessEngine/tests/Board/testing_base.cpp || cmake_object_order_depends_target_chessEngine
+  DEP_FILE = CMakeFiles\chessEngine.dir\tests\Board\testing_base.cpp.obj.d
+  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always
+  INCLUDES = -IE:/CLionProjects/chessEngine/src
+  OBJECT_DIR = CMakeFiles\chessEngine.dir
+  OBJECT_FILE_DIR = CMakeFiles\chessEngine.dir\tests\Board
+
+build CMakeFiles/chessEngine.dir/tests/test_all.cpp.obj: CXX_COMPILER__chessEngine_unscanned_Debug E$:/CLionProjects/chessEngine/tests/test_all.cpp || cmake_object_order_depends_target_chessEngine
+  DEP_FILE = CMakeFiles\chessEngine.dir\tests\test_all.cpp.obj.d
+  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always
+  INCLUDES = -IE:/CLionProjects/chessEngine/src
+  OBJECT_DIR = CMakeFiles\chessEngine.dir
+  OBJECT_FILE_DIR = CMakeFiles\chessEngine.dir\tests
 
 
 # =============================================================================
@@ -69,7 +85,7 @@ build CMakeFiles/chessEngine.dir/Board/board.cpp.obj: CXX_COMPILER__chessEngine_
 #############################################
 # Link the executable chessEngine.exe
 
-build chessEngine.exe: CXX_EXECUTABLE_LINKER__chessEngine_Debug CMakeFiles/chessEngine.dir/main.cpp.obj CMakeFiles/chessEngine.dir/Board/board.cpp.obj
+build chessEngine.exe: CXX_EXECUTABLE_LINKER__chessEngine_Debug CMakeFiles/chessEngine.dir/src/main.cpp.obj CMakeFiles/chessEngine.dir/src/Board/board.cpp.obj CMakeFiles/chessEngine.dir/tests/Board/testing_base.cpp.obj CMakeFiles/chessEngine.dir/tests/test_all.cpp.obj
   FLAGS = -g
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\chessEngine.dir
