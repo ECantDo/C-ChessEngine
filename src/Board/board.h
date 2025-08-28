@@ -13,10 +13,14 @@ public:
     // Constructor
     Board();
 
+    explicit Board(std::string &fen);
+
     // Load starting position
     void loadStartPosition();
 
     bool loadFenPosition(std::string &fen);
+
+    [[nodiscard]] std::string generateFen() const;
 
     // Print Board
     void printBoard() const;

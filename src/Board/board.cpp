@@ -5,11 +5,16 @@
 #include "board.h"
 #include "piece.h"
 #include <iostream>
+#include <sstream>
 
 Board::Board()
         : whitePawns(0), whiteBishops(0), whiteKing(0), whiteKnights(0), whiteQueens(0), whiteRooks(0),
           blackPawns(0), blackBishops(0), blackKing(0), blackKnights(0), blackQueens(0), blackRooks(0),
           enPassantSquare(-1), turn(0), castling(0), halfMoveClock(0), fullMove(1) {}
+
+Board::Board(std::string &fen) : Board() {
+    if (!loadFenPosition(fen)) throw std::invalid_argument("Invalid FEN string: " + fen);
+}
 
 void Board::loadStartPosition() {
     // Pawns
@@ -170,7 +175,7 @@ bool Board::loadFenPosition(std::string &fen) {
         uint64_t *bitBoardPtr = newBoard.getBitboardPointer(letter);
         if (!bitBoardPtr) return false;
 
-        setPieceAtSquare(getBoardIndex(file++, rank), *bitBoardPtr);
+        setPieceAtSquare(getBoardIndex(rank, file++), *bitBoardPtr);
     }
     if (rank != 0 || ++idx >= fen.size()) return false;
 
@@ -217,14 +222,13 @@ bool Board::loadFenPosition(std::string &fen) {
         if (fileChar < 'a' || fileChar > 'h') return false;
         if (rankChar < '1' || rankChar > '8') return false;
 
-        int file = fileChar - 'a';
-        int rank = rankChar - '1';
-        newBoard.enPassantSquare = getBoardIndex(file, rank);
+        newBoard.enPassantSquare = getBoardIndex(fileChar, rankChar);
     }
 
     if (idx < fen.size() && fen[idx] != ' ') return false; // must end with space
 
     // --- HalfMove clock ---
+    idx += 2;
     if (++idx >= fen.size()) return false;
     int halfmove = 0;
     while (idx < fen.size() && isdigit(fen[idx])) {
@@ -240,9 +244,74 @@ bool Board::loadFenPosition(std::string &fen) {
     }
     newBoard.fullMove = fullmove;
 
-
     *this = newBoard;
     return true;
+}
+
+std::string Board::generateFen() const {
+    std::stringstream fen;
+
+    // 1. Piece placement
+    for (int rank = 7; rank >= 0; --rank) {
+        int empty = 0;
+        for (int file = 0; file < 8; ++file) {
+            int idx = file + rank * 8;
+            char pieceChar = pieceAtSquare(idx);
+            if (pieceChar == NONE) {
+                ++empty;
+            } else {
+                if (empty > 0) {
+                    fen << empty;
+                    empty = 0;
+                }
+                fen << pieceChar;
+            }
+        }
+        if (empty > 0) fen << empty;
+        if (rank > 0) fen << '/';
+    }
+
+    // 2. Active color
+    fen << ' ' << (turn == 1 ? 'w' : 'b');
+
+    // 3. Castling rights
+    fen << ' ';
+    bool hasCastling = false;
+    if (castling & 0b1000) {
+        fen << 'K';
+        hasCastling = true;
+    }
+    if (castling & 0b0100) {
+        fen << 'Q';
+        hasCastling = true;
+    }
+    if (castling & 0b0010) {
+        fen << 'k';
+        hasCastling = true;
+    }
+    if (castling & 0b0001) {
+        fen << 'q';
+        hasCastling = true;
+    }
+    if (!hasCastling) fen << '-';
+
+    // 4. En passant
+    fen << ' ';
+    if (enPassantSquare >= 0 && enPassantSquare < 64) {
+        int file = enPassantSquare % 8;
+        int rank = enPassantSquare / 8;
+        fen << (char) ('a' + file) << (char) ('1' + rank);
+    } else {
+        fen << '-';
+    }
+
+    // 5. Halfmove clock
+    fen << ' ' << halfMoveClock;
+
+    // 6. Fullmove number
+    fen << ' ' << fullMove;
+
+    return fen.str();
 }
 //======================================================================================================================
 // Non-class
