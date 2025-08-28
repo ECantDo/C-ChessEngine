@@ -16,13 +16,23 @@ public:
     // Load starting position
     void loadStartPosition();
 
+    bool loadFenPosition(std::string &fen);
+
     // Print Board
     void printBoard() const;
 
-    uint64_t getBitboard(char piece);
+    [[nodiscard]] uint64_t getBitboard(char piece) const;
+
+    [[nodiscard]] uint64_t getWhiteBitboard() const;
+
+    [[nodiscard]] uint64_t getBlackBitboard() const;
+
 
 private:
     [[nodiscard]] char pieceAtSquare(int square) const;
+
+    [[nodiscard]] uint64_t *getBitboardPointer(char piece);
+
 
     // Bitboards
     uint64_t whitePawns;
@@ -39,6 +49,40 @@ private:
     uint64_t blackQueens;
     uint64_t blackKing;
 
+    /**
+     * -1 for none
+     * 0 < n < 64 for the board index -> C or F rank
+     */
+    char enPassantSquare;
+
+    /**
+     * 1 for white
+     * -1 for black
+     */
+    char turn;
+
+    /**
+     * Castling rights:
+     * 0b0000 -> no one has rights
+     * 0b1000 -> White king-side
+     * 0b0100 -> White queen-side
+     * 0b0010 -> Black king-side
+     * 0b0001 -> Black queen-side
+     *
+     * Example:
+     * 0b1010 -> Both white and black of king-side rights
+     */
+    char castling;
+
+    /**
+     * For 50-move rule
+     */
+    int halfMoveClock;
+
+    /**
+     * Counts from 1, increments after Black's move
+     */
+    int fullMove;
 };
 
 /**
@@ -66,5 +110,9 @@ int getBoardIndex(char file, char rank);
  * @return String of the index
  */
 std::string getBoardPosition(int index);
+
+void setPieceAtSquare(int square, uint64_t &bitBoard);
+
+void clearPieceAtSquare(int square, uint64_t &bitboard);
 
 #endif //CHESSENGINE_BOARD_H

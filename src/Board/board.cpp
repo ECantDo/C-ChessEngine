@@ -8,7 +8,8 @@
 
 Board::Board()
         : whitePawns(0), whiteBishops(0), whiteKing(0), whiteKnights(0), whiteQueens(0), whiteRooks(0),
-          blackPawns(0), blackBishops(0), blackKing(0), blackKnights(0), blackQueens(0), blackRooks(0) {}
+          blackPawns(0), blackBishops(0), blackKing(0), blackKnights(0), blackQueens(0), blackRooks(0),
+          enPassantSquare(-1), turn(0), castling(0), halfMoveClock(0), fullMove(1) {}
 
 void Board::loadStartPosition() {
     // Pawns
@@ -41,20 +42,30 @@ char Board::pieceAtSquare(int square) const {
     uint64_t mask = 1ULL << square;
 
     if (whitePawns & mask) return WHITE_PAWN;
+    if (blackPawns & mask) return BLACK_PAWN;
+
     if (whiteKnights & mask) return WHITE_KNIGHT;
     if (whiteBishops & mask) return WHITE_BISHOP;
     if (whiteRooks & mask) return WHITE_ROOK;
     if (whiteQueens & mask) return WHITE_QUEEN;
-    if (whiteKing & mask) return WHITE_KING;
 
-    if (blackPawns & mask) return BLACK_PAWN;
     if (blackKnights & mask) return BLACK_KNIGHT;
     if (blackBishops & mask) return BLACK_BISHOP;
     if (blackRooks & mask) return BLACK_ROOK;
     if (blackQueens & mask) return BLACK_QUEEN;
+
+    if (whiteKing & mask) return WHITE_KING;
     if (blackKing & mask) return BLACK_KING;
 
     return NONE;
+}
+
+void setPieceAtSquare(int square, uint64_t &bitboard) {
+    bitboard |= 1ULL << square;
+}
+
+void clearPieceAtSquare(int square, uint64_t &bitboard) {
+    bitboard &= ~(1ULL << square);
 }
 
 // Print Board
@@ -68,7 +79,7 @@ void Board::printBoard() const {
     }
 }
 
-uint64_t Board::getBitboard(char piece) {
+uint64_t Board::getBitboard(char piece) const {
     switch (piece) {
         case WHITE_PAWN:
             return whitePawns;
@@ -95,8 +106,143 @@ uint64_t Board::getBitboard(char piece) {
         case BLACK_KING:
             return blackKing;
         default:
-            return 0;
+            return -1;
     }
+}
+
+uint64_t *Board::getBitboardPointer(char piece) {
+    switch (piece) {
+        case WHITE_PAWN:
+            return &whitePawns;
+        case WHITE_KNIGHT:
+            return &whiteKnights;
+        case WHITE_ROOK:
+            return &whiteRooks;
+        case WHITE_BISHOP:
+            return &whiteBishops;
+        case WHITE_QUEEN:
+            return &whiteQueens;
+        case WHITE_KING:
+            return &whiteKing;
+        case BLACK_PAWN:
+            return &blackPawns;
+        case BLACK_KNIGHT:
+            return &blackKnights;
+        case BLACK_ROOK:
+            return &blackRooks;
+        case BLACK_BISHOP:
+            return &blackBishops;
+        case BLACK_QUEEN:
+            return &blackQueens;
+        case BLACK_KING:
+            return &blackKing;
+        default:
+            return nullptr;
+    }
+}
+
+uint64_t Board::getWhiteBitboard() const {
+    return whiteRooks | whiteQueens | whiteKing | whiteKnights | whitePawns | whiteBishops;
+}
+
+uint64_t Board::getBlackBitboard() const {
+    return blackRooks | blackQueens | blackKing | blackKnights | blackPawns | blackBishops;
+}
+
+bool Board::loadFenPosition(std::string &fen) {
+    int file = 0;
+    int rank = 7;
+    size_t idx = 0;
+    Board newBoard;
+
+    while (idx < fen.size() && fen[idx] != ' ') {
+        char letter = fen[idx++];
+        if (letter == '/') { // New rank
+            rank--;
+            file = 0;
+            continue;
+        }
+        if (letter <= '8' && letter >= '1') {
+            file += letter - '0';
+            continue;
+        }
+
+        uint64_t *bitBoardPtr = newBoard.getBitboardPointer(letter);
+        if (!bitBoardPtr) return false;
+
+        setPieceAtSquare(getBoardIndex(file++, rank), *bitBoardPtr);
+    }
+    if (rank != 0 || ++idx >= fen.size()) return false;
+
+    if (fen[idx] == 'w') newBoard.turn = 1;
+    else if (fen[idx++] == 'b') newBoard.turn = -1;
+    else return false;
+    // Index is now looking at the ' ' char after the turn
+
+    // --- Get castling rights ---
+    newBoard.castling = 0;
+    while (++idx < fen.size() && fen[idx] != ' ') {
+        char letter = fen[idx];
+        switch (letter) {
+            case 'K':
+                newBoard.castling |= 0b1000;
+                break;
+            case 'Q':
+                newBoard.castling |= 0b0100;
+                break;
+            case 'k':
+                newBoard.castling |= 0b0010;
+                break;
+            case 'q':
+                newBoard.castling |= 0b0001;
+                break;
+            case '-':
+                break;
+            default:
+                return false;
+        }
+    }
+    // idx is looking at the ' ' after castling
+
+    // --- En passant square ---
+    if (++idx >= fen.size()) return false;
+    if (fen[idx] == '-') {
+        newBoard.enPassantSquare = -1;
+        ++idx;
+    } else {
+        if (idx + 1 >= fen.size()) return false;
+        char fileChar = fen[idx++];
+        char rankChar = fen[idx++];
+
+        if (fileChar < 'a' || fileChar > 'h') return false;
+        if (rankChar < '1' || rankChar > '8') return false;
+
+        int file = fileChar - 'a';
+        int rank = rankChar - '1';
+        newBoard.enPassantSquare = getBoardIndex(file, rank);
+    }
+
+    if (idx < fen.size() && fen[idx] != ' ') return false; // must end with space
+
+    // --- HalfMove clock ---
+    if (++idx >= fen.size()) return false;
+    int halfmove = 0;
+    while (idx < fen.size() && isdigit(fen[idx])) {
+        halfmove = halfmove * 10 + (fen[idx++] - '0');
+    }
+    newBoard.halfMoveClock = halfmove;
+
+    // --- FullMove number ---
+    if (++idx >= fen.size()) return false;
+    int fullmove = 0;
+    while (idx < fen.size() && isdigit(fen[idx])) {
+        fullmove = fullmove * 10 + (fen[idx++] - '0');
+    }
+    newBoard.fullMove = fullmove;
+
+
+    *this = newBoard;
+    return true;
 }
 //======================================================================================================================
 // Non-class
