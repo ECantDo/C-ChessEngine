@@ -75,31 +75,20 @@ void testConvertFenString(TestResult &results) {
 void testGetBoardIndexLetters(TestResult &results) {
     std::vector<IndexTestChar> charIndexTests = {
             // Pass Cases
-            {'a', '1', 0},
-            {'a', '2', 1},
-            {'a', '3', 2},
-            {'a', '4', 3},
-            {'a', '5', 4},
-            {'a', '6', 5},
-            {'a', '7', 6},
-            {'a', '8', 7},
-            {'b', '1', 8},
-            {'b', '2', 9},
-            {'h', '1', 56},
-            {'h', '2', 57},
-            {'h', '3', 58},
-            {'h', '4', 59},
-            {'h', '5', 60},
-            {'h', '6', 61},
-            {'h', '7', 62},
-            {'h', '8', 63},
+            {'a', '1', 0},   /* rank 0, file 0 → 0*8+0 = 0 */
+            {'a', '2', 8},   /* rank 1, file 0 → 1*8+0 = 8 */
+            {'a', '3', 16},  /* rank 2, file 0 → 2*8+0 = 16 */
+            {'a', '8', 56},  /* rank 7, file 0 → 7*8+0 = 56 */
+            {'b', '1', 1},   /* rank 0, file 1 → 0*8+1 = 1 */
+            {'b', '2', 9},   /* rank 1, file 1 → 1*8+1 = 9 */
+            {'h', '1', 7},   /* rank 0, file 7 → 0*8+7 = 7 */
+            {'h', '8', 63},  /* rank 7, file 7 → 7*8+7 = 63 */
 
-            // Fail Cases
+            /* Fail cases */
             {'a', '0', -1},
             {'`', '1', -1},
             {'a', '9', -1},
             {'i', '1', -1}
-
     };
 
     for (auto &t: charIndexTests) {
@@ -116,19 +105,13 @@ void testGetBoardIndexLetters(TestResult &results) {
 
 void testGetBoardIndexNumbers(TestResult &results) {
     std::vector<IndexTestInt> intIndexTests = {
-            // Pass Cases
-            {0,  0,  0},
-            {0,  1,  1},
-            {0,  2,  2},
-            {0,  3,  3},
-            {0,  4,  4},
-            {0,  5,  5},
-            {0,  6,  6},
-            {0,  7,  7},
-            {1,  0,  8},
-            {7,  7,  63},
+            {0,  0,  0},    /* rank*8+file = 0*8+0 = 0 */
+            {0,  1,  8},    /* rank*8+file = 1*8+0 = 8 */
+            {1,  0,  1},    /* rank*8+file = 0*8+1 = 1 */
+            {1,  1,  9},    /* rank*8+file = 1*8+1 = 9 */
+            {7,  7,  63},   /* rank*8+file = 7*8+7 = 63 */
 
-            // Fail Cases
+            /* Fail cases */
             {-1, 0,  -1},
             {0,  -1, -1},
             {8,  0,  -1},
@@ -151,14 +134,14 @@ void testGetBoardPosition(TestResult &results) {
     std::vector<PositionTest> positionTests = {
             // Pass Cases
             {0,  "a1"},
-            {1,  "a2"},
-            {2,  "a3"},
-            {3,  "a4"},
-            {4,  "a5"},
-            {5,  "a6"},
-            {6,  "a7"},
-            {7,  "a8"},
-            {8,  "b1"},
+            {1,  "b1"},
+            {2,  "c1"},
+            {3,  "d1"},
+            {4,  "e1"},
+            {5,  "f1"},
+            {6,  "g1"},
+            {7,  "h1"},
+            {8,  "a2"},
             {63, "h8"},
 
             // Fail Cases

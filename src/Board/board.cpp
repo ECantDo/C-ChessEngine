@@ -109,7 +109,6 @@ void Board::setPieceAtSquare(int square, char piece) {
 
     // Set the value in the right bitboard
     *bitboard |= mask;
-
 }
 
 // Print Board
@@ -410,12 +409,14 @@ std::string Board::generateFen() const {
 // Non-class helper functions
 //======================================================================================================================
 
+/* Takes numeric file (0-7) and rank (0-7) */
 int getBoardIndex(int file, int rank) {
     if (file < 0 || file > 7 || rank < 0 || rank > 7)
         return -1;
-    return file * 8 + rank;
+    return rank * 8 + file;  /* RANK times 8, plus FILE */
 }
 
+/* Takes algebraic notation like 'b' and '7' */
 int getBoardIndex(char file, char rank) {
     return getBoardIndex(file - 'a', rank - '1');
 }
@@ -423,8 +424,8 @@ int getBoardIndex(char file, char rank) {
 std::string getBoardPosition(int index) {
     if (index < 0 || index >= 64) return "";
 
-    int file = index >> 3; // index / 8;
-    int rank = index & 7; // index % 8;
+    int rank = index >> 3; // index / 8;
+    int file = index & 7; // index % 8;
 
     return std::string()
            + static_cast<char>(file + 'a')
@@ -443,6 +444,10 @@ UndoInfo Board::makeMove(Move m) {
 
     char thisPiece = pieceAtSquare(fromLocation);
     char capturedPiece = pieceAtSquare(toLocation);
+
+    // TODO: remove debugging code
+    std::cout << "Making move: from=" << fromLocation << " to=" << toLocation
+              << " flags=" << flags << " piece=" << (int) thisPiece << std::endl;
 
     // Save undo info
     undoInfo.halfMoveClock = halfMoveClock;
