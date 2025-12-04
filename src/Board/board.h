@@ -41,7 +41,7 @@ public:
      */
     UndoInfo makeMove(Move m);
 
-    void unmakeMove(Move m, const UndoInfo &undo);
+    void unmakeMove(Move m, const UndoInfo &undoInfo);
 
 
 private:
@@ -77,7 +77,7 @@ private:
      * 1 for white
      * -1 for black
      */
-    char turn;
+    int8_t turn;
 
     /**
      * Castling rights:
@@ -90,7 +90,7 @@ private:
      * Example:
      * 0b1010 -> Both white and black of king-side rights
      */
-    char castling;
+    uint8_t castling;
 
     /**
      * For 50-move rule

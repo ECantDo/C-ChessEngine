@@ -22,5 +22,11 @@ add_executable(testChessEngine tests/test_all.cpp
         src/Board/board.cpp
         src/Board/piece.h
         src/Board/piece.cpp
+        tests/Board/test_moves.h
+        tests/Board/test_moves.cpp
+        tests/testing_essentials.h
+
+        src/Board/move.h
+        src/Board/move.cpp
 )
 

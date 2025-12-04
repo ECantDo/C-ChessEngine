@@ -449,16 +449,17 @@ UndoInfo Board::makeMove(Move m) {
     undoInfo.enPassantSquare = enPassantSquare;
     undoInfo.castlingRights = castling;
 
-    undoInfo.capturedPiece = capturedPiece;
-
     // Move the piece
     setPieceAtSquare(toLocation, thisPiece);
     setPieceAtSquare(fromLocation, NONE_PIECE);
 
     // Handle Captures
     if (flags & MOVE_FLAG_EN_PASSANT) {
+        int capturedPawnSquare = toLocation + (turn == 1 ? -8 : 8);
         undoInfo.capturedPiece = (turn == 1 ? BLACK_PAWN : WHITE_PAWN);
-        setPieceAtSquare(toLocation + (turn == 1 ? -8 : 8), NONE_PIECE);
+        setPieceAtSquare(capturedPawnSquare, NONE_PIECE);
+    } else {
+        undoInfo.capturedPiece = capturedPiece;  /* Regular capture */
     }
     // Other captures should already be natively handled.
 
@@ -522,18 +523,121 @@ UndoInfo Board::makeMove(Move m) {
                     newPiece = NONE_PIECE;
             }
         }
+        setPieceAtSquare(toLocation, newPiece);
     }
 
     // Update Castling Rights
+    if (thisPiece == WHITE_ROOK) {
+        if (fromLocation == 0) {
+            castling &= ~0b0100;    // Remove queen side rights
+        } else if (fromLocation == 7) {
+            castling &= ~0b1000;    // Remove king side rights
+        }
+    } else if (thisPiece == BLACK_ROOK) {
+        if (fromLocation == 56) {
+            castling &= ~0b0001; // Queen side
+        } else if (fromLocation == 63) {
+            castling &= ~0b0010; // King side
+        }
+    } else if (thisPiece == WHITE_KING) {
+        castling &= ~0b1100; // Remove white rights on king move
+    } else if (thisPiece == BLACK_KING) {
+        castling &= ~0b0011; // Remove black rights on king move
+    }
+
+    // This is really weird... but it somehow works.
+    if (capturedPiece == WHITE_ROOK) {
+        if (toLocation == 0) {
+            castling &= ~0b0001; // Remove white rights on queen side
+        }
+        if (toLocation == 7) {
+            castling &= ~0b0010; // Remove white rights on king side
+        }
+    } else if (capturedPiece == BLACK_ROOK) {
+        if (toLocation == 56) {
+            castling &= ~0b0100;
+        }
+        if (toLocation == 63) {
+            castling &= ~0b1000;
+        }
+    }
 
     // Update en passant square
+    enPassantSquare = -1;
+    if ((thisPiece == WHITE_PAWN && fromLocation / 8 == 1 && toLocation / 8 == 3) ||
+        (thisPiece == BLACK_PAWN && fromLocation / 8 == 6 && toLocation / 8 == 4)) {
+        enPassantSquare = (fromLocation + toLocation) / 2; // Square the pawn passed over
+    }
 
     // Update half-move clock
-    halfMoveClock++;
+    if (thisPiece == WHITE_PAWN || thisPiece == BLACK_PAWN || capturedPiece != NONE_PIECE) {
+        halfMoveClock = 0;
+    } else {
+        halfMoveClock += 1;
+    }
 
     // Update Turn
+    turn = -turn;
 
     // Update full-move number
+    if (turn == 1) { // Just switched to white, black just moved, therefore full move
+        fullMove += 1;
+    }
 
     return undoInfo;
+}
+
+void Board::unmakeMove(Move m, const UndoInfo &undoInfo) {
+    int fromLocation = getMoveFrom(m);
+    int toLocation = getMoveTo(m);
+    int flags = getMoveFlags(m);
+
+    /* Flip turn back first */
+    turn = (int8_t) -turn;
+
+    /* Decrement fullmove if we're back to black's turn */
+    if (turn == -1) {
+        fullMove -= 1;
+    }
+
+    /* Get the piece at destination (might be promoted piece) */
+    char piece = pieceAtSquare(toLocation);
+
+    /* If it was a promotion, restore the pawn */
+    if (flags & MOVE_FLAG_PROMOTION) {
+        piece = (turn == 1) ? WHITE_PAWN : BLACK_PAWN;
+    }
+
+    /* Move piece back */
+    setPieceAtSquare(fromLocation, piece);
+    setPieceAtSquare(toLocation, undoInfo.capturedPiece);
+
+    /* Undo en passant capture */
+    if (flags & MOVE_FLAG_EN_PASSANT) {
+        int capturedPawnSquare = toLocation + (turn == 1 ? -8 : 8);
+        setPieceAtSquare(capturedPawnSquare, undoInfo.capturedPiece);
+        setPieceAtSquare(toLocation, NONE_PIECE);
+    }
+
+    /* Undo castling */
+    if (flags & MOVE_FLAG_CASTLING) {
+        if (toLocation == 6) {  /* White kingside */
+            setPieceAtSquare(7, WHITE_ROOK);
+            setPieceAtSquare(5, NONE_PIECE);
+        } else if (toLocation == 2) {  /* White queenside */
+            setPieceAtSquare(0, WHITE_ROOK);
+            setPieceAtSquare(3, NONE_PIECE);
+        } else if (toLocation == 62) {  /* Black kingside */
+            setPieceAtSquare(63, BLACK_ROOK);
+            setPieceAtSquare(61, NONE_PIECE);
+        } else if (toLocation == 58) {  /* Black queenside */
+            setPieceAtSquare(56, BLACK_ROOK);
+            setPieceAtSquare(59, NONE_PIECE);
+        }
+    }
+
+    /* Restore state */
+    halfMoveClock = undoInfo.halfMoveClock;
+    enPassantSquare = undoInfo.enPassantSquare;
+    castling = undoInfo.castlingRights;
 }
