@@ -3,10 +3,12 @@
 //
 
 #include "Board/test_board.h"
+#include "Board/test_moves.h"
 
-int main(){
+int main() {
 
     testBoard();
+    testMoveMaking();
 
     return 0;
 }

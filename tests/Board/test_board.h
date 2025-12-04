@@ -5,10 +5,7 @@
 #ifndef CHESSENGINE_TEST_BOARD_H
 #define CHESSENGINE_TEST_BOARD_H
 
-struct TestResult {
-    int fail;
-    int pass;
-};
+#include "../testing_essentials.h"
 
 void testBoard();
 
