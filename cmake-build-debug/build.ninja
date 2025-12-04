@@ -70,6 +70,13 @@ build CMakeFiles/chessEngine.dir/src/Board/piece.cpp.obj: CXX_COMPILER__chessEng
   OBJECT_DIR = CMakeFiles\chessEngine.dir
   OBJECT_FILE_DIR = CMakeFiles\chessEngine.dir\src\Board
 
+build CMakeFiles/chessEngine.dir/src/Board/move.cpp.obj: CXX_COMPILER__chessEngine_unscanned_Debug E$:/CLionProjects/chessEngine/src/Board/move.cpp || cmake_object_order_depends_target_chessEngine
+  DEP_FILE = CMakeFiles\chessEngine.dir\src\Board\move.cpp.obj.d
+  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always
+  INCLUDES = -IE:/CLionProjects/chessEngine/src
+  OBJECT_DIR = CMakeFiles\chessEngine.dir
+  OBJECT_FILE_DIR = CMakeFiles\chessEngine.dir\src\Board
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target chessEngine
@@ -78,7 +85,7 @@ build CMakeFiles/chessEngine.dir/src/Board/piece.cpp.obj: CXX_COMPILER__chessEng
 #############################################
 # Link the executable chessEngine.exe
 
-build chessEngine.exe: CXX_EXECUTABLE_LINKER__chessEngine_Debug CMakeFiles/chessEngine.dir/src/main.cpp.obj CMakeFiles/chessEngine.dir/src/Board/board.cpp.obj CMakeFiles/chessEngine.dir/src/Board/piece.cpp.obj
+build chessEngine.exe: CXX_EXECUTABLE_LINKER__chessEngine_Debug CMakeFiles/chessEngine.dir/src/main.cpp.obj CMakeFiles/chessEngine.dir/src/Board/board.cpp.obj CMakeFiles/chessEngine.dir/src/Board/piece.cpp.obj CMakeFiles/chessEngine.dir/src/Board/move.cpp.obj
   FLAGS = -g
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\chessEngine.dir

@@ -10,6 +10,8 @@ add_executable(chessEngine src/main.cpp
         src/Board/board.cpp
         src/Board/piece.h
         src/Board/piece.cpp
+        src/Board/move.cpp
+        src/Board/move.h
 )
 
 add_executable(testChessEngine tests/test_all.cpp
