@@ -2,7 +2,7 @@
 // Created by ECanDo on 2025-08-23.
 //
 #include "Board/board.h"
-#include "test_base.h"
+#include "test_board.h"
 #include <iostream>
 #include <vector>
 #include <string>
@@ -24,7 +24,55 @@ struct PositionTest {
     std::string expected;
 };
 
-void test_base() {
+void testBoard() {
+    TestResult testResults = {0, 0};
+
+    // Test getting the index: a1 -> 0; (0, 0) -> 0; h8 -> 63; (7, 7) -> 63
+    testGetBoardIndexLetters(testResults);
+    testGetBoardIndexNumbers(testResults);
+
+    // Test going the other way
+    testGetBoardPosition(testResults);
+
+    // Test Board gen from FEN
+    testConvertFenString(testResults);
+
+
+    std::cout << "\nSummary: " << testResults.pass << "/" << (testResults.pass + testResults.fail)
+              << " tests pass for `Board/board`.\n";
+}
+
+void testConvertFenString(TestResult &results) {
+    std::vector<std::string> fenTests = {
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+            "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
+            "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2",
+            "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2",
+
+            "7k/3N2qp/b5r1/2p1Q1N1/Pp4PK/7P/1P3p2/6r1 w - - 7 4",
+    };
+
+    Board board = Board();
+    std::string resultingFEN;
+
+    for (auto &t: fenTests) {
+        board.loadFenPosition(t);
+
+        resultingFEN = board.generateFen();
+
+        if (resultingFEN != t) {
+            std::cout << "[FAIL] Board.generateFen() does not match provided FEN;\nInput: " << t << "\nOutput: "
+                      << resultingFEN << "\n\n";
+            board.printBoard();
+            results.fail++;
+            continue;
+        }
+
+        results.pass++;
+    }
+}
+
+void testGetBoardIndexLetters(TestResult &results) {
     std::vector<IndexTestChar> charIndexTests = {
             // Pass Cases
             {'a', '1', 0},
@@ -54,19 +102,19 @@ void test_base() {
 
     };
 
-    int passed = 0, failed = 0;
-
     for (auto &t: charIndexTests) {
         int got = getBoardIndex(t.file, t.rank);
         if (got == t.expected) {
-            passed++;
+            results.pass++;
         } else {
-            failed++;
+            results.fail++;
             std::cout << "[FAIL] Board.getBoardIndex('" << t.file << "', '" << t.rank << "') expected " << t.expected
                       << ", got " << got << "\n";
         }
     }
+}
 
+void testGetBoardIndexNumbers(TestResult &results) {
     std::vector<IndexTestInt> intIndexTests = {
             // Pass Cases
             {0,  0,  0},
@@ -90,25 +138,27 @@ void test_base() {
     for (auto &t: intIndexTests) {
         int got = getBoardIndex(t.file, t.rank);
         if (got == t.expected) {
-            passed++;
+            results.pass++;
         } else {
-            failed++;
+            results.fail++;
             std::cout << "[FAIL] Board.getBoardIndex(" << t.file << ", " << t.rank << ") expected " << t.expected
                       << ", got " << got << "\n";
         }
     }
+}
 
+void testGetBoardPosition(TestResult &results) {
     std::vector<PositionTest> positionTests = {
             // Pass Cases
-            {0, "a1"},
-            {1, "a2"},
-            {2, "a3"},
-            {3, "a4"},
-            {4, "a5"},
-            {5, "a6"},
-            {6, "a7"},
-            {7, "a8"},
-            {8, "b1"},
+            {0,  "a1"},
+            {1,  "a2"},
+            {2,  "a3"},
+            {3,  "a4"},
+            {4,  "a5"},
+            {5,  "a6"},
+            {6,  "a7"},
+            {7,  "a8"},
+            {8,  "b1"},
             {63, "h8"},
 
             // Fail Cases
@@ -119,13 +169,11 @@ void test_base() {
     for (auto &t: positionTests) {
         std::string got = getBoardPosition(t.index);
         if (got == t.expected) {
-            passed++;
+            results.pass++;
         } else {
-            failed++;
-            std::cout << "[FAIL] Board.getPostion(" << t.index << ") expected " << t.expected
+            results.fail++;
+            std::cout << "[FAIL] Board.getPosition(" << t.index << ") expected " << t.expected
                       << ", got " << got << "\n";
         }
     }
-
-    std::cout << "\nSummary: " << passed << "/" << (passed + failed) << " tests passed for `Board/board`.\n";
 }

@@ -2,11 +2,11 @@
 // Created by ECanDo on 2025-08-23.
 //
 
-#include "Board/test_base.h"
+#include "Board/test_board.h"
 
 int main(){
 
-    test_base();
+    testBoard();
 
     return 0;
 }
