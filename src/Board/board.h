@@ -37,6 +37,8 @@ private:
 
     [[nodiscard]] uint64_t *getBitboardPointer(char piece);
 
+    void setPieceAtSquare(int square, char piece);
+
 
     // Bitboards
     uint64_t whitePawns;
@@ -57,7 +59,7 @@ private:
      * -1 for none
      * 0 < n < 64 for the board index -> C or F rank
      */
-    char enPassantSquare;
+    int enPassantSquare;
 
     /**
      * 1 for white
@@ -114,9 +116,5 @@ int getBoardIndex(char file, char rank);
  * @return String of the index
  */
 std::string getBoardPosition(int index);
-
-void setPieceAtSquare(int square, uint64_t &bitBoard);
-
-void clearPieceAtSquare(int square, uint64_t &bitboard);
 
 #endif //CHESSENGINE_BOARD_H

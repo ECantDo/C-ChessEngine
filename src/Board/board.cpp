@@ -65,12 +65,40 @@ char Board::pieceAtSquare(int square) const {
     return NONE;
 }
 
-void setPieceAtSquare(int square, uint64_t &bitboard) {
-    bitboard |= 1ULL << square;
-}
+void Board::setPieceAtSquare(int square, char piece) {
+    if (square < 0 || square >= 64) {
+        return;
+    }
 
-void clearPieceAtSquare(int square, uint64_t &bitboard) {
-    bitboard &= ~(1ULL << square);
+    uint64_t mask = 1ULL << square;
+    uint64_t invertedMask = ~mask;
+
+    // Clear this square from all bitboards
+    whitePawns &= invertedMask;
+    whiteKnights &= invertedMask;
+    whiteBishops &= invertedMask;
+    whiteRooks &= invertedMask;
+    whiteQueens &= invertedMask;
+    whiteKing &= invertedMask;
+
+    blackPawns &= invertedMask;
+    blackKnights &= invertedMask;
+    blackBishops &= invertedMask;
+    blackRooks &= invertedMask;
+    blackQueens &= invertedMask;
+    blackKing &= invertedMask;
+
+    // Get the right bitboard
+    uint64_t *bitboard = getBitboardPointer(piece);
+
+    // If bitboard is null; stop
+    if (!bitboard) {
+        return;
+    }
+
+    // Set the value in the right bitboard
+    *bitboard |= mask;
+
 }
 
 // Print Board
@@ -155,95 +183,133 @@ uint64_t Board::getBlackBitboard() const {
 }
 
 bool Board::loadFenPosition(std::string &fen) {
-    int file = 0;
-    int rank = 7;
-    size_t idx = 0;
     Board newBoard;
+    size_t idx = 0;
+
+    /* ===== PART 1: Piece Placement ===== */
+    int rank = 7;  /* Start from rank 8 (index 7) */
+    int file = 0;  /* Start from file a (index 0) */
 
     while (idx < fen.size() && fen[idx] != ' ') {
-        char letter = fen[idx++];
-        if (letter == '/') { // New rank
+        char ch = fen[idx++];
+
+        if (ch == '/') {
+            /* Move to next rank */
+            if (file != 8) return false;  /* Previous rank wasn't complete */
             rank--;
             file = 0;
             continue;
         }
-        if (letter <= '8' && letter >= '1') {
-            file += letter - '0';
+
+        if (ch >= '1' && ch <= '8') {
+            /* Empty squares */
+            int emptyCount = ch - '0';
+            file += emptyCount;
+            if (file > 8) return false;  /* Too many squares in rank */
             continue;
         }
 
-        uint64_t *bitBoardPtr = newBoard.getBitboardPointer(letter);
-        if (!bitBoardPtr) return false;
+        /* Must be a piece character */
+        if (file >= 8) return false;  /* Too many pieces in rank */
 
-        setPieceAtSquare(getBoardIndex(rank, file++), *bitBoardPtr);
+        int square = rank * 8 + file;
+        newBoard.setPieceAtSquare(square, ch);
+        file++;
     }
-    if (rank != 0 || ++idx >= fen.size()) return false;
 
-    if (fen[idx] == 'w') newBoard.turn = 1;
-    else if (fen[idx++] == 'b') newBoard.turn = -1;
-    else return false;
-    // Index is now looking at the ' ' char after the turn
+    /* Verify we ended on rank 1 (index 0) with all 8 files */
+    if (rank != 0 || file != 8) return false;
 
-    // --- Get castling rights ---
+    /* ===== PART 2: Active Color ===== */
+    if (idx >= fen.size() || fen[idx] != ' ') return false;
+    idx++;  /* Skip space */
+
+    if (idx >= fen.size()) return false;
+    if (fen[idx] == 'w') {
+        newBoard.turn = 1;
+    } else if (fen[idx] == 'b') {
+        newBoard.turn = -1;
+    } else {
+        return false;
+    }
+    idx++;
+
+    /* ===== PART 3: Castling Rights ===== */
+    if (idx >= fen.size() || fen[idx] != ' ') return false;
+    idx++;  /* Skip space */
+
+    if (idx >= fen.size()) return false;
+
     newBoard.castling = 0;
-    while (++idx < fen.size() && fen[idx] != ' ') {
-        char letter = fen[idx];
-        switch (letter) {
-            case 'K':
-                newBoard.castling |= 0b1000;
-                break;
-            case 'Q':
-                newBoard.castling |= 0b0100;
-                break;
-            case 'k':
-                newBoard.castling |= 0b0010;
-                break;
-            case 'q':
-                newBoard.castling |= 0b0001;
-                break;
-            case '-':
-                break;
-            default:
-                return false;
+    if (fen[idx] == '-') {
+        /* No castling rights */
+        idx++;
+    } else {
+        /* Parse castling rights */
+        while (idx < fen.size() && fen[idx] != ' ') {
+            char ch = fen[idx++];
+            switch (ch) {
+                case 'K': newBoard.castling |= 0b1000; break;
+                case 'Q': newBoard.castling |= 0b0100; break;
+                case 'k': newBoard.castling |= 0b0010; break;
+                case 'q': newBoard.castling |= 0b0001; break;
+                default: return false;  /* Invalid castling character */
+            }
         }
     }
-    // idx is looking at the ' ' after castling
 
-    // --- En passant square ---
-    if (++idx >= fen.size()) return false;
+    /* ===== PART 4: En Passant Square ===== */
+    if (idx >= fen.size() || fen[idx] != ' ') return false;
+    idx++;  /* Skip space */
+
+    if (idx >= fen.size()) return false;
+
     if (fen[idx] == '-') {
+        /* No en passant square */
         newBoard.enPassantSquare = -1;
-        ++idx;
+        idx++;
     } else {
+        /* Parse en passant square (e.g., "e3") */
         if (idx + 1 >= fen.size()) return false;
+
         char fileChar = fen[idx++];
         char rankChar = fen[idx++];
 
         if (fileChar < 'a' || fileChar > 'h') return false;
         if (rankChar < '1' || rankChar > '8') return false;
 
-        newBoard.enPassantSquare = getBoardIndex(fileChar, rankChar);
+        int epFile = fileChar - 'a';
+        int epRank = rankChar - '1';
+        newBoard.enPassantSquare = epRank * 8 + epFile;
     }
 
-    if (idx < fen.size() && fen[idx] != ' ') return false; // must end with space
+    /* ===== PART 5: Halfmove Clock ===== */
+    if (idx >= fen.size() || fen[idx] != ' ') return false;
+    idx++;  /* Skip space */
 
-    // --- HalfMove clock ---
-    idx += 2;
-    if (++idx >= fen.size()) return false;
+    if (idx >= fen.size() || !isdigit(fen[idx])) return false;
+
     int halfmove = 0;
     while (idx < fen.size() && isdigit(fen[idx])) {
         halfmove = halfmove * 10 + (fen[idx++] - '0');
     }
     newBoard.halfMoveClock = halfmove;
 
-    // --- FullMove number ---
-    if (++idx >= fen.size()) return false;
+    /* ===== PART 6: Fullmove Number ===== */
+    if (idx >= fen.size() || fen[idx] != ' ') return false;
+    idx++;  /* Skip space */
+
+    if (idx >= fen.size() || !isdigit(fen[idx])) return false;
+
     int fullmove = 0;
     while (idx < fen.size() && isdigit(fen[idx])) {
         fullmove = fullmove * 10 + (fen[idx++] - '0');
     }
+
+    if (fullmove < 1) return false;  /* Fullmove must be at least 1 */
     newBoard.fullMove = fullmove;
 
+    /* ===== Success - Update Board ===== */
     *this = newBoard;
     return true;
 }
