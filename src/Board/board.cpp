@@ -73,7 +73,7 @@ char Board::pieceAtSquare(int square) const {
     if (whiteKing & mask) return WHITE_KING;
     if (blackKing & mask) return BLACK_KING;
 
-    return NONE;
+    return NONE_PIECE;
 }
 
 void Board::setPieceAtSquare(int square, char piece) {
@@ -264,11 +264,20 @@ bool Board::loadFenPosition(std::string &fen) {
         while (idx < fen.size() && fen[idx] != ' ') {
             char ch = fen[idx++];
             switch (ch) {
-                case 'K': newBoard.castling |= 0b1000; break;
-                case 'Q': newBoard.castling |= 0b0100; break;
-                case 'k': newBoard.castling |= 0b0010; break;
-                case 'q': newBoard.castling |= 0b0001; break;
-                default: return false;  /* Invalid castling character */
+                case 'K':
+                    newBoard.castling |= 0b1000;
+                    break;
+                case 'Q':
+                    newBoard.castling |= 0b0100;
+                    break;
+                case 'k':
+                    newBoard.castling |= 0b0010;
+                    break;
+                case 'q':
+                    newBoard.castling |= 0b0001;
+                    break;
+                default:
+                    return false;  /* Invalid castling character */
             }
         }
     }
@@ -341,7 +350,7 @@ std::string Board::generateFen() const {
         for (int file = 0; file < 8; ++file) {
             int idx = file + rank * 8;
             char pieceChar = pieceAtSquare(idx);
-            if (pieceChar == NONE) {
+            if (pieceChar == NONE_PIECE) {
                 ++empty;
             } else {
                 if (empty > 0) {
@@ -425,3 +434,106 @@ std::string getBoardPosition(int index) {
 // =====================================================================================================================
 // Move making
 // =====================================================================================================================
+UndoInfo Board::makeMove(Move m) {
+    UndoInfo undoInfo = {0, 0, 0, 0};
+
+    int fromLocation = getMoveFrom(m);
+    int toLocation = getMoveTo(m);
+    int flags = getMoveFlags(m);
+
+    char thisPiece = pieceAtSquare(fromLocation);
+    char capturedPiece = pieceAtSquare(toLocation);
+
+    // Save undo info
+    undoInfo.halfMoveClock = halfMoveClock;
+    undoInfo.enPassantSquare = enPassantSquare;
+    undoInfo.castlingRights = castling;
+
+    undoInfo.capturedPiece = capturedPiece;
+
+    // Move the piece
+    setPieceAtSquare(toLocation, thisPiece);
+    setPieceAtSquare(fromLocation, NONE_PIECE);
+
+    // Handle Captures
+    if (flags & MOVE_FLAG_EN_PASSANT) {
+        undoInfo.capturedPiece = (turn == 1 ? BLACK_PAWN : WHITE_PAWN);
+        setPieceAtSquare(toLocation + (turn == 1 ? -8 : 8), NONE_PIECE);
+    }
+    // Other captures should already be natively handled.
+
+    // Handle Castling
+    if (flags & MOVE_FLAG_CASTLING && thisPiece == WHITE_KING) {
+        if (toLocation == 6) { // King side
+            setPieceAtSquare(5, WHITE_ROOK);
+            setPieceAtSquare(7, NONE_PIECE);
+        } else if (toLocation == 2) { // Queen side
+            setPieceAtSquare(3, WHITE_ROOK);
+            setPieceAtSquare(0, NONE_PIECE);
+        }
+        castling &= 0b0011; // Remove white right to castle
+    } else if (flags & MOVE_FLAG_CASTLING && thisPiece == BLACK_KING) {
+        if (toLocation == 62) {
+            setPieceAtSquare(61, BLACK_ROOK);
+            setPieceAtSquare(63, NONE_PIECE);
+        } else if (toLocation == 58) {
+            setPieceAtSquare(59, BLACK_ROOK);
+            setPieceAtSquare(56, NONE_PIECE);
+        }
+        castling &= 0b1100; // Remove black right to castle
+    }
+
+    // Handle Promotion
+    if (flags & MOVE_FLAG_PROMOTION) {
+        int promotionPiece = flags & 0x3;
+        char newPiece;
+        if (turn == 1) {
+            switch (promotionPiece) {
+                case PROMOTE_TO_KNIGHT:
+                    newPiece = WHITE_KNIGHT;
+                    break;
+                case PROMOTE_TO_BISHOP:
+                    newPiece = WHITE_BISHOP;
+                    break;
+                case PROMOTE_TO_QUEEN:
+                    newPiece = WHITE_QUEEN;
+                    break;
+                case PROMOTE_TO_ROOK:
+                    newPiece = WHITE_ROOK;
+                    break;
+                default:
+                    newPiece = NONE_PIECE;
+            }
+        } else {
+            switch (promotionPiece) {
+                case PROMOTE_TO_KNIGHT:
+                    newPiece = BLACK_KNIGHT;
+                    break;
+                case PROMOTE_TO_BISHOP:
+                    newPiece = BLACK_BISHOP;
+                    break;
+                case PROMOTE_TO_QUEEN:
+                    newPiece = BLACK_QUEEN;
+                    break;
+                case PROMOTE_TO_ROOK:
+                    newPiece = BLACK_ROOK;
+                    break;
+                default:
+                    newPiece = NONE_PIECE;
+            }
+        }
+    }
+
+    // Update Castling Rights
+
+    // Update en passant square
+
+    // Update half-move clock
+    halfMoveClock++;
+
+    // Update Turn
+
+    // Update full-move number
+
+    return undoInfo;
+}

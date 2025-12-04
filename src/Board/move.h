@@ -22,6 +22,13 @@ typedef uint16_t Move;
 #define PROMOTE_TO_ROOK   2
 #define PROMOTE_TO_QUEEN  3
 
+struct UndoInfo {
+    char capturedPiece;
+    int enPassantSquare;
+    uint8_t castlingRights;
+    int halfMoveClock;
+};
+
 inline Move encodeMove(int from, int to, int flags){
     return (Move)((flags << 12) | (to << 6) | from);
 }

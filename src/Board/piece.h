@@ -19,7 +19,7 @@ const char BLACK_BISHOP = 'b';
 const char BLACK_QUEEN = 'q';
 const char BLACK_KING = 'k';
 
-const char NONE = '.';
+const char NONE_PIECE = '.';
 
 int getValue(char piece);
 

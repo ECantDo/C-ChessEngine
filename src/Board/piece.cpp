@@ -6,7 +6,7 @@
 
 int getValue(char piece) {
 
-    // NONE, <BLACK/WHITE>_KING; all worth 0, caught by the default case
+    // NONE_PIECE, <BLACK/WHITE>_KING; all worth 0, caught by the default case
     switch (piece) {
         case WHITE_PAWN:
             return 100;

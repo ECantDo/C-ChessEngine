@@ -5,6 +5,8 @@
 #include <cstdint>
 #include <string>
 
+#include "move.h"
+
 #ifndef CHESSENGINE_BOARD_H
 #define CHESSENGINE_BOARD_H
 
@@ -30,6 +32,16 @@ public:
     [[nodiscard]] uint64_t getWhiteBitboard() const;
 
     [[nodiscard]] uint64_t getBlackBitboard() const;
+
+    // Move making
+    /**
+     * Make a move, assumes that the move is a legal move.
+     * @param m The move to make
+     * @return
+     */
+    UndoInfo makeMove(Move m);
+
+    void unmakeMove(Move m, const UndoInfo &undo);
 
 
 private:
