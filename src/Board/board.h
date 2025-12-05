@@ -44,7 +44,6 @@ public:
     void unmakeMove(Move m, const UndoInfo &undoInfo);
 
 
-private:
     [[nodiscard]] char pieceAtSquare(int square) const;
 
     [[nodiscard]] uint64_t *getBitboardPointer(char piece);

@@ -12,6 +12,8 @@ add_executable(chessEngine src/main.cpp
         src/Board/piece.cpp
         src/Board/move.cpp
         src/Board/move.h
+        src/Board/generate_moves.cpp
+        src/Board/generate_moves.h
 )
 
 add_executable(testChessEngine tests/test_all.cpp
@@ -28,5 +30,7 @@ add_executable(testChessEngine tests/test_all.cpp
 
         src/Board/move.h
         src/Board/move.cpp
+        src/Board/generate_moves.cpp
+        src/Board/generate_moves.h
 )
 
