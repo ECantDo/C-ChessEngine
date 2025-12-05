@@ -445,10 +445,6 @@ UndoInfo Board::makeMove(Move m) {
     char thisPiece = pieceAtSquare(fromLocation);
     char capturedPiece = pieceAtSquare(toLocation);
 
-    // TODO: remove debugging code
-    std::cout << "Making move: from=" << fromLocation << " to=" << toLocation
-              << " flags=" << flags << " piece=" << (int) thisPiece << std::endl;
-
     // Save undo info
     undoInfo.halfMoveClock = halfMoveClock;
     undoInfo.enPassantSquare = enPassantSquare;
@@ -550,20 +546,19 @@ UndoInfo Board::makeMove(Move m) {
         castling &= ~0b0011; // Remove black rights on king move
     }
 
-    // This is really weird... but it somehow works.
     if (capturedPiece == WHITE_ROOK) {
         if (toLocation == 0) {
-            castling &= ~0b0001; // Remove white rights on queen side
+            castling &= ~0b0100; // Remove white rights on queen side
         }
         if (toLocation == 7) {
-            castling &= ~0b0010; // Remove white rights on king side
+            castling &= ~0b1000; // Remove white rights on king side
         }
     } else if (capturedPiece == BLACK_ROOK) {
         if (toLocation == 56) {
-            castling &= ~0b0100;
+            castling &= ~0b0001; // Remove black rights on queen side
         }
         if (toLocation == 63) {
-            castling &= ~0b1000;
+            castling &= ~0b0010; // Remove black rights on king side
         }
     }
 
@@ -582,7 +577,7 @@ UndoInfo Board::makeMove(Move m) {
     }
 
     // Update Turn
-    turn = -turn;
+    turn = (int8_t) -turn;
 
     // Update full-move number
     if (turn == 1) { // Just switched to white, black just moved, therefore full move

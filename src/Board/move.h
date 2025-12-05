@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <string>
 
-typedef uint16_t Move;
+typedef uint32_t Move;
 
 /* Flag constants */
 #define MOVE_FLAG_CAPTURE 0x1000
@@ -42,7 +42,7 @@ inline int getMoveTo(Move m) {
 }
 
 inline int getMoveFlags(Move m) {
-    return (m >> 12) &0xF;
+    return (m >> 12);
 }
 
 std::string moveToString(Move m);
