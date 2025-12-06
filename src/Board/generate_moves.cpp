@@ -18,8 +18,10 @@ void generatePseudoLegalMoves(Board &board, std::vector<Move> &moveList) {
     generateBishopMoves(board, moveList);
 
     // Generate Queen moves
+    generateQueenMoves(board, moveList);
 
     // Generate Knight moves
+    generateKnightMoves(board, moveList);
 
     // Generate Pawn moves
 }
@@ -224,7 +226,7 @@ void generateQueenMoves(const Board &board, std::vector<Move> &moveList) {
         /* Queen moves = rook directions + bishop directions */
         const int directions[8] = {8, -8, 1, -1, 9, -9, 7, -7};
 
-        for (int dir : directions) {
+        for (int dir: directions) {
             int targetSquare = queenSquare + dir;
 
             while (isValidSquare(targetSquare)) {
@@ -246,6 +248,150 @@ void generateQueenMoves(const Board &board, std::vector<Move> &moveList) {
                 targetSquare += dir;
             }
         }
+    }
+}
+
+void generateKnightMoves(const Board &board, std::vector<Move> &moveList) {
+    uint64_t knightBitboard;
+    uint64_t myPieces, theirPieces;
+
+    if (board.turn == 1) {
+        myPieces = board.getWhiteBitboard();
+        theirPieces = board.getBlackBitboard();
+        knightBitboard = board.whiteKnights;
+    } else {
+        myPieces = board.getBlackBitboard();
+        theirPieces = board.getWhiteBitboard();
+        knightBitboard = board.blackKnights;
+    }
+
+    const int knightOffsets[8] = {-17, -15, -10, -6, 6, 10, 15, 17};
+
+    while (knightBitboard) {
+        int knightSquare = std::countr_zero(knightBitboard);
+        knightBitboard &= knightBitboard - 1;
+
+        for (int offset: knightOffsets) {
+            int targetSquare = knightSquare + offset;
+
+            if (!isValidSquare(targetSquare)) continue;
+
+            /* Knights wrap differently - check file distance is exactly 1 or 2 */
+            int fromFile = knightSquare % 8;
+            int toFile = targetSquare % 8;
+            int fileDist = abs(toFile - fromFile);
+            if (fileDist != 1 && fileDist != 2) continue;  /* Wrapped */
+
+            uint64_t targetMask = 1ULL << targetSquare;
+
+            if (targetMask & myPieces) continue;
+
+            int flags = (targetMask & theirPieces) ? MOVE_FLAG_CAPTURE : 0;
+            moveList.push_back(encodeMove(knightSquare, targetSquare, flags));
+        }
+    }
+}
+
+void generatePawnMoves(const Board &board, std::vector<Move> &moveList) {
+    uint64_t pawnBitboard;
+    uint64_t myPieces, theirPieces;
+    int direction;  /* +8 for white (moving up), -8 for black (moving down) */
+    int startRank, promotionRank;
+
+    if (board.turn == 1) {  /* White */
+        myPieces = board.getWhiteBitboard();
+        theirPieces = board.getBlackBitboard();
+        pawnBitboard = board.whitePawns;
+        direction = 8;
+        startRank = 1;  /* Rank 2 in 0-indexed */
+        promotionRank = 7;  /* Rank 8 */
+    } else {  /* Black */
+        myPieces = board.getBlackBitboard();
+        theirPieces = board.getWhiteBitboard();
+        pawnBitboard = board.blackPawns;
+        direction = -8;
+        startRank = 6;  /* Rank 7 in 0-indexed */
+        promotionRank = 0;  /* Rank 1 */
+    }
+
+    uint64_t occupied = myPieces | theirPieces;
+
+    while (pawnBitboard) {
+        int pawnSquare = std::countr_zero(pawnBitboard);
+        pawnBitboard &= pawnBitboard - 1;
+
+        int pawnRank = pawnSquare / 8;
+        int pawnFile = pawnSquare % 8;
+
+        // === 1. Moving Forward ===
+        int oneForward = pawnSquare + direction;
+
+        if (isValidSquare(oneForward) && !(occupied & (1ULL << oneForward))) {
+            if (pawnRank + (direction / 8) == promotionRank) {
+                // Add promotion moves
+                moveList.push_back(encodeMove(pawnSquare, oneForward, MOVE_FLAG_PROMOTION | PROMOTE_TO_QUEEN));
+                moveList.push_back(encodeMove(pawnSquare, oneForward, MOVE_FLAG_PROMOTION | PROMOTE_TO_ROOK));
+                moveList.push_back(encodeMove(pawnSquare, oneForward, MOVE_FLAG_PROMOTION | PROMOTE_TO_BISHOP));
+                moveList.push_back(encodeMove(pawnSquare, oneForward, MOVE_FLAG_PROMOTION | PROMOTE_TO_KNIGHT));
+            } else {
+                // Normal move forwards
+                moveList.push_back(encodeMove(pawnSquare, oneForward, 0));
+
+                // === 2. Double Forwards ===
+                if (pawnRank == startRank) {
+                    int twoForward = pawnSquare + (direction << 1); // Fast mult by 2
+                    if (!(occupied & (1ULL << twoForward))) {
+                        moveList.push_back(encodeMove(pawnSquare, twoForward, 0));
+                    }
+                }
+            }
+        }
+
+        // === 3. CAPTURES ===
+        int captureOffsets[2] = {direction - 1, direction + 1};
+
+        for (int captureOffset: captureOffsets) {
+            int captureSquare = pawnSquare + captureOffset;
+
+            // Check for going off the end
+            if (!isValidSquare(captureSquare)) continue;
+
+            // Check for wrap
+            int captureFile = captureSquare % 8;
+            if (abs(captureFile - pawnFile) != 1) continue;
+
+            if (theirPieces & (1ULL << captureSquare)) {
+                if (pawnRank + (direction / 8) == promotionRank) {
+                    //Promotion captures
+                    moveList.push_back(encodeMove(pawnSquare, captureSquare,
+                                                  MOVE_FLAG_PROMOTION | MOVE_FLAG_CAPTURE | PROMOTE_TO_QUEEN));
+                    moveList.push_back(encodeMove(pawnSquare, captureSquare,
+                                                  MOVE_FLAG_PROMOTION | MOVE_FLAG_CAPTURE | PROMOTE_TO_ROOK));
+                    moveList.push_back(encodeMove(pawnSquare, captureSquare,
+                                                  MOVE_FLAG_PROMOTION | MOVE_FLAG_CAPTURE | PROMOTE_TO_BISHOP));
+                    moveList.push_back(encodeMove(pawnSquare, captureSquare,
+                                                  MOVE_FLAG_PROMOTION | MOVE_FLAG_CAPTURE | PROMOTE_TO_KNIGHT));
+                } else {
+                    // Normal capture
+                    moveList.push_back(encodeMove(pawnSquare, captureSquare, MOVE_FLAG_CAPTURE));
+                }
+            }
+        }
+
+        // === 4. En Passant ===
+        if (board.enPassantSquare >= 0 && board.enPassantSquare < 64) {
+            int epSquare = board.enPassantSquare;
+            int epFile = epSquare % 8;
+
+            // Check if we can capture
+            if (abs(epFile - pawnFile) == 1 && epSquare == pawnSquare + direction - 1) {
+                moveList.push_back(encodeMove(pawnSquare, epSquare, MOVE_FLAG_EN_PASSANT | MOVE_FLAG_CAPTURE));
+            } else if (abs(epFile - pawnFile) == 1 && epSquare == pawnSquare + direction + 1) {
+                moveList.push_back(encodeMove(pawnSquare, epSquare, MOVE_FLAG_EN_PASSANT | MOVE_FLAG_CAPTURE));
+            }
+        }
+
+        // And that's pawns... goodness... the simplest piece has the most rules...
     }
 }
 // =====================================================================================================================

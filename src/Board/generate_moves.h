@@ -35,6 +35,12 @@ void generateRookMoves(const Board &board, std::vector<Move> &moveList);
 
 void generateBishopMoves(const Board &board, std::vector<Move> &moveList);
 
+void generateQueenMoves(const Board &board, std::vector<Move> &moveList);
+
+void generateKnightMoves(const Board &board, std::vector<Move> &moveList);
+
+void generatePawnMoves(const Board &board, std::vector<Move> &moveList);
+
 // HELPER
 bool isEnemyPiece(const Board &board, int square, int myColor);
 
