@@ -10,7 +10,7 @@
 #include "Board/generate_moves.h"
 
 struct BestMove {
-    std::string bestMove;
+    Move bestMove;
     int score;
 };
 

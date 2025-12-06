@@ -7,6 +7,8 @@
 
 #include <cstdint>
 #include <string>
+#include "board.h"
+#include "piece.h"
 
 typedef uint32_t Move;
 
@@ -46,5 +48,7 @@ inline int getMoveFlags(Move m) {
 }
 
 std::string moveToString(Move m);
+
+Move stringToMove(std::string &str, const Board &board);
 
 #endif //CHESSENGINE_MOVE_H

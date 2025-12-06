@@ -11,11 +11,11 @@ BestMove selectMove(Board board, long timeLimitMS) {
 
 
     if (moveList.empty()) {
-        return {"0000", 0};
+        return {0, 0};
     }
 
     return {
-            moveToString(moveList[rand() % moveList.size()]),
+            moveList[rand() % moveList.size()],
             0
     };
 }
