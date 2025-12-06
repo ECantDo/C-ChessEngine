@@ -6,6 +6,7 @@
 #include <string>
 #include <sstream>
 #include <atomic>
+#include <chrono>
 
 std::atomic<bool> stopSearch{false};
 Board currentBoard;   // Global board state stored between commands
@@ -53,7 +54,7 @@ void startSearch(const std::string &goCmd) {
     stopSearch = false;
 
     long movetime = 0;
-    long depth = 0;
+    long depth = 3;
 
     {
         std::stringstream ss(goCmd);
@@ -67,8 +68,18 @@ void startSearch(const std::string &goCmd) {
 
     // Placeholder info line (GUI expects some output)
 
-    BestMove bm = selectMove(currentBoard, movetime);
-    std::cout << "info depth 1 time 0 nodes 1 score cp " << (bm.score / 100.0) << " pv e2e4\n" << std::flush;
+    auto start = std::chrono::high_resolution_clock::now();
+    BestMove bm = selectMove(currentBoard, 0, depth);
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+
+    std::cout << "info depth " << depth
+              << " time " << duration.count()
+              << " nodes " << bm.nodes
+              << " score cp " << (bm.score)
+              << " pv " << moveToString(bm.bestMove)
+              << "\n" << std::flush;
 
     std::cout << "bestmove " << moveToString(bm.bestMove) << "\n" << std::flush;
 }
@@ -108,7 +119,7 @@ int main() {
             stopSearch = true;
         } else if (line == "quit") {
             break;
-        } else if (line == "d"){
+        } else if (line == "d") {
             currentBoard.printBoard();
             std::cout << std::flush;
         }

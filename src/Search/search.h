@@ -16,12 +16,13 @@
 struct BestMove {
     Move bestMove;
     int score;
+    unsigned long long nodes;
 };
 
-BestMove selectMove(Board board, long timeLimitMS);
+BestMove selectMove(Board &board, int depth, int maxDepth);
 
-int evaluate(Board &board, Move &move);
+int evaluate(Board &board);
 
-int countPiece(Board &board, char piece);
+bool isKingInCheck(const Board &board, int color);
 
 #endif //CHESSENGINE_SEARCH_H
