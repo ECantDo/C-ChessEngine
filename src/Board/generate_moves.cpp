@@ -11,12 +11,10 @@ void generateLegalMoves(Board &board, std::vector<Move> &moveList) {
     moveList.clear();
     moveList.reserve(pseudoLegal.size());
 
-    int8_t ourColor = board.turn;
-
     for (Move m: pseudoLegal) {
         UndoInfo undoInfo = board.makeMove(m);
 
-        uint64_t ourKing = (ourColor == 1) ? board.whiteKing : board.blackKing;
+        uint64_t ourKing = (board.turn == -1) ? board.whiteKing : board.blackKing;
         int kingSquare = std::countr_zero(ourKing);
 
         bool inCheck = isSquareAttacked(board, kingSquare, board.turn);
@@ -514,10 +512,13 @@ bool isSquareAttacked(const Board &board, int square, int attackingColor) {
     for (int dir: rookDirs) {
         int target = square + dir;
         while (isValidSquare(target)) {
-            /* Check wrap for horizontal */
-            if (abs(dir) == 1) {
-                int targetFile = target % 8;
-                if (abs(targetFile - file) > 1) break;
+            // Horizontal wrap check
+            if (dir == 1 || dir == -1) {
+                int fromFile = (target - dir) % 8;
+                int toFile = target % 8;
+                if (abs(toFile - fromFile) > 1) {
+                    break;
+                }
             }
 
             uint64_t targetMask = 1ULL << target;
@@ -539,8 +540,11 @@ bool isSquareAttacked(const Board &board, int square, int attackingColor) {
         int target = square + dir;
         while (isValidSquare(target)) {
             /* Check wrap */
-            int targetFile = target % 8;
-            if (abs(targetFile - file) > 2) break;
+            int fromFile = (target - dir) % 8;
+            int toFile = target % 8;
+            if (abs(toFile - fromFile) > 1) {
+                break;
+            }
 
             uint64_t targetMask = 1ULL << target;
 
