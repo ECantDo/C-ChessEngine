@@ -19,7 +19,7 @@
 Board::Board()
         : whitePawns(0), whiteBishops(0), whiteKing(0), whiteKnights(0), whiteQueens(0), whiteRooks(0),
           blackPawns(0), blackBishops(0), blackKing(0), blackKnights(0), blackQueens(0), blackRooks(0),
-          enPassantSquare(-1), turn(0), castling(0), halfMoveClock(0), fullMove(1) {}
+          enPassantSquare(-1), turn(0), castling(0), halfMoveClock(0), fullMove(1) { loadStartPosition(); }
 
 Board::Board(std::string &fen) : Board() {
     if (!loadFenPosition(fen)) throw std::invalid_argument("Invalid FEN string: " + fen);
@@ -49,6 +49,11 @@ void Board::loadStartPosition() {
     // Kings
     whiteKing = 0x0000000000000010ULL;
     blackKing = 0x1000000000000000ULL;
+
+    fullMove = 1;
+    halfMoveClock = 0;
+    castling = 0b1111;
+    turn = 1;
 }
 
 // =====================================================================================================================
