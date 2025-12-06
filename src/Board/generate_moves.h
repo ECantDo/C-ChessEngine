@@ -29,14 +29,20 @@ void generateLegalMoves(Board &board, std::vector<Move> &moveList, size_t &moveC
  * @param board
  * @param moves
  */
-void generateKingMoves(const Board &board, std::vector<Move> moves);
+void generateKingMoves(const Board &board, std::vector<Move> &moves);
 
+void generateRookMoves(const Board &board, std::vector<Move> &moves);
+
+// HELPER
 bool isEnemyPiece(const Board &board, int square, int myColor);
 
 bool isEmpty(const Board &board, int square);
 
 bool isValidSquare(int square);
 
+// OFFSETS
 const int kingOffsets[8] = {-9, -8, -7, -1, 1, 7, 8, 9};
+
+const int rookOffsets[4] = {8, -8, 1, -1};
 
 #endif //CHESSENGINE_GENERATE_MOVES_H

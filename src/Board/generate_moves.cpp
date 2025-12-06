@@ -26,16 +26,19 @@ void generatePseudoLegalMoves(Board &board, std::vector<Move> &moveList) {
 // Single generator functions
 // =====================================================================================================================
 void generateKingMoves(const Board &board, std::vector<Move> &moveList) {
-    // Will only have 1 bit enabled; there is only 1 king
-    uint64_t kingBitBoard = board.turn == 1 ? board.whiteKing : board.blackKing;
-
+    uint64_t kingBitBoard;
     uint64_t myPieces, theirPieces;
+
     if (board.turn == 1) {
         myPieces = board.getWhiteBitboard();
         theirPieces = board.getBlackBitboard();
+
+        kingBitBoard = board.whiteKing;
     } else {
         myPieces = board.getBlackBitboard();
         theirPieces = board.getWhiteBitboard();
+
+        kingBitBoard = board.blackKing;
     }
 
     // Same as log2(x), but we know x is a power of 2
@@ -47,6 +50,13 @@ void generateKingMoves(const Board &board, std::vector<Move> &moveList) {
 
         // Stop if off the board
         if (!isValidSquare(targetSquare)) {
+            continue;
+        }
+
+        // Stop wrapping around the board
+        int fromFile = kingSquare % 8;
+        int toFile = targetSquare % 8;
+        if (abs(toFile - fromFile) > 1) {
             continue;
         }
 
@@ -80,6 +90,60 @@ void generateKingMoves(const Board &board, std::vector<Move> &moveList) {
             moveList.push_back(encodeMove(60, 62, MOVE_FLAG_CASTLING));
         } else if ((board.castling & 0b0001) && (0x0E00000000000000 & allPieceBitboard) == 0) { // Black queen side
             moveList.push_back(encodeMove(60, 58, MOVE_FLAG_CASTLING));
+        }
+    }
+}
+
+void generateRookMoves(const Board &board, std::vector<Move> &moveList) {
+    //TODO: Magic bitboards
+    uint64_t rookBitBoard;
+    uint64_t myPieces, theirPieces;
+
+    if (board.turn == 1) {
+        myPieces = board.getWhiteBitboard();
+        theirPieces = board.getBlackBitboard();
+
+        rookBitBoard = board.whiteRooks;
+    } else {
+        myPieces = board.getBlackBitboard();
+        theirPieces = board.getWhiteBitboard();
+
+        rookBitBoard = board.blackRooks;
+    }
+
+    while (rookBitBoard) {
+        int rookSquare = std::countr_zero(rookBitBoard);
+        rookBitBoard &= rookBitBoard - 1; // Clear the bit we just processed
+
+        for (int dir: rookOffsets) {
+            int targetSquare = rookSquare + dir;
+
+            // Keep sliding until we are off the board
+            while (isValidSquare(targetSquare)) {
+                // If horizontal movement; stop when wrapping around the board.
+                if (dir == 1 || dir == -1) {
+                    int fromFile = (targetSquare - dir) % 8;
+                    int toFile = targetSquare % 8;
+                    if (abs(toFile - fromFile) > 1) {
+                        break;
+                    }
+                }
+
+                uint64_t targetMask = 1ULL << targetSquare;
+
+                // Hit our own piece --- stop
+                if (targetMask & myPieces) break;
+
+                // Hit opponent piece --- add and stop
+                if (targetMask & theirPieces) {
+                    moveList.push_back(encodeMove(rookSquare, targetSquare, MOVE_FLAG_CAPTURE));
+                    break;
+                }
+
+                // Otherwise the square is empty
+                moveList.push_back(encodeMove(rookSquare, targetSquare, 0));
+                targetSquare += dir;
+            }
         }
     }
 }
