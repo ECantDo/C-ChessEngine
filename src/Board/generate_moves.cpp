@@ -12,8 +12,10 @@ void generatePseudoLegalMoves(Board &board, std::vector<Move> &moveList) {
     generateKingMoves(board, moveList);
 
     // Generate Rook moves
+    generateRookMoves(board, moveList);
 
     // Generate Bishop moves
+    generateBishopMoves(board, moveList);
 
     // Generate Queen moves
 
@@ -82,13 +84,15 @@ void generateKingMoves(const Board &board, std::vector<Move> &moveList) {
     if (board.turn == 1 && kingSquare == 4) {
         if ((board.castling & 0b1000) && (0x60 & allPieceBitboard) == 0) { // White kingside
             moveList.push_back(encodeMove(4, 6, MOVE_FLAG_CASTLING));
-        } else if ((board.castling & 0b0100) && (0x0E & allPieceBitboard) == 0) { // White queen side
+        }
+        if ((board.castling & 0b0100) && (0x0E & allPieceBitboard) == 0) { // White queen side
             moveList.push_back(encodeMove(4, 2, MOVE_FLAG_CASTLING));
         }
     } else if (kingSquare == 60) { // Black Castling moves
         if ((board.castling & 0b0010) && (0x6000000000000000 & allPieceBitboard) == 0) { // Black kingside
             moveList.push_back(encodeMove(60, 62, MOVE_FLAG_CASTLING));
-        } else if ((board.castling & 0b0001) && (0x0E00000000000000 & allPieceBitboard) == 0) { // Black queen side
+        }
+        if ((board.castling & 0b0001) && (0x0E00000000000000 & allPieceBitboard) == 0) { // Black queen side
             moveList.push_back(encodeMove(60, 58, MOVE_FLAG_CASTLING));
         }
     }
@@ -142,6 +146,103 @@ void generateRookMoves(const Board &board, std::vector<Move> &moveList) {
 
                 // Otherwise the square is empty
                 moveList.push_back(encodeMove(rookSquare, targetSquare, 0));
+                targetSquare += dir;
+            }
+        }
+    }
+}
+
+void generateBishopMoves(const Board &board, std::vector<Move> &moveList) {
+//TODO: Magic bitboards
+    uint64_t bishopBitboard;
+    uint64_t myPieces, theirPieces;
+
+    if (board.turn == 1) {
+        myPieces = board.getWhiteBitboard();
+        theirPieces = board.getBlackBitboard();
+
+        bishopBitboard = board.whiteBishops;
+    } else {
+        myPieces = board.getBlackBitboard();
+        theirPieces = board.getWhiteBitboard();
+
+        bishopBitboard = board.blackBishops;
+    }
+
+    while (bishopBitboard) {
+        int bishopSquare = std::countr_zero(bishopBitboard);
+        bishopBitboard &= bishopBitboard - 1; // Clear the bit we just processed
+
+        for (int dir: bishopOffsets) {
+            int targetSquare = bishopSquare + dir;
+
+            // Keep sliding until we are off the board
+            while (isValidSquare(targetSquare)) {
+                int fromFile = (targetSquare - dir) % 8;
+                int toFile = targetSquare % 8;
+                if (abs(toFile - fromFile) > 1) {
+                    break;
+                }
+
+                uint64_t targetMask = 1ULL << targetSquare;
+
+                // Hit our own piece --- stop
+                if (targetMask & myPieces) break;
+
+                // Hit opponent piece --- add and stop
+                if (targetMask & theirPieces) {
+                    moveList.push_back(encodeMove(bishopSquare, targetSquare, MOVE_FLAG_CAPTURE));
+                    break;
+                }
+
+                // Otherwise the square is empty
+                moveList.push_back(encodeMove(bishopSquare, targetSquare, 0));
+                targetSquare += dir;
+            }
+        }
+    }
+}
+
+void generateQueenMoves(const Board &board, std::vector<Move> &moveList) {
+    uint64_t queenBitboard;
+    uint64_t myPieces, theirPieces;
+
+    if (board.turn == 1) {
+        myPieces = board.getWhiteBitboard();
+        theirPieces = board.getBlackBitboard();
+        queenBitboard = board.whiteQueens;
+    } else {
+        myPieces = board.getBlackBitboard();
+        theirPieces = board.getWhiteBitboard();
+        queenBitboard = board.blackQueens;
+    }
+
+    while (queenBitboard) {
+        int queenSquare = std::countr_zero(queenBitboard);
+        queenBitboard &= queenBitboard - 1;
+
+        /* Queen moves = rook directions + bishop directions */
+        const int directions[8] = {8, -8, 1, -1, 9, -9, 7, -7};
+
+        for (int dir : directions) {
+            int targetSquare = queenSquare + dir;
+
+            while (isValidSquare(targetSquare)) {
+                /* Check for wrap (horizontal or diagonal) */
+                int fromFile = (targetSquare - dir) % 8;
+                int toFile = targetSquare % 8;
+                if (abs(toFile - fromFile) > 2) break;  /* Wrapped */
+
+                uint64_t targetMask = 1ULL << targetSquare;
+
+                if (targetMask & myPieces) break;
+
+                if (targetMask & theirPieces) {
+                    moveList.push_back(encodeMove(queenSquare, targetSquare, MOVE_FLAG_CAPTURE));
+                    break;
+                }
+
+                moveList.push_back(encodeMove(queenSquare, targetSquare, 0));
                 targetSquare += dir;
             }
         }
