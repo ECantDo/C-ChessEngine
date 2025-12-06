@@ -22,7 +22,7 @@ constexpr size_t MAX_MOVES = 256;
  */
 void generatePseudoLegalMoves(const Board &board, std::vector<Move> &moveList);
 
-void generateLegalMoves(const Board &board, std::vector<Move> &moveList);
+void generateLegalMoves(Board &board, std::vector<Move> &moveList);
 
 /**
  * Generate pseudo legal moves

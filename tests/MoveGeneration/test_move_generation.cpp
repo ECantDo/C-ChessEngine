@@ -28,7 +28,7 @@ void testMoveGeneration(int depth) {
                     {1, 48, 2039, 97862, 4085603, 193690690}
             },
             {
-                    "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1 ",
+                    "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1",
                     {1, 14, 191,  2812,  43238,   674624}
             },
             {
@@ -48,18 +48,20 @@ void testMoveGeneration(int depth) {
 
     Board board = Board();
 
-    for (TestPerftResults test: testPerft) {
+    for (TestPerftResults &test: testPerft) {
         board.loadFenPosition(test.startingPosition);
-        std::cout << "Testing Position " << test.startingPosition << " ... ";
+        std::cout << "Testing Position " << test.startingPosition << "\n";
 
         auto start = std::chrono::high_resolution_clock::now();
         uint64_t nodes = perft(depth, board);
         auto end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-        std::cout << "perft found " << nodes << " in " << duration << " seconds, at a depth of " << depth << "\n";
+        std::cout << "perft found " << nodes << " in " << duration << ", at a depth of " << depth << "\n";
         if (nodes != test.results[depth]) {
             std::cout << "[FAIL] Should have found " << test.results[depth] << "\n\n";
+        } else {
+            std::cout << "[PASS]\n\n";
         }
     }
 }

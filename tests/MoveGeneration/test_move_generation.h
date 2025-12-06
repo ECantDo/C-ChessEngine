@@ -11,6 +11,7 @@
 
 #include "Board/generate_moves.h"
 #include "Board/board.h"
+#include "Board/move.h"
 
 void testMoveGeneration(int depth);
 
