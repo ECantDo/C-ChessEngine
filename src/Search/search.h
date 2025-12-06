@@ -6,6 +6,10 @@
 #define CHESSENGINE_SEARCH_H
 
 #include <string>
+#include <numeric>
+#include <cmath>
+
+#include "Board/piece.h"
 #include "Board/board.h"
 #include "Board/generate_moves.h"
 
@@ -15,5 +19,9 @@ struct BestMove {
 };
 
 BestMove selectMove(Board board, long timeLimitMS);
+
+int evaluate(Board &board, Move &move);
+
+int countPiece(Board &board, char piece);
 
 #endif //CHESSENGINE_SEARCH_H
