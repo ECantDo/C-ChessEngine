@@ -20,9 +20,9 @@ constexpr size_t MAX_MOVES = 256;
  * @param moveList The array to output the moves into
  * @param moveCount The number of moves found.
  */
-void generatePseudoLegalMoves(Board &board, std::vector<Move> &moveList);
+void generatePseudoLegalMoves(const Board &board, std::vector<Move> &moveList);
 
-void generateLegalMoves(Board &board, std::vector<Move> &moveList, size_t &moveCount);
+void generateLegalMoves(const Board &board, std::vector<Move> &moveList);
 
 /**
  * Generate pseudo legal moves
@@ -47,6 +47,8 @@ bool isEnemyPiece(const Board &board, int square, int myColor);
 bool isEmpty(const Board &board, int square);
 
 bool isValidSquare(int square);
+
+bool isSquareAttacked(const Board &board, int square, int attackingColor);
 
 // OFFSETS
 const int kingOffsets[8] = {-9, -8, -7, -1, 1, 7, 8, 9};

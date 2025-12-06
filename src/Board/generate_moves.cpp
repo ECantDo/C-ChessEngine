@@ -4,7 +4,33 @@
 
 #include "generate_moves.h"
 
-void generatePseudoLegalMoves(Board &board, std::vector<Move> &moveList) {
+void generateLegalMoves(Board &board, std::vector<Move> &moveList) {
+    std::vector<Move> pseudoLegal;
+    generatePseudoLegalMoves(board, pseudoLegal);
+
+    moveList.clear();
+    moveList.reserve(pseudoLegal.size());
+
+    int8_t ourColor = board.turn;
+
+    for (Move m: pseudoLegal) {
+        UndoInfo undoInfo = board.makeMove(m);
+
+        uint64_t ourKing = (ourColor == 1) ? board.whiteKing : board.blackKing;
+        int kingSquare = std::countr_zero(ourKing);
+
+        bool inCheck = isSquareAttacked(board, kingSquare, board.turn);
+
+        board.unmakeMove(m, undoInfo);
+
+        if (!inCheck) {
+            moveList.push_back(m);
+        }
+    }
+
+}
+
+void generatePseudoLegalMoves(const Board &board, std::vector<Move> &moveList) {
     moveList.clear();
     moveList.reserve(MAX_MOVES);
 
@@ -24,6 +50,7 @@ void generatePseudoLegalMoves(Board &board, std::vector<Move> &moveList) {
     generateKnightMoves(board, moveList);
 
     // Generate Pawn moves
+    generatePawnMoves(board, moveList);
 }
 
 // =====================================================================================================================
@@ -81,20 +108,30 @@ void generateKingMoves(const Board &board, std::vector<Move> &moveList) {
         moveList.push_back(encodeMove(kingSquare, targetSquare, flags));
     }
 
+    // Can't castle with king in check
+    if (isSquareAttacked(board, kingSquare, -board.turn)) {
+        return;
+    }
+
+
     uint64_t allPieceBitboard = myPieces | theirPieces;
     // White Castling moves
     if (board.turn == 1 && kingSquare == 4) {
-        if ((board.castling & 0b1000) && (0x60 & allPieceBitboard) == 0) { // White kingside
+        if ((board.castling & 0b1000) && (0x60 & allPieceBitboard) == 0 &&
+            !isSquareAttacked(board, 5, -1)) { // White kingside
             moveList.push_back(encodeMove(4, 6, MOVE_FLAG_CASTLING));
         }
-        if ((board.castling & 0b0100) && (0x0E & allPieceBitboard) == 0) { // White queen side
+        if ((board.castling & 0b0100) && (0x0E & allPieceBitboard) == 0 &&
+            !isSquareAttacked(board, 3, -1)) { // White queen side
             moveList.push_back(encodeMove(4, 2, MOVE_FLAG_CASTLING));
         }
     } else if (kingSquare == 60) { // Black Castling moves
-        if ((board.castling & 0b0010) && (0x6000000000000000 & allPieceBitboard) == 0) { // Black kingside
+        if ((board.castling & 0b0010) && (0x6000000000000000 & allPieceBitboard) == 0 &&
+            !isSquareAttacked(board, 61, 1)) { // Black kingside
             moveList.push_back(encodeMove(60, 62, MOVE_FLAG_CASTLING));
         }
-        if ((board.castling & 0b0001) && (0x0E00000000000000 & allPieceBitboard) == 0) { // Black queen side
+        if ((board.castling & 0b0001) && (0x0E00000000000000 & allPieceBitboard) == 0 &&
+            !isSquareAttacked(board, 59, 1)) { // Black queen side
             moveList.push_back(encodeMove(60, 58, MOVE_FLAG_CASTLING));
         }
     }
@@ -414,4 +451,107 @@ bool isEmpty(const Board &board, int square) {
 
 bool isValidSquare(int square) {
     return square < 64 && square >= 0;
+}
+
+bool isSquareAttacked(const Board &board, int square, int attackingColor) {
+    /* Check if 'square' is attacked by pieces of 'attackingColor' */
+    /* attackingColor: 1 = white, -1 = black */
+
+    uint64_t occupied = board.getWhiteBitboard() | board.getBlackBitboard();
+    int file = square % 8;
+    int rank = square / 8;
+
+    /* === Check Knight attacks === */
+    const int knightOffsets[8] = {-17, -15, -10, -6, 6, 10, 15, 17};
+    uint64_t enemyKnights = (attackingColor == 1) ? board.whiteKnights : board.blackKnights;
+
+    for (int offset: knightOffsets) {
+        int from = square + offset;
+        if (!isValidSquare(from)) continue;
+
+        int fromFile = from % 8;
+        int fileDist = abs(fromFile - file);
+        if (fileDist != 1 && fileDist != 2) continue;
+
+        if (enemyKnights & (1ULL << from)) return true;
+    }
+
+    /* === Check King attacks === */
+    const int kingOffsets[8] = {-9, -8, -7, -1, 1, 7, 8, 9};
+    uint64_t enemyKing = (attackingColor == 1) ? board.whiteKing : board.blackKing;
+
+    for (int offset: kingOffsets) {
+        int from = square + offset;
+        if (!isValidSquare(from)) continue;
+
+        int fromFile = from % 8;
+        if (abs(fromFile - file) > 1) continue;
+
+        if (enemyKing & (1ULL << from)) return true;
+    }
+
+    /* === Check Pawn attacks === */
+    uint64_t enemyPawns = (attackingColor == 1) ? board.whitePawns : board.blackPawns;
+    int pawnDir = (attackingColor == 1) ? -8 : 8;  /* Pawns attack opposite direction */
+
+    int leftAttack = square + pawnDir - 1;
+    int rightAttack = square + pawnDir + 1;
+
+    if (isValidSquare(leftAttack) && file > 0) {
+        if (enemyPawns & (1ULL << leftAttack)) return true;
+    }
+    if (isValidSquare(rightAttack) && file < 7) {
+        if (enemyPawns & (1ULL << rightAttack)) return true;
+    }
+
+    /* === Check Sliding pieces (Rook, Bishop, Queen) === */
+    uint64_t enemyRooks = (attackingColor == 1) ? board.whiteRooks : board.blackRooks;
+    uint64_t enemyBishops = (attackingColor == 1) ? board.whiteBishops : board.blackBishops;
+    uint64_t enemyQueens = (attackingColor == 1) ? board.whiteQueens : board.blackQueens;
+
+    /* Rook directions: N, S, E, W */
+    const int rookDirs[4] = {8, -8, 1, -1};
+    for (int dir: rookDirs) {
+        int target = square + dir;
+        while (isValidSquare(target)) {
+            /* Check wrap for horizontal */
+            if (abs(dir) == 1) {
+                int targetFile = target % 8;
+                if (abs(targetFile - file) > 1) break;
+            }
+
+            uint64_t targetMask = 1ULL << target;
+
+            /* Hit a piece */
+            if (occupied & targetMask) {
+                /* Is it an attacking rook or queen? */
+                if ((enemyRooks | enemyQueens) & targetMask) return true;
+                break;  /* Blocked */
+            }
+
+            target += dir;
+        }
+    }
+
+    /* Bishop directions: NE, NW, SE, SW */
+    const int bishopDirs[4] = {9, 7, -7, -9};
+    for (int dir: bishopDirs) {
+        int target = square + dir;
+        while (isValidSquare(target)) {
+            /* Check wrap */
+            int targetFile = target % 8;
+            if (abs(targetFile - file) > 2) break;
+
+            uint64_t targetMask = 1ULL << target;
+
+            if (occupied & targetMask) {
+                if ((enemyBishops | enemyQueens) & targetMask) return true;
+                break;
+            }
+
+            target += dir;
+        }
+    }
+
+    return false;
 }
