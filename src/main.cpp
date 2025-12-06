@@ -66,9 +66,9 @@ void startSearch(const std::string &goCmd) {
     }
 
     // Placeholder info line (GUI expects some output)
-    std::cout << "info depth 1 time 0 nodes 1 score cp 0 pv e2e4\n" << std::flush;
 
     BestMove bm = selectMove(currentBoard, movetime);
+    std::cout << "info depth 1 time 0 nodes 1 score cp " << (bm.score / 100.0) << " pv e2e4\n" << std::flush;
 
     std::cout << "bestmove " << moveToString(bm.bestMove) << "\n" << std::flush;
 }
@@ -108,6 +108,9 @@ int main() {
             stopSearch = true;
         } else if (line == "quit") {
             break;
+        } else if (line == "d"){
+            currentBoard.printBoard();
+            std::cout << std::flush;
         }
     }
 

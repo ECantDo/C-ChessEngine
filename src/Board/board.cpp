@@ -202,6 +202,24 @@ uint64_t Board::getBlackBitboard() const {
 bool Board::loadFenPosition(std::string &fen) {
     Board newBoard;
     size_t idx = 0;
+    // Pawns
+    newBoard.whitePawns = 0;
+    newBoard.blackPawns = 0;
+    newBoard.whiteRooks = 0;
+    newBoard.blackRooks = 0;
+    newBoard.whiteKnights = 0;
+    newBoard.blackKnights = 0;
+    newBoard.whiteBishops = 0;
+    newBoard.blackBishops = 0;
+    newBoard.whiteQueens = 0;
+    newBoard.blackQueens = 0;
+    newBoard.whiteKing = 0;
+    newBoard.blackKing = 0;
+    newBoard.fullMove = 1;
+    newBoard.halfMoveClock = 0;
+    newBoard.castling = 0b1111;
+    newBoard.turn = 1;
+
 
     /* ===== PART 1: Piece Placement ===== */
     int rank = 7;  /* Start from rank 8 (index 7) */

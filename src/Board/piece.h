@@ -5,6 +5,8 @@
 #ifndef CHESSENGINE_PIECE_H
 #define CHESSENGINE_PIECE_H
 
+#include <array>
+
 const char WHITE_PAWN = 'P';
 const char WHITE_ROOK = 'R';
 const char WHITE_KNIGHT = 'N';
@@ -20,6 +22,12 @@ const char BLACK_QUEEN = 'q';
 const char BLACK_KING = 'k';
 
 const char NONE_PIECE = '.';
+
+const std::array<char, 12> ALL_PIECES = {
+        WHITE_PAWN, WHITE_KNIGHT, WHITE_BISHOP, WHITE_ROOK, WHITE_QUEEN,
+        BLACK_PAWN, BLACK_KNIGHT, BLACK_BISHOP, BLACK_ROOK, BLACK_QUEEN,
+        WHITE_KING, BLACK_KING
+};
 
 int getValue(char piece);
 

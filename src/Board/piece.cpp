@@ -17,7 +17,7 @@ int getValue(char piece) {
         case WHITE_BISHOP:
             return 330;
         case WHITE_QUEEN:
-            return 900;
+            return 1000;
 
         case BLACK_PAWN:
             return -100;
@@ -28,7 +28,8 @@ int getValue(char piece) {
         case BLACK_BISHOP:
             return -330;
         case BLACK_QUEEN:
-            return -900;
+            return -1000;
+
 
         default:
             return 0;
