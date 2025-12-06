@@ -7,8 +7,9 @@
 
 #include <cstdint>
 #include <string>
-#include "board.h"
 #include "piece.h"
+
+class Board;
 
 typedef uint32_t Move;
 

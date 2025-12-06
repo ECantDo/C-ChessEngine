@@ -13,7 +13,7 @@ Board currentBoard;   // Global board state stored between commands
 //-------------------------------------------------------------
 // Parse "position ..." command
 //-------------------------------------------------------------
-void setPosition(const std::string& line) {
+void setPosition(const std::string &line) {
     std::stringstream ss(line);
     std::string tok;
 
@@ -27,8 +27,7 @@ void setPosition(const std::string& line) {
                 currentBoard.makeMove(stringToMove(tok, currentBoard));
             }
         }
-    }
-    else if (tok == "fen") {
+    } else if (tok == "fen") {
         std::string fen, part;
         fen.clear();
 
@@ -50,7 +49,7 @@ void setPosition(const std::string& line) {
 //-------------------------------------------------------------
 // Begin search (dummy for now)
 //-------------------------------------------------------------
-void startSearch(const std::string& goCmd) {
+void startSearch(const std::string &goCmd) {
     stopSearch = false;
 
     long movetime = 0;
@@ -67,11 +66,11 @@ void startSearch(const std::string& goCmd) {
     }
 
     // Placeholder info line (GUI expects some output)
-    std::cout << "info depth 1 time 0 nodes 1 score cp 0 pv e2e4\n";
+    std::cout << "info depth 1 time 0 nodes 1 score cp 0 pv e2e4\n" << std::flush;
 
     BestMove bm = selectMove(currentBoard, movetime);
 
-    std::cout << "bestmove " << moveToString(bm.bestMove) << "\n";
+    std::cout << "bestmove " << moveToString(bm.bestMove) << "\n" << std::flush;
 }
 
 //-------------------------------------------------------------
@@ -88,33 +87,26 @@ int main() {
         if (line.empty()) continue;
 
         if (line == "uci") {
-            std::cout << "id name ECanBot\n";
-            std::cout << "id author ECanDo\n";
+            std::cout << "id name ECanBot\n" << std::flush;
+            std::cout << "id author ECanDo\n" << std::flush;
 
             // Future options:
             // std::cout << "option name Hash type spin default 16 min 1 max 4096\n";
 
-            std::cout << "uciok\n";
-        }
-        else if (line == "isready") {
-            std::cout << "readyok\n";
-        }
-        else if (line.rfind("setoption", 0) == 0) {
+            std::cout << "uciok\n" << std::flush;
+        } else if (line == "isready") {
+            std::cout << "readyok\n" << std::flush;
+        } else if (line.rfind("setoption", 0) == 0) {
             // TODO: handle engine options
-        }
-        else if (line == "ucinewgame") {
+        } else if (line == "ucinewgame") {
             currentBoard = Board();
-        }
-        else if (line.rfind("position", 0) == 0) {
+        } else if (line.rfind("position", 0) == 0) {
             setPosition(line);
-        }
-        else if (line.rfind("go", 0) == 0) {
+        } else if (line.rfind("go", 0) == 0) {
             startSearch(line);
-        }
-        else if (line == "stop") {
+        } else if (line == "stop") {
             stopSearch = true;
-        }
-        else if (line == "quit") {
+        } else if (line == "quit") {
             break;
         }
     }

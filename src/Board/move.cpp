@@ -4,6 +4,8 @@
 
 #include "move.h"
 
+#include "board.h"
+
 std::string moveToString(Move m) {
     std::string result = getBoardPosition(getMoveFrom(m)) + getBoardPosition(getMoveTo(m));
 

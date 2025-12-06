@@ -2,13 +2,16 @@
 // Created by ECanDo on 2025-08-22.
 //
 
-#include <cstdint>
-#include <string>
-
-#include "move.h"
-
 #ifndef CHESSENGINE_BOARD_H
 #define CHESSENGINE_BOARD_H
+
+#include "move.h"
+#include "piece.h"
+
+#include <iostream>
+#include <sstream>
+#include <cstdint>
+#include <string>
 
 class Board {
 public:

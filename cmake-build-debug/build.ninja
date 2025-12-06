@@ -65,9 +65,9 @@ build CMakeFiles/chessEngine.dir/src/Board/board.cpp.obj: CXX_COMPILER__chessEng
   OBJECT_DIR = CMakeFiles\chessEngine.dir
   OBJECT_FILE_DIR = CMakeFiles\chessEngine.dir\src\Board
 
-build CMakeFiles/chessEngine.dir/src/Board/piece.cpp.obj: CXX_COMPILER__chessEngine_unscanned_Debug E$:/CLionProjects/chessEngine/src/Board/piece.cpp || cmake_object_order_depends_target_chessEngine
+build CMakeFiles/chessEngine.dir/src/Board/generate_moves.cpp.obj: CXX_COMPILER__chessEngine_unscanned_Debug E$:/CLionProjects/chessEngine/src/Board/generate_moves.cpp || cmake_object_order_depends_target_chessEngine
   CONFIG = Debug
-  DEP_FILE = CMakeFiles\chessEngine.dir\src\Board\piece.cpp.obj.d
+  DEP_FILE = CMakeFiles\chessEngine.dir\src\Board\generate_moves.cpp.obj.d
   FLAGS = -g -std=gnu++20 -fdiagnostics-color=always
   INCLUDES = -IE:/CLionProjects/chessEngine/src
   OBJECT_DIR = CMakeFiles\chessEngine.dir
@@ -81,21 +81,13 @@ build CMakeFiles/chessEngine.dir/src/Board/move.cpp.obj: CXX_COMPILER__chessEngi
   OBJECT_DIR = CMakeFiles\chessEngine.dir
   OBJECT_FILE_DIR = CMakeFiles\chessEngine.dir\src\Board
 
-build CMakeFiles/chessEngine.dir/src/Board/generate_moves.cpp.obj: CXX_COMPILER__chessEngine_unscanned_Debug E$:/CLionProjects/chessEngine/src/Board/generate_moves.cpp || cmake_object_order_depends_target_chessEngine
+build CMakeFiles/chessEngine.dir/src/Board/piece.cpp.obj: CXX_COMPILER__chessEngine_unscanned_Debug E$:/CLionProjects/chessEngine/src/Board/piece.cpp || cmake_object_order_depends_target_chessEngine
   CONFIG = Debug
-  DEP_FILE = CMakeFiles\chessEngine.dir\src\Board\generate_moves.cpp.obj.d
+  DEP_FILE = CMakeFiles\chessEngine.dir\src\Board\piece.cpp.obj.d
   FLAGS = -g -std=gnu++20 -fdiagnostics-color=always
   INCLUDES = -IE:/CLionProjects/chessEngine/src
   OBJECT_DIR = CMakeFiles\chessEngine.dir
   OBJECT_FILE_DIR = CMakeFiles\chessEngine.dir\src\Board
-
-build CMakeFiles/chessEngine.dir/tests/MoveGeneration/test_move_generation.cpp.obj: CXX_COMPILER__chessEngine_unscanned_Debug E$:/CLionProjects/chessEngine/tests/MoveGeneration/test_move_generation.cpp || cmake_object_order_depends_target_chessEngine
-  CONFIG = Debug
-  DEP_FILE = CMakeFiles\chessEngine.dir\tests\MoveGeneration\test_move_generation.cpp.obj.d
-  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always
-  INCLUDES = -IE:/CLionProjects/chessEngine/src
-  OBJECT_DIR = CMakeFiles\chessEngine.dir
-  OBJECT_FILE_DIR = CMakeFiles\chessEngine.dir\tests\MoveGeneration
 
 build CMakeFiles/chessEngine.dir/src/Search/search.cpp.obj: CXX_COMPILER__chessEngine_unscanned_Debug E$:/CLionProjects/chessEngine/src/Search/search.cpp || cmake_object_order_depends_target_chessEngine
   CONFIG = Debug
@@ -113,7 +105,7 @@ build CMakeFiles/chessEngine.dir/src/Search/search.cpp.obj: CXX_COMPILER__chessE
 #############################################
 # Link the executable chessEngine.exe
 
-build chessEngine.exe: CXX_EXECUTABLE_LINKER__chessEngine_Debug CMakeFiles/chessEngine.dir/src/main.cpp.obj CMakeFiles/chessEngine.dir/src/Board/board.cpp.obj CMakeFiles/chessEngine.dir/src/Board/piece.cpp.obj CMakeFiles/chessEngine.dir/src/Board/move.cpp.obj CMakeFiles/chessEngine.dir/src/Board/generate_moves.cpp.obj CMakeFiles/chessEngine.dir/tests/MoveGeneration/test_move_generation.cpp.obj CMakeFiles/chessEngine.dir/src/Search/search.cpp.obj
+build chessEngine.exe: CXX_EXECUTABLE_LINKER__chessEngine_Debug CMakeFiles/chessEngine.dir/src/main.cpp.obj CMakeFiles/chessEngine.dir/src/Board/board.cpp.obj CMakeFiles/chessEngine.dir/src/Board/generate_moves.cpp.obj CMakeFiles/chessEngine.dir/src/Board/move.cpp.obj CMakeFiles/chessEngine.dir/src/Board/piece.cpp.obj CMakeFiles/chessEngine.dir/src/Search/search.cpp.obj
   CONFIG = Debug
   FLAGS = -g
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32

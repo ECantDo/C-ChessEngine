@@ -8,9 +8,7 @@
 // TODO: Refactor "rank" and "file" (rank -> row -> 1-8, file -> a-h) to align with the game properly
 
 #include "board.h"
-#include "piece.h"
-#include <iostream>
-#include <sstream>
+
 
 // =====================================================================================================================
 // Constructors

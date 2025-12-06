@@ -5,19 +5,24 @@ set(CMAKE_CXX_STANDARD 20)
 
 include_directories(${CMAKE_SOURCE_DIR}/src)
 
-add_executable(chessEngine src/main.cpp
+add_executable(chessEngine
+        src/main.cpp
+
         src/Board/board.h
         src/Board/board.cpp
+
+        src/Board/generate_moves.h
+        src/Board/generate_moves.cpp
+
+        src/Board/move.h
+        src/Board/move.cpp
+
         src/Board/piece.h
         src/Board/piece.cpp
-        src/Board/move.cpp
-        src/Board/move.h
-        src/Board/generate_moves.cpp
-        src/Board/generate_moves.h
-        tests/MoveGeneration/test_move_generation.cpp
-        tests/MoveGeneration/test_move_generation.h
-        src/Search/search.cpp
+
+
         src/Search/search.h
+        src/Search/search.cpp
 )
 
 add_executable(testChessEngine tests/test_all.cpp
