@@ -97,6 +97,14 @@ build CMakeFiles/chessEngine.dir/tests/MoveGeneration/test_move_generation.cpp.o
   OBJECT_DIR = CMakeFiles\chessEngine.dir
   OBJECT_FILE_DIR = CMakeFiles\chessEngine.dir\tests\MoveGeneration
 
+build CMakeFiles/chessEngine.dir/src/Search/search.cpp.obj: CXX_COMPILER__chessEngine_unscanned_Debug E$:/CLionProjects/chessEngine/src/Search/search.cpp || cmake_object_order_depends_target_chessEngine
+  CONFIG = Debug
+  DEP_FILE = CMakeFiles\chessEngine.dir\src\Search\search.cpp.obj.d
+  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always
+  INCLUDES = -IE:/CLionProjects/chessEngine/src
+  OBJECT_DIR = CMakeFiles\chessEngine.dir
+  OBJECT_FILE_DIR = CMakeFiles\chessEngine.dir\src\Search
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target chessEngine
@@ -105,7 +113,7 @@ build CMakeFiles/chessEngine.dir/tests/MoveGeneration/test_move_generation.cpp.o
 #############################################
 # Link the executable chessEngine.exe
 
-build chessEngine.exe: CXX_EXECUTABLE_LINKER__chessEngine_Debug CMakeFiles/chessEngine.dir/src/main.cpp.obj CMakeFiles/chessEngine.dir/src/Board/board.cpp.obj CMakeFiles/chessEngine.dir/src/Board/piece.cpp.obj CMakeFiles/chessEngine.dir/src/Board/move.cpp.obj CMakeFiles/chessEngine.dir/src/Board/generate_moves.cpp.obj CMakeFiles/chessEngine.dir/tests/MoveGeneration/test_move_generation.cpp.obj
+build chessEngine.exe: CXX_EXECUTABLE_LINKER__chessEngine_Debug CMakeFiles/chessEngine.dir/src/main.cpp.obj CMakeFiles/chessEngine.dir/src/Board/board.cpp.obj CMakeFiles/chessEngine.dir/src/Board/piece.cpp.obj CMakeFiles/chessEngine.dir/src/Board/move.cpp.obj CMakeFiles/chessEngine.dir/src/Board/generate_moves.cpp.obj CMakeFiles/chessEngine.dir/tests/MoveGeneration/test_move_generation.cpp.obj CMakeFiles/chessEngine.dir/src/Search/search.cpp.obj
   CONFIG = Debug
   FLAGS = -g
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
@@ -189,6 +197,14 @@ build CMakeFiles/testChessEngine.dir/tests/MoveGeneration/test_move_generation.c
   OBJECT_DIR = CMakeFiles\testChessEngine.dir
   OBJECT_FILE_DIR = CMakeFiles\testChessEngine.dir\tests\MoveGeneration
 
+build CMakeFiles/testChessEngine.dir/src/Search/search.cpp.obj: CXX_COMPILER__testChessEngine_unscanned_Debug E$:/CLionProjects/chessEngine/src/Search/search.cpp || cmake_object_order_depends_target_testChessEngine
+  CONFIG = Debug
+  DEP_FILE = CMakeFiles\testChessEngine.dir\src\Search\search.cpp.obj.d
+  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always
+  INCLUDES = -IE:/CLionProjects/chessEngine/src
+  OBJECT_DIR = CMakeFiles\testChessEngine.dir
+  OBJECT_FILE_DIR = CMakeFiles\testChessEngine.dir\src\Search
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target testChessEngine
@@ -197,7 +213,7 @@ build CMakeFiles/testChessEngine.dir/tests/MoveGeneration/test_move_generation.c
 #############################################
 # Link the executable testChessEngine.exe
 
-build testChessEngine.exe: CXX_EXECUTABLE_LINKER__testChessEngine_Debug CMakeFiles/testChessEngine.dir/tests/test_all.cpp.obj CMakeFiles/testChessEngine.dir/tests/Board/test_board.cpp.obj CMakeFiles/testChessEngine.dir/src/Board/board.cpp.obj CMakeFiles/testChessEngine.dir/src/Board/piece.cpp.obj CMakeFiles/testChessEngine.dir/tests/Board/test_moves.cpp.obj CMakeFiles/testChessEngine.dir/src/Board/move.cpp.obj CMakeFiles/testChessEngine.dir/src/Board/generate_moves.cpp.obj CMakeFiles/testChessEngine.dir/tests/MoveGeneration/test_move_generation.cpp.obj
+build testChessEngine.exe: CXX_EXECUTABLE_LINKER__testChessEngine_Debug CMakeFiles/testChessEngine.dir/tests/test_all.cpp.obj CMakeFiles/testChessEngine.dir/tests/Board/test_board.cpp.obj CMakeFiles/testChessEngine.dir/src/Board/board.cpp.obj CMakeFiles/testChessEngine.dir/src/Board/piece.cpp.obj CMakeFiles/testChessEngine.dir/tests/Board/test_moves.cpp.obj CMakeFiles/testChessEngine.dir/src/Board/move.cpp.obj CMakeFiles/testChessEngine.dir/src/Board/generate_moves.cpp.obj CMakeFiles/testChessEngine.dir/tests/MoveGeneration/test_move_generation.cpp.obj CMakeFiles/testChessEngine.dir/src/Search/search.cpp.obj
   CONFIG = Debug
   FLAGS = -g
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
