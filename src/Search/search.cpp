@@ -66,7 +66,7 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
     if (moveList.empty()) {
         // King in check -> Mate
         if (isKingInCheck(board, board.turn)) {
-            return {0, -100000 + depth, 1};
+            return {0, -MATE_SCORE + depth, 1};
         }
         // King not in check -> Draw
         return {0, 0, 1};
@@ -112,7 +112,7 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
         }
     }
 
-    return {bestMove, bestScore, nodes, pv};
+    return {bestMove, bestScore, nodes, depth, pv};
 
 }
 
@@ -120,8 +120,9 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
     Move bestMove = 0;
     int bestScore = 0;
     unsigned long long totalNodes = 0;
+    int depth;
 
-    for (int depth = 1; depth <= maxDepth; depth++) {
+    for (depth = 1; depth <= maxDepth; depth++) {
         auto startTime = std::chrono::steady_clock::now();
 
         BestMove result = alphaBeta(board, 0, depth,
@@ -131,12 +132,31 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
 
         bestMove = result.bestMove;
-        bestScore = -result.score;
+        bestScore = result.score;
         totalNodes += result.nodes;
+
+
+        std::string score;
+        bool isMate = false; // Check for early exit, if mate is found at some depth, it is the first mate; take it
+        if (abs(bestScore) >= MATE_SCORE - 1000) {
+            // it's a mate score
+            isMate = true;
+            int matePly = MATE_SCORE - abs(bestScore);
+            int mateMoves = (matePly + 1) / 2;
+
+            // negative means you're being mated
+            if (bestScore > 0)
+                score = std::format(" score mate {}", mateMoves);
+            else
+                score = std::format(" score mate -{}", mateMoves);
+
+        } else {
+            score = std::format(" score cp {}", bestScore);
+        }
 
         /* UCI info output */
         std::cout << "info depth " << depth
-                  << " score cp " << bestScore
+                  << score
                   << " nodes " << result.nodes
                   << " time " << elapsed
                   << " nps " << (elapsed > 0 ? (result.nodes * 1000 / elapsed) : 0)
@@ -148,11 +168,15 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
         std::cout << std::endl << std::flush;
 
         /* Check if we should stop (time management later) */
+        if (isMate) {
+            break;
+        }
         // if (elapsed > timeLimitMS) break;
 
     }
 
-    return {bestMove, bestScore, totalNodes};
+    // TODO: add PV
+    return {bestMove, bestScore, totalNodes, depth};
 }
 
 BestMove selectMove(Board &board, int maxDepth) {
@@ -160,21 +184,26 @@ BestMove selectMove(Board &board, int maxDepth) {
 }
 
 int evaluate(Board &board) {
-
     int score = 0;
 
-    // Sum piece values
-    score += std::popcount(board.whitePawns) * getPieceValue('P');
-    score += std::popcount(board.whiteKnights) * getPieceValue('N');
-    score += std::popcount(board.whiteBishops) * getPieceValue('B');
-    score += std::popcount(board.whiteRooks) * getPieceValue('R');
-    score += std::popcount(board.whiteQueens) * getPieceValue('Q');
+    for (char piece: ALL_PIECES) {
+        uint64_t bitboard = board.getBitboard(piece);
+        // Sum piece values
+        score += std::popcount(bitboard) * getPieceValue(piece);
 
-    score += std::popcount(board.blackPawns) * getPieceValue('p');
-    score += std::popcount(board.blackKnights) * getPieceValue('n');
-    score += std::popcount(board.blackBishops) * getPieceValue('b');
-    score += std::popcount(board.blackRooks) * getPieceValue('r');
-    score += std::popcount(board.blackQueens) * getPieceValue('q');
+        // Piece square table values
+        bool isWhite = isupper(piece);
+        while (bitboard) {
+            int sq = std::countr_zero(bitboard);
+            bitboard &= bitboard - 1;
+
+            if (isWhite) { // Add white score
+                score += getPieceSquareValue(piece, sq);
+            } else { // Subtract black score
+                score -= getPieceSquareValue(piece, sq);
+            }
+        }
+    }
 
     // Return from current player's perspective
     return board.turn == 1 ? score : -score;
@@ -183,4 +212,28 @@ int evaluate(Board &board) {
 bool isKingInCheck(const Board &board, int color) {
     uint64_t king = color == 1 ? board.whiteKing : board.blackKing;
     return isSquareAttacked(board, std::countr_zero(king), -color);
+}
+
+/* Helper to get piece-square table value */
+int getPieceSquareValue(char piece, int square) {
+    /* For black pieces, flip the square vertically */
+    bool isWhite = isupper(piece);
+    int sq = isWhite ? square : (63 - square);
+
+    switch (tolower(piece)) {
+        case 'p':
+            return pawnTable[sq];
+        case 'n':
+            return knightTable[sq];
+        case 'b':
+            return bishopTable[sq];
+        case 'r':
+            return rookTable[sq];
+        case 'q':
+            return queenTable[sq];
+        case 'k':
+            return kingMiddleGameTable[sq];
+        default:
+            return 0;
+    }
 }

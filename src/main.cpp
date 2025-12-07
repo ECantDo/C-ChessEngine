@@ -54,7 +54,7 @@ void startSearch(const std::string &goCmd) {
     stopSearch = false;
 
     long movetime = 0;
-    long depth = 6;
+    long depth = 8;
 
     {
         std::stringstream ss(goCmd);
@@ -74,9 +74,9 @@ void startSearch(const std::string &goCmd) {
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
     std::string score;
-    if (abs(bm.score) >= 100000 - 1000) {
+    if (abs(bm.score) >= MATE_SCORE - 1000) {
         // it's a mate score
-        int matePly = 100000 - abs(bm.score);
+        int matePly = MATE_SCORE - abs(bm.score);
         int mateMoves = (matePly + 1) / 2;
 
         // negative means you're being mated
@@ -89,7 +89,7 @@ void startSearch(const std::string &goCmd) {
         score = std::format(" score cp {}", bm.score);
     }
 
-    std::cout << "info depth " << depth
+    std::cout << "info depth " << bm.depth
               << " time " << duration.count()
               << " nodes " << bm.nodes
               << score
