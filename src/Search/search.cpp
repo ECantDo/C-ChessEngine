@@ -81,6 +81,7 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
 
     Move bestMove = moveList[0];
     int bestScore = INT32_MIN;
+    std::vector<Move> pv;
 
     unsigned long long nodes = 1;
 
@@ -96,6 +97,10 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
         if (score > bestScore) {
             bestMove = m;
             bestScore = score;
+
+            pv.clear();
+            pv.push_back(m);
+            pv.insert(pv.end(), result.pv.begin(), result.pv.end());
         }
 
         if (score > alpha) {
@@ -107,7 +112,7 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
         }
     }
 
-    return {bestMove, bestScore, nodes};
+    return {bestMove, bestScore, nodes, pv};
 
 }
 
@@ -119,7 +124,8 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
     for (int depth = 1; depth <= maxDepth; depth++) {
         auto startTime = std::chrono::steady_clock::now();
 
-        BestMove result = alphaBeta(board, 0, depth, INT32_MIN, INT32_MAX, bestMove);
+        BestMove result = alphaBeta(board, 0, depth,
+                                    INT32_MIN + 1000, INT32_MAX - 1000, bestMove);
 
         auto endTime = std::chrono::steady_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
@@ -134,8 +140,12 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
                   << " nodes " << result.nodes
                   << " time " << elapsed
                   << " nps " << (elapsed > 0 ? (result.nodes * 1000 / elapsed) : 0)
-                  << " pv " << moveToString(bestMove)
-                  << std::endl << std::flush;
+                  << " pv ";
+
+        for (Move &m: result.pv) {
+            std::cout << moveToString(m) << ' ';
+        }
+        std::cout << std::endl << std::flush;
 
         /* Check if we should stop (time management later) */
         // if (elapsed > timeLimitMS) break;

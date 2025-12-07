@@ -19,6 +19,7 @@ struct BestMove {
     Move bestMove;
     int score;
     unsigned long long nodes;
+    std::vector<Move> pv;
 };
 
 BestMove selectMove(Board &board, int maxDepth);
@@ -30,5 +31,8 @@ int scoreMoveForOrdering(Move m, const Board &board);
 int evaluate(Board &board);
 
 bool isKingInCheck(const Board &board, int color);
+
+
+const int pawnTable[1]{0};
 
 #endif //CHESSENGINE_SEARCH_H

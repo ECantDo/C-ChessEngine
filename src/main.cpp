@@ -93,8 +93,11 @@ void startSearch(const std::string &goCmd) {
               << " time " << duration.count()
               << " nodes " << bm.nodes
               << score
-              << " pv " << moveToString(bm.bestMove)
-              << "\n" << std::flush;
+              << " pv ";
+    for (Move &m: bm.pv) {
+        std::cout << moveToString(m) << ' ';
+    }
+    std::cout << std::endl << std::flush;
 
     std::cout << "bestmove " << moveToString(bm.bestMove) << "\n" << std::flush;
 }
