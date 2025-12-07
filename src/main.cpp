@@ -48,58 +48,108 @@ void setPosition(const std::string &line) {
 }
 
 //-------------------------------------------------------------
-// Begin search (dummy for now)
+//
 //-------------------------------------------------------------
 void startSearch(const std::string &goCmd) {
     stopSearch = false;
 
-    long movetime = 0;
-    long depth = 8;
+    long movetime = -1;     // exact time to use (ms)
+    long depth    = -1;     // depth limit
+    long nodes    = -1;     // node limit
+
+    long wtime = -1, btime = -1;   // remaining time (ms)
+    long winc  = 0,  binc  = 0;    // increments (ms)
 
     {
         std::stringstream ss(goCmd);
         std::string tok;
         ss >> tok; // "go"
+
         while (ss >> tok) {
             if (tok == "movetime") ss >> movetime;
-            if (tok == "depth") ss >> depth;
+            else if (tok == "depth") ss >> depth;
+            else if (tok == "nodes") ss >> nodes;
+
+            else if (tok == "wtime") ss >> wtime;
+            else if (tok == "btime") ss >> btime;
+            else if (tok == "winc")  ss >> winc;
+            else if (tok == "binc")  ss >> binc;
         }
     }
 
-    // Placeholder info line (GUI expects some output)
+    //---------------------------------------------------------
+    // If no limits were explicitly given, derive a time limit
+    //---------------------------------------------------------
+    long timeLimit = 0;
 
-    auto start = std::chrono::high_resolution_clock::now();
-    BestMove bm = selectMove(currentBoard, depth);
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    if (movetime > 0) {
+        timeLimit = movetime;
+        depth = 30; // No need in going any higher than 30 tbh
+    } else if (wtime >= 0 && btime >= 0) {
+        // Allocate time based on whose move it is
+        long remaining = (currentBoard.turn == 1 ? wtime : btime);
+        long increment = (currentBoard.turn == 1 ? winc  : binc);
+
+        // Basic time allocation: use 1/30 of remaining + 80% of increment (allow for some overhead)
+        timeLimit = remaining / 30 + (long)(increment * 0.8);
+
+        // Safety clamp: never more than 80% of remaining
+        if (timeLimit > remaining * 4 / 5)
+            timeLimit = remaining * 4 / 5;
+
+        // Ensure minimum thinking time
+        if (timeLimit < 20) timeLimit = 20;
+    } else {
+        // No time controls given — default to depth search
+        if (depth <= 0)
+            depth = 6; // fallback
+    }
+
+    std::cout << "[TIME LIMIT] " << timeLimit << '\n';
+    //---------------------------------------------------------
+    // Now you have:
+    //   timeLimit  (ms)  — guaranteed non-negative
+    //   depth      (ply) — maybe -1 if no depth limit
+    //   nodes      (cnt) — maybe -1 if no node limit
+    //---------------------------------------------------------
+
+    auto start = std::chrono::steady_clock::now();
+
+    // Pass depth or time-based stopping to your search
+    BestMove bm = selectMove(currentBoard, depth, timeLimit);
+
+    auto end = std::chrono::steady_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+
+    //---------------------------------------------------------
+    // Output info + bestmove (same as before)
+    //---------------------------------------------------------
 
     std::string score;
     if (abs(bm.score) >= MATE_SCORE - 1000) {
-        // it's a mate score
         int matePly = MATE_SCORE - abs(bm.score);
         int mateMoves = (matePly + 1) / 2;
-
-        // negative means you're being mated
-        if (bm.score > 0)
-            score = std::format(" score mate {}", mateMoves);
-        else
-            score = std::format(" score mate -{}", mateMoves);
-
+        score = bm.score > 0 ?
+                std::format(" score mate {}", mateMoves) :
+                std::format(" score mate -{}", mateMoves);
     } else {
         score = std::format(" score cp {}", bm.score);
     }
 
     std::cout << "info depth " << bm.depth
-              << " time " << duration.count()
+              << " time " << elapsed
               << " nodes " << bm.nodes
               << score
-              << " pv ";
+              << " pv " << moveToString(bm.bestMove);
     for (Move &m: bm.pv) {
         std::cout << moveToString(m) << ' ';
     }
     std::cout << std::endl << std::flush;
 
-    std::cout << "bestmove " << moveToString(bm.bestMove) << "\n" << std::flush;
+    for (Move &m: bm.pv) std::cout << moveToString(m) << ' ';
+    std::cout << "\n";
+
+    std::cout << "bestmove " << moveToString(bm.bestMove) << '\n' << std::flush;
 }
 
 //-------------------------------------------------------------

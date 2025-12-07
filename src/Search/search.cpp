@@ -4,7 +4,13 @@
 
 
 #include <chrono>
+#include <atomic>
 #include "search.h"
+
+extern std::atomic<bool> stopSearch;
+
+static long g_timeLimitMS = 0;
+static std::chrono::steady_clock::time_point g_searchStart;
 
 void orderMoves(std::vector<Move> &moves, const Board &board, Move previousBest) {
     std::sort(moves.begin(), moves.end(), [&board, previousBest](Move a, Move b) {
@@ -66,14 +72,23 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
     if (moveList.empty()) {
         // King in check -> Mate
         if (isKingInCheck(board, board.turn)) {
-            return {0, -MATE_SCORE + depth, 1};
+            return {0, -MATE_SCORE + depth, 1, depth};
         }
         // King not in check -> Draw
-        return {0, 0, 1};
+        return {0, 0, 1, depth};
     }
 
-    if (depth >= maxDepth) {
-        return {0, evaluate(board), 1};
+
+    // --- TIME CHECK ----------------------------------------------------
+    if (!stopSearch && g_timeLimitMS > 0) {
+        auto now = std::chrono::steady_clock::now();
+        long elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - g_searchStart).count();
+        if (elapsed >= g_timeLimitMS) {
+            stopSearch = true;
+        }
+    }
+    if (depth >= maxDepth || stopSearch) {
+        return {0, evaluate(board), 1, depth - 1};
     }
 
     // Order moves for better pruning
@@ -168,7 +183,7 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
         std::cout << std::endl << std::flush;
 
         /* Check if we should stop (time management later) */
-        if (isMate) {
+        if (isMate || stopSearch) {
             break;
         }
         // if (elapsed > timeLimitMS) break;
@@ -179,7 +194,13 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
     return {bestMove, bestScore, totalNodes, depth};
 }
 
-BestMove selectMove(Board &board, int maxDepth) {
+BestMove selectMove(Board &board, int maxDepth, long timeLimitMS) {
+    std::cout << "Found limit to be " << timeLimitMS << '\n';
+
+    stopSearch = false;
+    g_timeLimitMS = timeLimitMS;
+    g_searchStart = std::chrono::steady_clock::now();
+
     return iterativeDeepening(board, maxDepth);
 }
 
