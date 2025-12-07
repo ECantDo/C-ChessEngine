@@ -29,6 +29,6 @@ const std::array<char, 12> ALL_PIECES = {
         WHITE_KING, BLACK_KING
 };
 
-int getValue(char piece);
+int getPieceValue(char piece);
 
 #endif //CHESSENGINE_PIECE_H

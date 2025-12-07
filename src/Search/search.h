@@ -8,6 +8,8 @@
 #include <string>
 #include <numeric>
 #include <cmath>
+#include <algorithm>
+
 
 #include "Board/piece.h"
 #include "Board/board.h"
@@ -19,7 +21,11 @@ struct BestMove {
     unsigned long long nodes;
 };
 
-BestMove selectMove(Board &board, int depth, int maxDepth);
+BestMove selectMove(Board &board, int maxDepth);
+
+BestMove iterativeDeepening(Board &board, int maxDepth);
+
+int scoreMoveForOrdering(Move m, const Board &board);
 
 int evaluate(Board &board);
 

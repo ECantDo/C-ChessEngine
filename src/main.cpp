@@ -54,7 +54,7 @@ void startSearch(const std::string &goCmd) {
     stopSearch = false;
 
     long movetime = 0;
-    long depth = 3;
+    long depth = 6;
 
     {
         std::stringstream ss(goCmd);
@@ -69,15 +69,30 @@ void startSearch(const std::string &goCmd) {
     // Placeholder info line (GUI expects some output)
 
     auto start = std::chrono::high_resolution_clock::now();
-    BestMove bm = selectMove(currentBoard, 0, depth);
+    BestMove bm = selectMove(currentBoard, depth);
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
+    std::string score;
+    if (abs(bm.score) >= 100000 - 1000) {
+        // it's a mate score
+        int matePly = 100000 - abs(bm.score);
+        int mateMoves = (matePly + 1) / 2;
+
+        // negative means you're being mated
+        if (bm.score > 0)
+            score = std::format(" score mate {}", mateMoves);
+        else
+            score = std::format(" score mate -{}", mateMoves);
+
+    } else {
+        score = std::format(" score cp {}", bm.score);
+    }
 
     std::cout << "info depth " << depth
               << " time " << duration.count()
               << " nodes " << bm.nodes
-              << " score cp " << (bm.score)
+              << score
               << " pv " << moveToString(bm.bestMove)
               << "\n" << std::flush;
 
