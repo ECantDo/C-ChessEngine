@@ -32,6 +32,9 @@ void generatePseudoLegalMoves(const Board &board, std::vector<Move> &moveList) {
     moveList.clear();
     moveList.reserve(MAX_MOVES);
 
+    // Generate Pawn moves
+    generatePawnMoves(board, moveList);
+
     // Generate King moves
     generateKingMoves(board, moveList);
 
@@ -46,9 +49,6 @@ void generatePseudoLegalMoves(const Board &board, std::vector<Move> &moveList) {
 
     // Generate Knight moves
     generateKnightMoves(board, moveList);
-
-    // Generate Pawn moves
-    generatePawnMoves(board, moveList);
 }
 
 // =====================================================================================================================

@@ -105,7 +105,6 @@ void startSearch(const std::string &goCmd) {
             depth = 6; // fallback
     }
 
-    std::cout << "[TIME LIMIT] " << timeLimit << '\n';
     //---------------------------------------------------------
     // Now you have:
     //   timeLimit  (ms)  — guaranteed non-negative

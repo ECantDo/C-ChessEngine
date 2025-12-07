@@ -11,6 +11,8 @@
 #include <numeric>
 #include <cmath>
 #include <algorithm>
+#include <chrono>
+#include <atomic>
 
 
 #include "Board/piece.h"
@@ -25,6 +27,7 @@ struct BestMove {
     std::vector<Move> pv;
 };
 
+
 BestMove selectMove(Board &board, int maxDepth, long timeLimitMS);
 
 BestMove iterativeDeepening(Board &board, int maxDepth);
@@ -38,24 +41,25 @@ bool isKingInCheck(const Board &board, int color);
 
 const int pawnTable[64] = {
         0, 0, 0, 0, 0, 0, 0, 0,
-        50, 50, 50, 50, 50, 50, 50, 50,
-        10, 10, 20, 35, 35, 20, 10, 10,
-        5, 5, 10, 35, 35, 10, 5, 5,
-        0, 0, 0, 30, 30, 0, 0, 0,
-        5, -5, -10, 0, 0, -10, -5, 5,
-        5, 10, 10, -20, -20, 10, 10, 5,
+        100, 100, 100, 100, 100, 100, 100, 100,
+        50, 50, 60, 70, 70, 60, 50, 50,
+        20, 20, 30, 60, 60, 30, 20, 20,
+        10, 10, 20, 50, 50, 20, 10, 10,
+        5, 5, 10, 30, 30, 10, 5, 5,
+        0, 0, 0, -20, -20, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0
+
 };
 
 const int knightTable[64] = {
-        -50, -40, -30, -30, -30, -30, -40, -50,
+        -50, -10, -20, -30, -30, -20, -10, -50,
         -40, -20, 0, 0, 0, 0, -20, -40,
         -30, 0, 10, 15, 15, 10, 0, -30,
         -30, 5, 15, 20, 20, 15, 5, -30,
         -30, 0, 15, 20, 20, 15, 0, -30,
         -30, 5, 10, 15, 15, 10, 5, -30,
         -40, -20, 0, 5, 5, 0, -20, -40,
-        -50, -40, -30, -30, -30, -30, -40, -50
+        -50, -10, -20, -30, -30, -20, -10, -50
 };
 
 const int bishopTable[64] = {
@@ -103,5 +107,11 @@ const int kingMiddleGameTable[64] = {
 };
 
 int getPieceSquareValue(char piece, int square);
+
+inline int flipIndex(int index) {
+    int rank = index / 8;
+    int file = index % 8;
+    return (7 - rank) * 8 + file;
+}
 
 #endif //CHESSENGINE_SEARCH_H

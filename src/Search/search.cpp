@@ -2,12 +2,9 @@
 // Created by ECanDo on 2025-12-06.
 //
 
-
-#include <chrono>
-#include <atomic>
 #include "search.h"
 
-extern std::atomic<bool> stopSearch;
+static bool stopSearch = false;
 
 static long g_timeLimitMS = 0;
 static std::chrono::steady_clock::time_point g_searchStart;
@@ -195,8 +192,6 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
 }
 
 BestMove selectMove(Board &board, int maxDepth, long timeLimitMS) {
-    std::cout << "Found limit to be " << timeLimitMS << '\n';
-
     stopSearch = false;
     g_timeLimitMS = timeLimitMS;
     g_searchStart = std::chrono::steady_clock::now();
@@ -205,6 +200,8 @@ BestMove selectMove(Board &board, int maxDepth, long timeLimitMS) {
 }
 
 int evaluate(Board &board) {
+    // TODO: Figure out why pawns are not being pushed
+
     int score = 0;
 
     for (char piece: ALL_PIECES) {
@@ -238,8 +235,8 @@ bool isKingInCheck(const Board &board, int color) {
 /* Helper to get piece-square table value */
 int getPieceSquareValue(char piece, int square) {
     /* For black pieces, flip the square vertically */
-    bool isWhite = isupper(piece);
-    int sq = isWhite ? square : (63 - square);
+    bool isWhite = !isupper(piece);
+    int sq = isWhite ? square : flipIndex(square);
 
     switch (tolower(piece)) {
         case 'p':
