@@ -125,13 +125,13 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
         auto startTime = std::chrono::steady_clock::now();
 
         BestMove result = alphaBeta(board, 0, depth,
-                                    INT32_MIN + 1000, INT32_MAX - 1000, bestMove);
+                                    INT32_MIN + 10000, INT32_MAX - 10000, bestMove);
 
         auto endTime = std::chrono::steady_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
 
         bestMove = result.bestMove;
-        bestScore = result.score;
+        bestScore = -result.score;
         totalNodes += result.nodes;
 
         /* UCI info output */
@@ -170,11 +170,11 @@ int evaluate(Board &board) {
     score += std::popcount(board.whiteRooks) * getPieceValue('R');
     score += std::popcount(board.whiteQueens) * getPieceValue('Q');
 
-    score -= std::popcount(board.blackPawns) * getPieceValue('p');
-    score -= std::popcount(board.blackKnights) * getPieceValue('n');
-    score -= std::popcount(board.blackBishops) * getPieceValue('b');
-    score -= std::popcount(board.blackRooks) * getPieceValue('r');
-    score -= std::popcount(board.blackQueens) * getPieceValue('q');
+    score += std::popcount(board.blackPawns) * getPieceValue('p');
+    score += std::popcount(board.blackKnights) * getPieceValue('n');
+    score += std::popcount(board.blackBishops) * getPieceValue('b');
+    score += std::popcount(board.blackRooks) * getPieceValue('r');
+    score += std::popcount(board.blackQueens) * getPieceValue('q');
 
     // Return from current player's perspective
     return board.turn == 1 ? score : -score;
