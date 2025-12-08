@@ -54,11 +54,11 @@ void startSearch(const std::string &goCmd) {
     stopSearch = false;
 
     long movetime = -1;     // exact time to use (ms)
-    long depth    = -1;     // depth limit
-    long nodes    = -1;     // node limit
+    long depth = -1;     // depth limit
+    long nodes = -1;     // node limit
 
     long wtime = -1, btime = -1;   // remaining time (ms)
-    long winc  = 0,  binc  = 0;    // increments (ms)
+    long winc = 0, binc = 0;    // increments (ms)
 
     {
         std::stringstream ss(goCmd);
@@ -72,8 +72,8 @@ void startSearch(const std::string &goCmd) {
 
             else if (tok == "wtime") ss >> wtime;
             else if (tok == "btime") ss >> btime;
-            else if (tok == "winc")  ss >> winc;
-            else if (tok == "binc")  ss >> binc;
+            else if (tok == "winc") ss >> winc;
+            else if (tok == "binc") ss >> binc;
         }
     }
 
@@ -88,10 +88,10 @@ void startSearch(const std::string &goCmd) {
     } else if (wtime >= 0 && btime >= 0) {
         // Allocate time based on whose move it is
         long remaining = (currentBoard.turn == 1 ? wtime : btime);
-        long increment = (currentBoard.turn == 1 ? winc  : binc);
+        long increment = (currentBoard.turn == 1 ? winc : binc);
 
         // Basic time allocation: use 1/30 of remaining + 80% of increment (allow for some overhead)
-        timeLimit = remaining / 30 + (long)(increment * 0.8);
+        timeLimit = remaining / 30 + (long) (increment * 0.8);
 
         // Safety clamp: never more than 80% of remaining
         if (timeLimit > remaining * 4 / 5)
@@ -105,7 +105,13 @@ void startSearch(const std::string &goCmd) {
             depth = 6; // fallback
     }
 
-    timeLimit -= 50; // Allow for 50ms of outputting time
+    if (timeLimit > 50) {
+        timeLimit -= 20; // Allow for 20ms of outputting time
+    }
+
+    if (timeLimit <= 0) {
+        timeLimit = 30;  // 30 ms fallback
+    }
 
     //---------------------------------------------------------
     // Now you have:
@@ -118,6 +124,18 @@ void startSearch(const std::string &goCmd) {
 
     // Pass depth or time-based stopping to your search
     BestMove bm = selectMove(currentBoard, depth, timeLimit);
+    if (bm.bestMove == 0) {
+        std::vector<Move> moves;
+        generateLegalMoves(currentBoard, moves);
+        if (!moves.empty()) {
+            bm.bestMove = moves[0];
+            std::cerr << "WARNING: Search returned null move, using fallback: "
+                      << moveToString(bm.bestMove) << std::endl;
+        } else {
+            std::cout << "bestmove (none)\n" << std::flush;
+            return;  /* Early return */
+        }
+    }
 
     auto end = std::chrono::steady_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -141,14 +159,11 @@ void startSearch(const std::string &goCmd) {
               << " time " << elapsed
               << " nodes " << bm.nodes
               << score
-              << " pv " << moveToString(bm.bestMove);
+              << " pv ";
     for (Move &m: bm.pv) {
         std::cout << moveToString(m) << ' ';
     }
     std::cout << std::endl << std::flush;
-
-    for (Move &m: bm.pv) std::cout << moveToString(m) << ' ';
-    std::cout << "\n";
 
     std::cout << "bestmove " << moveToString(bm.bestMove) << '\n' << std::flush;
 }
@@ -166,8 +181,10 @@ int main() {
 
         if (line.empty()) continue;
 
-        if (line == "uci") {
-            std::cout << "id name ECanBot\n" << std::flush;
+        if (line.rfind("go", 0) == 0) { // Keep at the top, the most common input
+            startSearch(line);
+        } else if (line == "uci") {
+            std::cout << "id name ECanBot-V6.2\n" << std::flush;
             std::cout << "id author ECanDo\n" << std::flush;
 
             // Future options:
@@ -182,8 +199,6 @@ int main() {
             currentBoard = Board();
         } else if (line.rfind("position", 0) == 0) {
             setPosition(line);
-        } else if (line.rfind("go", 0) == 0) {
-            startSearch(line);
         } else if (line == "stop") {
             stopSearch = true;
         } else if (line == "quit") {
@@ -191,6 +206,9 @@ int main() {
         } else if (line == "d") {
             currentBoard.printBoard();
             std::cout << std::flush;
+        } else if (line == "eval"){
+            std::cout << "Evaluation: " << evaluate(currentBoard) << std::endl;
+            std::cout << "FEN: " << currentBoard.generateFen() << std::endl << std::flush;
         }
     }
 

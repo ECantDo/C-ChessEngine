@@ -75,6 +75,9 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
         return {0, 0, 1, depth};
     }
 
+    // Order moves for better pruning
+    orderMoves(moveList, board, previousBest);
+    Move bestMove = moveList[0];
 
     // --- TIME CHECK ----------------------------------------------------
     if (!stopSearch && g_timeLimitMS > 0) {
@@ -85,14 +88,11 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
         }
     }
     if (depth >= maxDepth || stopSearch) {
-        return {0, evaluate(board), 1, depth - 1};
+        return {bestMove, evaluate(board), 1, depth - 1};
     }
 
-    // Order moves for better pruning
-    orderMoves(moveList, board, previousBest);
 
-    Move bestMove = moveList[0];
-    int bestScore = INT32_MIN;
+    int bestScore = -INF_SCORE;
     std::vector<Move> pv;
 
     unsigned long long nodes = 1;
@@ -138,7 +138,7 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
         auto startTime = std::chrono::steady_clock::now();
 
         BestMove result = alphaBeta(board, 0, depth,
-                                    INT32_MIN + 10000, INT32_MAX - 10000, bestMove);
+                                    -INF_SCORE, INF_SCORE, bestMove);
 
         auto endTime = std::chrono::steady_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
@@ -235,8 +235,8 @@ bool isKingInCheck(const Board &board, int color) {
 /* Helper to get piece-square table value */
 int getPieceSquareValue(char piece, int square) {
     /* For black pieces, flip the square vertically */
-    bool isWhite = !isupper(piece);
-    int sq = isWhite ? square : flipIndex(square);
+    bool isWhite = isupper(piece);
+    int sq = isWhite ? flipIndex(square) : square; // Seems backwards, but is fine
 
     switch (tolower(piece)) {
         case 'p':
