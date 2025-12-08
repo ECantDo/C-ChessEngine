@@ -1,6 +1,7 @@
 #include "Board/board.h"
 #include "Board/move.h"
 #include "Search/search.h"
+#include "Board/zobrist_hash.h"
 
 #include <iostream>
 #include <string>
@@ -172,6 +173,7 @@ void startSearch(const std::string &goCmd) {
 // UCI main loop
 //-------------------------------------------------------------
 int main() {
+    Zobrist::init();
     std::ios::sync_with_stdio(false);
     std::cin.tie(nullptr);
 
@@ -206,7 +208,7 @@ int main() {
         } else if (line == "d") {
             currentBoard.printBoard();
             std::cout << std::flush;
-        } else if (line == "eval"){
+        } else if (line == "eval") {
             std::cout << "Evaluation: " << evaluate(currentBoard) << std::endl;
             std::cout << "FEN: " << currentBoard.generateFen() << std::endl << std::flush;
         }

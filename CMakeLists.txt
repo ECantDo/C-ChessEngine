@@ -23,26 +23,38 @@ add_executable(chessEngine
 
         src/Search/search.h
         src/Search/search.cpp
+        src/Board/zobrist_hash.cpp
+        src/Board/zobrist_hash.h
 )
 
 add_executable(testChessEngine tests/test_all.cpp
-        tests/Board/test_board.cpp
         tests/test_all.cpp
+
+        tests/Board/test_board.cpp
         tests/Board/test_board.h
         src/Board/board.h
         src/Board/board.cpp
+
         src/Board/piece.h
         src/Board/piece.cpp
+
         tests/Board/test_moves.h
         tests/Board/test_moves.cpp
         tests/testing_essentials.h
 
+        src/Board/zobrist_hash.cpp
+        src/Board/zobrist_hash.h
         src/Board/move.h
         src/Board/move.cpp
+
         src/Board/generate_moves.cpp
         src/Board/generate_moves.h
         tests/MoveGeneration/test_move_generation.cpp
         tests/MoveGeneration/test_move_generation.h
+
         src/Search/search.cpp
+
+        tests/Board/test_zobrist.cpp
+        tests/Board/test_zobrist.h
 )
 

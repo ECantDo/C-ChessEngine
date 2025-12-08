@@ -30,6 +30,7 @@ struct UndoInfo {
     int enPassantSquare;
     uint8_t castlingRights;
     int halfMoveClock;
+    uint64_t zobristHash;
 };
 
 inline Move encodeMove(int from, int to, int flags){
