@@ -69,14 +69,15 @@ public:
             return false; // Miss; position not in table
         }
 
-        // From this point forwards, we can always use what is stored in the table; Might not be
         // able to use the score, but we can use the best move
-        entry = e;
 
         // If the stored entry is from a shallower search, we cannot trust the bounds
         if (e.depth < depth) {
             return false;
         }
+
+        // From this point forwards, we can always use what is stored in the table; Might not be
+        entry = e;
 
         // Exact score; fully evaluated at this node. Always usable.
         if (e.flag == TT_EXACT) {

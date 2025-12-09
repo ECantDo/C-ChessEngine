@@ -114,4 +114,6 @@ inline int flipIndex(int index) {
     return (7 - rank) * 8 + file;
 }
 
+void rootDebugAlphaBeta(const Board &board, int maxDepth);
+
 #endif //CHESSENGINE_SEARCH_H

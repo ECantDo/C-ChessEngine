@@ -58,7 +58,7 @@ void testMoveGeneration(int depth) {
 
         std::cout << "perft found " << nodes << " in " << duration << ", at a depth of " << depth << "\n";
         if (nodes != test.results[depth]) {
-            std::cout << "[FAIL] Should have found " << test.results[depth] << "\n\n";
+            std::cout << "[FAIL] Should have found " << (long)test.results[depth] << "\n\n";
         } else {
             std::cout << "[PASS]\n\n";
         }

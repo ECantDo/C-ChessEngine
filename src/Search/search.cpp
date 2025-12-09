@@ -65,6 +65,7 @@ int scoreMoveForOrdering(Move m, const Board &board) {
 BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, Move previousBest) {
 
     int alphaOrig = alpha; // For the TT
+    int betaOrig = beta;
 
     // Probe the current board position in the TT
     TTEntry ttEntry;
@@ -80,14 +81,16 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
     if (moveList.empty()) {
         // King in check -> Mate
         if (isKingInCheck(board, board.turn)) {
-            return {0, -MATE_SCORE + depth, 1, depth};
+            globalTT.store(board.zobristHash, 0, maxDepth - depth, -MATE_SCORE, TT_EXACT);
+            return {0, -MATE_SCORE + depth, 1, depth, {0}};
         }
         // King not in check -> Draw
-        return {0, 0, 1, depth};
+        globalTT.store(board.zobristHash, 0, maxDepth - depth, 0, TT_EXACT);
+        return {0, 0, 1, depth, {0}};
     }
 
     // Order moves for better pruning
-    orderMoves(moveList, board, ttEntry.bestMove);
+    orderMoves(moveList, board, previousBest);
     Move bestMove = moveList[0];
 
     // --- TIME CHECK ----------------------------------------------------
@@ -99,7 +102,7 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
         }
     }
     if (depth >= maxDepth || stopSearch) {
-        return {bestMove, evaluate(board), 1, depth - 1};
+        return {bestMove, evaluate(board), 1, depth, {bestMove}};
     }
 
 
@@ -139,7 +142,7 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
     TTFlag flag;
     if (bestScore <= alphaOrig) {
         flag = TT_ALPHA;
-    } else if (bestScore >= beta) {
+    } else if (bestScore >= betaOrig) {
         flag = TT_BETA;
     } else {
         flag = TT_EXACT;
@@ -156,8 +159,10 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
     unsigned long long totalNodes = 0;
     int depth;
 
+    auto startTime = std::chrono::steady_clock::now();
+
+
     for (depth = 1; depth <= maxDepth; depth++) {
-        auto startTime = std::chrono::steady_clock::now();
 
         BestMove result = alphaBeta(board, 0, depth,
                                     -INF_SCORE, INF_SCORE, bestMove);
@@ -175,8 +180,7 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
         if (abs(bestScore) >= MATE_SCORE - 1000) {
             // it's a mate score
             isMate = true;
-            int matePly = MATE_SCORE - abs(bestScore);
-            int mateMoves = (matePly + 1) / 2;
+            int mateMoves = (depth + 1) >> 1;
 
             // negative means you're being mated
             if (bestScore > 0)
@@ -205,11 +209,8 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
         if (isMate || stopSearch) {
             break;
         }
-        // if (elapsed > timeLimitMS) break;
-
     }
 
-    // TODO: add PV
     return {bestMove, bestScore, totalNodes, depth};
 }
 
@@ -222,7 +223,7 @@ BestMove selectMove(Board &board, int maxDepth, long timeLimitMS) {
 }
 
 int evaluate(Board &board) {
-    // TODO: Figure out why pawns are not being pushed
+    // TODO: Pawn structure
 
     int score = 0;
 
@@ -276,4 +277,47 @@ int getPieceSquareValue(char piece, int square) {
         default:
             return 0;
     }
+}
+
+// =====================================================================================================================
+// DEBUGGING FUNCTIONS
+// =====================================================================================================================
+void rootDebugAlphaBeta(const Board &board, int maxDepth) {
+    std::vector<Move> moveList;
+    generateLegalMoves(const_cast<Board &>(board), moveList);
+    if (moveList.empty()) {
+        std::cout << "No legal moves at root\n";
+        return;
+    }
+
+    struct Row {
+        Move m;
+        int score;
+        std::vector<Move> pv;
+    };
+    std::vector<Row> rows;
+
+    int alpha = -INF_SCORE;
+    int beta = INF_SCORE;
+
+    for (Move m: moveList) {
+        Board b = board;                    // make local copy to be safe
+        UndoInfo ui = b.makeMove(m);
+        BestMove res = alphaBeta(b, 1, maxDepth, -beta, -alpha, 0);
+        int score = -res.score;
+        rows.push_back({m, score, res.pv});
+    }
+
+    // sort by score descending for readability
+    std::sort(rows.begin(), rows.end(), [](auto &a, auto &b) { return a.score > b.score; });
+
+    std::cout << "=== root debug depth " << maxDepth << " ===\n";
+    for (auto &r: rows) {
+        std::cout << std::left << std::setw(8) << moveToString(r.m)
+                  << " | score = " << std::setw(8) << r.score
+                  << " | pv: ";
+        for (auto &mm: r.pv) std::cout << moveToString(mm) << ' ';
+        std::cout << '\n' << std::flush;
+    }
+    std::cout << "=== end root debug ===\n";
 }

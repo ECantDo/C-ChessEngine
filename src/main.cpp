@@ -108,10 +108,6 @@ void startSearch(const std::string &goCmd) {
         timeLimit -= 20; // Allow for 20ms of outputting time
     }
 
-    if (timeLimit <= 0) {
-        timeLimit = 30;  // 30 ms fallback
-    }
-
     //---------------------------------------------------------
     // Now you have:
     //   timeLimit  (ms)  — guaranteed non-negative
@@ -186,7 +182,7 @@ int main() {
         if (line.rfind("go", 0) == 0) { // Keep at the top, the most common input
             startSearch(line);
         } else if (line == "uci") {
-            std::cout << "id name ECanBot-V7.1\n" << std::flush;
+            std::cout << "id name ECanBot-V7.2\n" << std::flush;
             std::cout << "id author ECanDo\n" << std::flush;
 
             // Future options:
@@ -201,17 +197,23 @@ int main() {
             currentBoard = Board();
             globalTT.clear();
         } else if (line.rfind("position", 0) == 0) {
-            setPosition(line);
+            try {
+                setPosition(line);
+            } catch (std::invalid_argument &e) {
+                std::cerr << e.what() << std::endl;
+            }
         } else if (line == "stop") {
             stopSearch = true;
         } else if (line == "quit") {
             break;
         } else if (line == "d") {
             currentBoard.printBoard();
-            std::cout << std::flush;
+            std::cout << currentBoard.generateFen() << std::endl << std::flush;
         } else if (line == "eval") {
             std::cout << "Evaluation: " << evaluate(currentBoard) << std::endl;
             std::cout << "FEN: " << currentBoard.generateFen() << std::endl << std::flush;
+        } else if (line == "debug") {
+            rootDebugAlphaBeta(currentBoard, 6);
         }
     }
 
