@@ -61,22 +61,26 @@ void startSearch(const std::string &goCmd) {
     long wtime = -1, btime = -1;   // remaining time (ms)
     long winc = 0, binc = 0;    // increments (ms)
 
-    {
-        std::stringstream ss(goCmd);
-        std::string tok;
-        ss >> tok; // "go"
 
-        while (ss >> tok) {
-            if (tok == "movetime") ss >> movetime;
-            else if (tok == "depth") ss >> depth;
-            else if (tok == "nodes") ss >> nodes;
+    std::stringstream ss(goCmd);
+    std::string tok;
+    ss >> tok; // "go"
 
-            else if (tok == "wtime") ss >> wtime;
-            else if (tok == "btime") ss >> btime;
-            else if (tok == "winc") ss >> winc;
-            else if (tok == "binc") ss >> binc;
-        }
+
+    while (ss >> tok) {
+        std::cout << "DEBUG tok:" << tok << std::endl;
+        if (tok == "movetime") ss >> movetime;
+        else if (tok == "depth") ss >> depth;
+        else if (tok == "nodes") ss >> nodes;
+
+        else if (tok == "wtime") ss >> wtime;
+        else if (tok == "btime") ss >> btime;
+        else if (tok == "winc") ss >> winc;
+        else if (tok == "binc") ss >> binc;
     }
+
+    std::cout << "wtime : " << wtime << std::endl << " btime : " << btime << std::endl;
+
 
     //---------------------------------------------------------
     // If no limits were explicitly given, derive a time limit
@@ -98,8 +102,7 @@ void startSearch(const std::string &goCmd) {
         if (timeLimit > remaining * 4 / 5)
             timeLimit = remaining * 4 / 5;
 
-        // Ensure minimum thinking time
-        if (timeLimit < 20) timeLimit = 20;
+        depth = 30;
     } else {
         // No time controls given — default to depth search
         if (depth <= 0)
@@ -156,15 +159,16 @@ void startSearch(const std::string &goCmd) {
         score = std::format(" score cp {}", bm.score);
     }
 
-    std::cout << "info depth " << bm.depth
-              << " time " << elapsed
-              << " nodes " << bm.nodes
-              << score
-              << " pv ";
-    for (Move &m: bm.pv) {
-        std::cout << moveToString(m) << ' ';
-    }
-    std::cout << std::endl << std::flush;
+// Already happening on the output of the iterative deepening, not needed twice
+//    std::cout << "info depth " << bm.depth
+//              << " time " << elapsed
+//              << " nodes " << bm.nodes
+//              << score
+//              << " pv ";
+//    for (Move &m: bm.pv) {
+//        std::cout << moveToString(m) << ' ';
+//    }
+//    std::cout << std::endl << std::flush;
 
     std::cout << "bestmove " << moveToString(bm.bestMove) << '\n' << std::flush;
 }
