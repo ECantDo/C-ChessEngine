@@ -73,6 +73,7 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
         return {ttEntry.bestMove, ttEntry.score, 1, depth, {ttEntry.bestMove}};
     }
 
+
     std::vector<Move> moveList;
     generateLegalMoves(board, moveList);
 

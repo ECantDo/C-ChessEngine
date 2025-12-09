@@ -66,9 +66,7 @@ void startSearch(const std::string &goCmd) {
     std::string tok;
     ss >> tok; // "go"
 
-
     while (ss >> tok) {
-        std::cout << "DEBUG tok:" << tok << std::endl;
         if (tok == "movetime") ss >> movetime;
         else if (tok == "depth") ss >> depth;
         else if (tok == "nodes") ss >> nodes;
@@ -78,9 +76,6 @@ void startSearch(const std::string &goCmd) {
         else if (tok == "winc") ss >> winc;
         else if (tok == "binc") ss >> binc;
     }
-
-    std::cout << "wtime : " << wtime << std::endl << " btime : " << btime << std::endl;
-
 
     //---------------------------------------------------------
     // If no limits were explicitly given, derive a time limit
@@ -142,7 +137,6 @@ void startSearch(const std::string &goCmd) {
     }
 
     auto end = std::chrono::steady_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
     //---------------------------------------------------------
     // Output info + bestmove (same as before)
@@ -192,7 +186,7 @@ int main() {
         if (line.rfind("go", 0) == 0) { // Keep at the top, the most common input
             startSearch(line);
         } else if (line == "uci") {
-            std::cout << "id name ECanBot-V7.0\n" << std::flush;
+            std::cout << "id name ECanBot-V7.1\n" << std::flush;
             std::cout << "id author ECanDo\n" << std::flush;
 
             // Future options:
