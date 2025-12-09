@@ -107,7 +107,40 @@ public:
 
     uint64_t zobristHash;
 
-    uint64_t computeZobristHash() const;
+    [[nodiscard]] uint64_t computeZobristHash() const;
+
+    std::vector<uint64_t> gameHistory; // Positions from actual game
+
+    [[nodiscard]] bool isDraw() const {
+        // Fifty move rule
+        if (halfMoveClock >= 100) {
+            return true;
+        }
+
+        // Count board repetitions
+        int reps = 0;
+        int startIdx = std::max(0, (int) gameHistory.size() - halfMoveClock);
+        for (int i = startIdx; i < gameHistory.size(); i++) {
+            if (gameHistory[i] == zobristHash) {
+                reps++;
+                if (reps >= 2) {
+                    return true; // 3rd occurrence
+                }
+            }
+        }
+        return false;
+    }
+
+    [[nodiscard]] bool isRepetitionInSearch(const std::vector<uint64_t> &searchPath) const {
+        /* Check if this exact position occurred earlier in the search */
+        for (size_t i = 0; i < searchPath.size(); i += 2) {  /* Skip opponent moves */
+            if (searchPath[i] == zobristHash) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 };
 
 /**

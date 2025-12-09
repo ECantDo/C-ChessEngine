@@ -62,22 +62,34 @@ int scoreMoveForOrdering(Move m, const Board &board) {
     return score;
 }
 
-BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, Move previousBest) {
+BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, Move previousBest,
+                   std::vector<uint64_t> &searchPath) {
+
+    // ============ Check for Draw ============
+    // 50 move, and repetition
+    if (depth > 0) {
+        if (board.isDraw() || board.isRepetitionInSearch(searchPath)) {
+            return {0, 0, 1, {}};  /* Draw score = 0 */
+        }
+    }
+
+    // ============ TT Storage consts ============
 
     int alphaOrig = alpha; // For the TT
     int betaOrig = beta;
 
-    // Probe the current board position in the TT
+    // ============ TT Probe ============
     TTEntry ttEntry;
     // The depth is how many nodes from here it has been searched
     if (globalTT.probe(board.zobristHash, maxDepth - depth, alpha, beta, ttEntry)) {
         return {ttEntry.bestMove, ttEntry.score, 1, depth, {ttEntry.bestMove}};
     }
 
-
+    // ============ Generate Moves ============
     std::vector<Move> moveList;
     generateLegalMoves(board, moveList);
 
+    // ============ Legal moves is empty; check/draw ============
     if (moveList.empty()) {
         // King in check -> Mate
         if (isKingInCheck(board, board.turn)) {
@@ -89,11 +101,11 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
         return {0, 0, 1, depth, {0}};
     }
 
-    // Order moves for better pruning
-    orderMoves(moveList, board, previousBest);
+    // ============ Order Moves ============
+    orderMoves(moveList, board, ttEntry.bestMove);
     Move bestMove = moveList[0];
 
-    // --- TIME CHECK ----------------------------------------------------
+    // ============ Time Check ============
     if (!stopSearch && g_timeLimitMS > 0) {
         auto now = std::chrono::steady_clock::now();
         long elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - g_searchStart).count();
@@ -101,10 +113,14 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
             stopSearch = true;
         }
     }
+
+    // ============ Exceeded parameters ============
     if (depth >= maxDepth || stopSearch) {
         return {bestMove, evaluate(board), 1, depth, {bestMove}};
     }
 
+    // Now add to search path
+    searchPath.push_back(board.zobristHash);
 
     int bestScore = -INF_SCORE;
     std::vector<Move> pv;
@@ -114,7 +130,7 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
     for (Move m: moveList) {
         UndoInfo undo = board.makeMove(m);
 
-        BestMove result = alphaBeta(board, depth + 1, maxDepth, -beta, -alpha, 0);
+        BestMove result = alphaBeta(board, depth + 1, maxDepth, -beta, -alpha, 0, searchPath);
         int score = -result.score;
         nodes += result.nodes;
 
@@ -150,6 +166,7 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
 
     globalTT.store(board.zobristHash, bestMove, maxDepth - depth, bestScore, flag);
 
+    searchPath.pop_back();
     return {bestMove, bestScore, nodes, depth, pv};
 }
 
@@ -163,9 +180,10 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
 
 
     for (depth = 1; depth <= maxDepth; depth++) {
+        std::vector<uint64_t> searchPath;
 
-        BestMove result = alphaBeta(board, 0, depth,
-                                    -INF_SCORE, INF_SCORE, bestMove);
+        BestMove result = alphaBeta(board, 0, depth, -INF_SCORE, INF_SCORE,
+                                    bestMove, searchPath);
 
         auto endTime = std::chrono::steady_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
@@ -301,9 +319,10 @@ void rootDebugAlphaBeta(const Board &board, int maxDepth) {
     int beta = INF_SCORE;
 
     for (Move m: moveList) {
+        std::vector<uint64_t> searchPath;
         Board b = board;                    // make local copy to be safe
         UndoInfo ui = b.makeMove(m);
-        BestMove res = alphaBeta(b, 1, maxDepth, -beta, -alpha, 0);
+        BestMove res = alphaBeta(b, 1, maxDepth, -beta, -alpha, 0, searchPath);
         int score = -res.score;
         rows.push_back({m, score, res.pv});
     }

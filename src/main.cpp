@@ -40,8 +40,11 @@ void setPosition(const std::string &line) {
 
         currentBoard = Board(fen);
 
+        currentBoard.gameHistory.clear();
+
         if (ss >> tok && tok == "moves") {
             while (ss >> tok) {
+                currentBoard.gameHistory.push_back(currentBoard.zobristHash);
                 currentBoard.makeMove(stringToMove(tok, currentBoard));
             }
         }
@@ -182,7 +185,7 @@ int main() {
         if (line.rfind("go", 0) == 0) { // Keep at the top, the most common input
             startSearch(line);
         } else if (line == "uci") {
-            std::cout << "id name ECanBot-V7.2\n" << std::flush;
+            std::cout << "id name ECanBot-V8.0_GameDraws\n" << std::flush;
             std::cout << "id author ECanDo\n" << std::flush;
 
             // Future options:
