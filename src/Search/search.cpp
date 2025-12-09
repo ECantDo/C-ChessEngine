@@ -82,7 +82,7 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
     TTEntry ttEntry;
     // The depth is how many nodes from here it has been searched
     if (globalTT.probe(board.zobristHash, maxDepth - depth, alpha, beta, ttEntry)) {
-        return {ttEntry.bestMove, ttEntry.score, 1, depth, {ttEntry.bestMove}};
+        return {ttEntry.bestMove, ttEntry.score, 1, maxDepth, {ttEntry.bestMove}};
     }
 
     // ============ Generate Moves ============
@@ -93,8 +93,9 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
     if (moveList.empty()) {
         // King in check -> Mate
         if (isKingInCheck(board, board.turn)) {
-            globalTT.store(board.zobristHash, 0, maxDepth - depth, -MATE_SCORE, TT_EXACT);
-            return {0, -MATE_SCORE + depth, 1, depth, {0}};
+            int mateScore = -MATE_SCORE + depth;
+            globalTT.store(board.zobristHash, 0, maxDepth - depth, mateScore, TT_EXACT);
+            return {0, mateScore, 1, depth, {0}};
         }
         // King not in check -> Draw
         globalTT.store(board.zobristHash, 0, maxDepth - depth, 0, TT_EXACT);
