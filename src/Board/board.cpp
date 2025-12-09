@@ -8,7 +8,6 @@
 
 #include "board.h"
 
-
 // =====================================================================================================================
 // Constructors
 // =====================================================================================================================
@@ -16,7 +15,10 @@
 Board::Board()
         : whitePawns(0), whiteBishops(0), whiteKing(0), whiteKnights(0), whiteQueens(0), whiteRooks(0),
           blackPawns(0), blackBishops(0), blackKing(0), blackKnights(0), blackQueens(0), blackRooks(0),
-          enPassantSquare(-1), turn(0), castling(0), halfMoveClock(0), fullMove(1) { loadStartPosition(); }
+          enPassantSquare(-1), turn(0), castling(0), halfMoveClock(0), fullMove(1), zobristHash(0) {
+    loadStartPosition();
+    zobristHash = computeZobristHash();
+}
 
 Board::Board(std::string &fen) : Board() {
     if (!loadFenPosition(fen)) throw std::invalid_argument("Invalid FEN string: " + fen);
@@ -354,6 +356,8 @@ bool Board::loadFenPosition(std::string &fen) {
 
     /* ===== Success - Update Board ===== */
     *this = newBoard;
+
+    zobristHash = computeZobristHash();
     return true;
 }
 
@@ -469,6 +473,7 @@ UndoInfo Board::makeMove(Move m) {
     undoInfo.halfMoveClock = halfMoveClock;
     undoInfo.enPassantSquare = enPassantSquare;
     undoInfo.castlingRights = castling;
+    undoInfo.zobristHash = zobristHash;
 
     // Move the piece
     setPieceAtSquare(toLocation, thisPiece);
@@ -506,9 +511,9 @@ UndoInfo Board::makeMove(Move m) {
     }
 
     // Handle Promotion
+    char newPiece;
     if (flags & MOVE_FLAG_PROMOTION) {
         int promotionPiece = flags & 0x3;
-        char newPiece;
         if (turn == 1) {
             switch (promotionPiece) {
                 case PROMOTE_TO_KNIGHT:
@@ -604,6 +609,57 @@ UndoInfo Board::makeMove(Move m) {
         fullMove += 1;
     }
 
+    // ==========================================
+    // UPDATE ZOBRIST
+    // TODO: Integrate with the above code; make it a few fewer CPU cycles to do everything
+    // ==========================================
+    /* Remove piece from source square */
+    zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(thisPiece)][fromLocation];
+
+    /* If capture, remove captured piece */
+    if (capturedPiece != NONE_PIECE && !(flags & MOVE_FLAG_EN_PASSANT)) {
+        zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(capturedPiece)][toLocation];
+    }
+
+    /* Add piece to destination square */
+    char movingPiece = thisPiece;
+    if (flags & MOVE_FLAG_PROMOTION) {
+        /* Promoted piece, not original pawn */
+        movingPiece = newPiece;  /* The piece after promotion */
+    }
+    zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(movingPiece)][toLocation];
+
+    /* En passant capture */
+    if (flags & MOVE_FLAG_EN_PASSANT) {
+        int capturedPawnSquare = toLocation + (turn == 1 ? -8 : 8);
+        zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(undoInfo.capturedPiece)][capturedPawnSquare];
+    }
+
+    /* Castling - move rook */
+    if (flags & MOVE_FLAG_CASTLING) {
+        /* Remove rook from old square, add to new square */
+        if (toLocation == 6) {  /* White kingside */
+            zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(WHITE_ROOK)][7];
+            zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(WHITE_ROOK)][5];
+        }
+        /* ... handle other castling cases ... */
+    }
+
+    /* Update castling rights */
+    zobristHash ^= Zobrist::castlingRights[undoInfo.castlingRights];  /* Remove old */
+    zobristHash ^= Zobrist::castlingRights[castling];  /* Add new */
+
+    /* Update en passant */
+    if (undoInfo.enPassantSquare >= 0) {
+        zobristHash ^= Zobrist::enPassantFile[undoInfo.enPassantSquare % 8];  /* Remove old */
+    }
+    if (enPassantSquare >= 0) {
+        zobristHash ^= Zobrist::enPassantFile[enPassantSquare % 8];  /* Add new */
+    }
+
+    /* Flip side to move */
+    zobristHash ^= Zobrist::sideToMove;
+
     return undoInfo;
 }
 
@@ -660,4 +716,33 @@ void Board::unmakeMove(Move m, const UndoInfo &undoInfo) {
     halfMoveClock = undoInfo.halfMoveClock;
     enPassantSquare = undoInfo.enPassantSquare;
     castling = undoInfo.castlingRights;
+    zobristHash = undoInfo.zobristHash;
+}
+
+uint64_t Board::computeZobristHash() const {
+    uint64_t hash = 0;
+
+    // Hash board position
+    for (int square = 0; square < 64; square++) {
+        char piece = pieceAtSquare(square);
+        if (piece != NONE_PIECE) {
+            int pIdx = Zobrist::getZobristIndex(piece);
+            hash ^= Zobrist::pieceSquare[pIdx][square];
+        }
+    }
+
+    // Hash side to move
+    if (turn == -1) {
+        hash ^= Zobrist::sideToMove;
+    }
+
+    // Hash castling rights
+    hash ^= Zobrist::castlingRights[castling];
+
+    if (enPassantSquare >= 0 && enPassantSquare < 64){
+        int file = enPassantSquare & 0x7; // Same as % 8, but faster
+        hash ^= Zobrist::enPassantFile[file];
+    }
+
+    return hash;
 }

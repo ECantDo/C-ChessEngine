@@ -7,6 +7,7 @@
 
 #include "move.h"
 #include "piece.h"
+#include "zobrist_hash.h"
 
 #include <iostream>
 #include <sstream>
@@ -103,6 +104,10 @@ public:
      * Counts from 1, increments after Black's move
      */
     int fullMove;
+
+    uint64_t zobristHash;
+
+    uint64_t computeZobristHash() const;
 };
 
 /**
