@@ -69,7 +69,7 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
     // 50 move, and repetition
     if (depth > 0) {
         if (board.isDraw() || board.isRepetitionInSearch(searchPath)) {
-            return {0, 0, 1, {}};  /* Draw score = 0 */
+            return {0, 0, 1, depth, true, {}};  /* Draw score = 0 */
         }
     }
 
@@ -82,7 +82,7 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
     TTEntry ttEntry;
     // The depth is how many nodes from here it has been searched
     if (globalTT.probe(board.zobristHash, maxDepth - depth, alpha, beta, ttEntry)) {
-        return {ttEntry.bestMove, ttEntry.score, 1, maxDepth, {ttEntry.bestMove}};
+        return {ttEntry.bestMove, ttEntry.score, 1, maxDepth, true, {ttEntry.bestMove}};
     }
 
     // ============ Generate Moves ============
@@ -95,11 +95,11 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
         if (isKingInCheck(board, board.turn)) {
             int mateScore = -MATE_SCORE + depth;
             globalTT.store(board.zobristHash, 0, maxDepth - depth, mateScore, TT_EXACT);
-            return {0, mateScore, 1, depth, {0}};
+            return {0, mateScore, 1, depth, true, {}};
         }
         // King not in check -> Draw
         globalTT.store(board.zobristHash, 0, maxDepth - depth, 0, TT_EXACT);
-        return {0, 0, 1, depth, {0}};
+        return {0, 0, 1, depth, true, {}};
     }
 
     // ============ Order Moves ============
@@ -116,9 +116,12 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
     }
 
     // ============ Exceeded parameters ============
-    if (depth >= maxDepth || stopSearch) {
-        return {bestMove, evaluate(board), 1, depth, {bestMove}};
+    if (depth >= maxDepth) {
+        return {bestMove, evaluate(board), 1, depth, true, {bestMove}};
     }
+//    if (stopSearch) {
+//        return {0, 0, 1, depth, false, {bestMove}};
+//    }
 
     // Now add to search path
     searchPath.push_back(board.zobristHash);
@@ -127,11 +130,13 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
     std::vector<Move> pv;
 
     unsigned long long nodes = 1;
+    bool completed = true;
 
     for (Move m: moveList) {
         UndoInfo undo = board.makeMove(m);
 
-        BestMove result = alphaBeta(board, depth + 1, maxDepth, -beta, -alpha, 0, searchPath);
+        BestMove result = alphaBeta(board, depth + 1, maxDepth, -beta, -alpha,
+                                    0, searchPath);
         int score = -result.score;
         nodes += result.nodes;
 
@@ -153,22 +158,31 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
         if (alpha >= beta) {
             break;
         }
+
+        if (stopSearch){
+            completed = false;
+            break;
+        }
     }
 
-    // ==== STORE TT MOVE ====
-    TTFlag flag;
-    if (bestScore <= alphaOrig) {
-        flag = TT_ALPHA;
-    } else if (bestScore >= betaOrig) {
-        flag = TT_BETA;
+    if (completed) {
+        // ==== STORE TT MOVE ====
+        TTFlag flag;
+        if (bestScore <= alphaOrig) {
+            flag = TT_ALPHA;
+        } else if (bestScore >= betaOrig) {
+            flag = TT_BETA;
+        } else {
+            flag = TT_EXACT;
+        }
+
+        globalTT.store(board.zobristHash, bestMove, maxDepth - depth, bestScore, flag);
+
+        searchPath.pop_back();
+        return {bestMove, bestScore, nodes, depth, true, pv};
     } else {
-        flag = TT_EXACT;
+        return {bestMove, bestScore, nodes, depth, false, pv};
     }
-
-    globalTT.store(board.zobristHash, bestMove, maxDepth - depth, bestScore, flag);
-
-    searchPath.pop_back();
-    return {bestMove, bestScore, nodes, depth, pv};
 }
 
 BestMove iterativeDeepening(Board &board, int maxDepth) {
@@ -188,6 +202,12 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
 
         auto endTime = std::chrono::steady_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
+
+
+        if (!result.completed) {
+            // Throw out partial-computations ; (really not good), need to look into more
+            break;
+        }
 
         bestMove = result.bestMove;
         bestScore = result.score;
@@ -224,13 +244,12 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
         }
         std::cout << std::endl << std::flush;
 
-        /* Check if we should stop (time management later) */
-        if (isMate || stopSearch) {
+        if (stopSearch || isMate) {
             break;
         }
     }
 
-    return {bestMove, bestScore, totalNodes, depth};
+    return {bestMove, bestScore, totalNodes, depth, };
 }
 
 BestMove selectMove(Board &board, int maxDepth, long timeLimitMS) {
@@ -267,6 +286,7 @@ int evaluate(Board &board) {
 
     // Return from current player's perspective
     return board.turn == 1 ? score : -score;
+//    return score; // Return only whites perspective???
 }
 
 bool isKingInCheck(const Board &board, int color) {

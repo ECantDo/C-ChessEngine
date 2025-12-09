@@ -12,7 +12,7 @@ namespace Zobrist {
     uint64_t enPassantFile[8];
 
     void init() {
-        std::mt19937_64 rng(0xAB583800684ECAD0ULL);
+        std::mt19937_64 rng(0x9778946512784651ULL);
         std::uniform_int_distribution<uint64_t> dist;
 
         for (int piece = 0; piece < 12; piece++) {
