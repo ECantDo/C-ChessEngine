@@ -63,6 +63,16 @@ int scoreMoveForOrdering(Move m, const Board &board) {
 }
 
 BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, Move previousBest) {
+
+    int alphaOrig = alpha; // For the TT
+
+    // Probe the current board position in the TT
+    TTEntry ttEntry;
+    // The depth is how many nodes from here it has been searched
+    if (globalTT.probe(board.zobristHash, maxDepth - depth, alpha, beta, ttEntry)) {
+        return {ttEntry.bestMove, ttEntry.score, 1, depth, {ttEntry.bestMove}};
+    }
+
     std::vector<Move> moveList;
     generateLegalMoves(board, moveList);
 
@@ -76,7 +86,7 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
     }
 
     // Order moves for better pruning
-    orderMoves(moveList, board, previousBest);
+    orderMoves(moveList, board, ttEntry.bestMove);
     Move bestMove = moveList[0];
 
     // --- TIME CHECK ----------------------------------------------------
@@ -124,8 +134,19 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
         }
     }
 
-    return {bestMove, bestScore, nodes, depth, pv};
+    // ==== STORE TT MOVE ====
+    TTFlag flag;
+    if (bestScore <= alphaOrig) {
+        flag = TT_ALPHA;
+    } else if (bestScore >= beta) {
+        flag = TT_BETA;
+    } else {
+        flag = TT_EXACT;
+    }
 
+    globalTT.store(board.zobristHash, bestMove, maxDepth - depth, bestScore, flag);
+
+    return {bestMove, bestScore, nodes, depth, pv};
 }
 
 BestMove iterativeDeepening(Board &board, int maxDepth) {

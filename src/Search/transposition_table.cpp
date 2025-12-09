@@ -4,6 +4,8 @@
 
 #include "transposition_table.h"
 
+TranspositionTable globalTT(128);
+
 void TranspositionTable::clear() {
     delete[] table;
     table = new TTEntry[size];

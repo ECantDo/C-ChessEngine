@@ -105,4 +105,7 @@ public:
     }
 };
 
+extern TranspositionTable globalTT;
+
+
 #endif //CHESSENGINE_TRANSPOSITION_TABLE_H

@@ -174,6 +174,8 @@ void startSearch(const std::string &goCmd) {
 //-------------------------------------------------------------
 int main() {
     Zobrist::init();
+    globalTT.clear();
+
     std::ios::sync_with_stdio(false);
     std::cin.tie(nullptr);
 
@@ -199,6 +201,7 @@ int main() {
             // TODO: handle engine options
         } else if (line == "ucinewgame") {
             currentBoard = Board();
+            globalTT.clear();
         } else if (line.rfind("position", 0) == 0) {
             setPosition(line);
         } else if (line == "stop") {
