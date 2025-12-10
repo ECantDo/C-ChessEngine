@@ -18,6 +18,7 @@
 #include "Board/piece.h"
 #include "Board/board.h"
 #include "generate_moves.h"
+#include "quiescence_search.h"
 #include "Evaluation/evaluation.h"
 #include "transposition_table.h"
 
@@ -40,5 +41,7 @@ int scoreMoveForOrdering(Move m, const Board &board);
 bool isKingInCheck(const Board &board, int color);
 
 void rootDebugAlphaBeta(const Board &board, int maxDepth);
+
+void orderMoves(std::vector<Move> &moves, const Board &board, Move previousBest);
 
 #endif //CHESSENGINE_SEARCH_H

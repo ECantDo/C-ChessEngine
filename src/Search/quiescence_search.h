@@ -5,8 +5,9 @@
 #ifndef CHESSENGINE_QUIESCENCE_SEARCH_H
 #define CHESSENGINE_QUIESCENCE_SEARCH_H
 
-#include "search.h"
 #include "generate_moves.h"
+
+class BestMove;
 
 BestMove quiescenceSearch(Board &board, int alpha, int beta, std::vector<uint64_t> searchPath);
 

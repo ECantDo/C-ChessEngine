@@ -131,7 +131,7 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
 
     // ============ Exceeded parameters ============
     if (depth >= maxDepth) {
-        return {bestMove, evaluateBoard(board), 1, depth, true, {bestMove}};
+        return quiescenceSearch(board, alpha, beta, searchPath);
     }
 //    if (stopSearch) {
 //        return {0, 0, 1, depth, false, {bestMove}};
@@ -235,7 +235,7 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
 //            isMate = true;
 //            std::cout << std::format("Result Depth: {} | Depth: {}", result.depth, depth) << std::endl;
             int mateDistance = MATE_SCORE - abs(bestScore);
-            int mateMoves = (mateDistance+1) / 2;
+            int mateMoves = (mateDistance + 1) / 2;
 
             std::cerr << "DEBUG: depth=" << depth
                       << " bestScore=" << bestScore

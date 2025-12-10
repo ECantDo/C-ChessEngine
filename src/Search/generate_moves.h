@@ -24,7 +24,9 @@ void generatePseudoLegalMoves(const Board &board, std::vector<Move> &moveList, b
 
 void generateLegalMoves(Board &board, std::vector<Move> &moveList, bool capturesOnly = false);
 
-void generateCaptures(Board &board, std::vector<Move> &moveList);
+inline void generateCaptures(Board &board, std::vector<Move> &moveList) {
+    generateLegalMoves(board, moveList, true);
+}
 
 /**
  * Generate pseudo legal moves
