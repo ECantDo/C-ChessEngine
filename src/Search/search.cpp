@@ -82,20 +82,31 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
     TTEntry ttEntry;
     // The depth is how many nodes from here it has been searched
     if (globalTT.probe(board.zobristHash, maxDepth - depth, alpha, beta, ttEntry)) {
-        return {ttEntry.bestMove, ttEntry.score, 1, maxDepth,
-                true, {ttEntry.bestMove}};
+        int score = ttEntry.score;
+
+//        // Adjust mate scores relative to current position
+//        if (score >= MATE_SCORE - 100) {
+//            // We're delivering mate - subtract depth to make it closer
+//            score -= depth;
+//        } else if (score <= -MATE_SCORE + 100) {
+//            // We're being mated - add depth to make it further away
+//            score += depth;
+//        }
+
+        return {ttEntry.bestMove, score, 1, maxDepth, true, {ttEntry.bestMove}};
     }
 
     // ============ Generate Moves ============
     std::vector<Move> moveList;
-    generateLegalMoves(board, moveList);
+    generateLegalMoves(board, moveList, false);
 
     // ============ Legal moves is empty; check/draw ============
     if (moveList.empty()) {
         // King in check -> Mate
         if (isKingInCheck(board, board.turn)) {
             int mateScore = -MATE_SCORE + depth;
-            // Only seeing this move, or a from-here depth of 1
+            /* Only seeing this move, or a from-here depth of 1
+            */
             globalTT.store(board.zobristHash, 0, 1, mateScore, TT_EXACT);
             return {0, mateScore, 1, depth, true, {}};
         }
@@ -220,13 +231,17 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
         std::string score;
         bool isMate = false; // Check for early exit, if mate is found at some depth, it is the first mate; take it
         if (abs(bestScore) >= MATE_SCORE - 100) { // I doubt it can find a forced mate in 50
-            // it's a mate score
             //TODO: Re-enable when quiescence search is implemented -- Horizon effect (I think)
 //            isMate = true;
 //            std::cout << std::format("Result Depth: {} | Depth: {}", result.depth, depth) << std::endl;
-            int mateMoves = (MATE_SCORE - abs(bestScore)) >> 1;
+            int mateDistance = MATE_SCORE - abs(bestScore);
+            int mateMoves = (mateDistance+1) / 2;
 
-            // negative means you're being mated
+            std::cerr << "DEBUG: depth=" << depth
+                      << " bestScore=" << bestScore
+                      << " mateDistance=" << mateDistance
+                      << " mateMoves=" << mateMoves << std::endl << std::flush;
+
             if (bestScore > 0)
                 score = std::format(" score mate {}", mateMoves);
             else

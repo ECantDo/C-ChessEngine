@@ -2,6 +2,8 @@
 #include "Board/move.h"
 #include "Search/search.h"
 #include "Board/zobrist_hash.h"
+#include "Evaluation/evaluation.h"
+#include "../tests/MoveGeneration/test_move_generation.h"
 
 #include <iostream>
 #include <string>
@@ -57,6 +59,8 @@ void setPosition(const std::string &line) {
 void startSearch(const std::string &goCmd) {
     stopSearch = false;
 
+    bool isPeft = false;
+
     long movetime = -1;     // exact time to use (ms)
     long depth = -1;     // depth limit
     long nodes = -1;     // node limit
@@ -78,6 +82,10 @@ void startSearch(const std::string &goCmd) {
         else if (tok == "btime") ss >> btime;
         else if (tok == "winc") ss >> winc;
         else if (tok == "binc") ss >> binc;
+        else if (tok == "perft") {
+            ss >> depth;
+            isPeft = true;
+        }
     }
 
     //---------------------------------------------------------
@@ -118,52 +126,28 @@ void startSearch(const std::string &goCmd) {
     //   nodes      (cnt) — maybe -1 if no node limit
     //---------------------------------------------------------
 
-    auto start = std::chrono::steady_clock::now();
-
-    // Pass depth or time-based stopping to your search
-    BestMove bm = selectMove(currentBoard, depth, timeLimit);
-    if (bm.bestMove == 0) {
-        std::vector<Move> moves;
-        generateLegalMoves(currentBoard, moves);
-        if (!moves.empty()) {
-            bm.bestMove = moves[0];
-            std::cerr << "WARNING: Search returned null move, using fallback: "
-                      << moveToString(bm.bestMove) << std::endl;
-        } else {
-            std::cout << "bestmove (none)\n" << std::flush;
-            return;  /* Early return */
+    if (!isPeft) {
+        // Pass depth or time-based stopping to your search
+        BestMove bm = selectMove(currentBoard, depth, timeLimit);
+        if (bm.bestMove == 0) {
+            std::vector<Move> moves;
+            generateLegalMoves(currentBoard, moves);
+            if (!moves.empty()) {
+                bm.bestMove = moves[0];
+                std::cerr << "WARNING: Search returned null move, using fallback: "
+                          << moveToString(bm.bestMove) << std::endl;
+            } else {
+                std::cout << "bestmove (none)\n" << std::flush;
+                return;  /* Early return */
+            }
         }
-    }
-
-    auto end = std::chrono::steady_clock::now();
-
-    //---------------------------------------------------------
-    // Output info + bestmove (same as before)
-    //---------------------------------------------------------
-
-    std::string score;
-    if (abs(bm.score) >= MATE_SCORE - 1000) {
-        int matePly = MATE_SCORE - abs(bm.score);
-        int mateMoves = (matePly + 1) / 2;
-        score = bm.score > 0 ?
-                std::format(" score mate {}", mateMoves) :
-                std::format(" score mate -{}", mateMoves);
+        std::cout << "bestmove " << moveToString(bm.bestMove) << '\n' << std::flush;
     } else {
-        score = std::format(" score cp {}", bm.score);
+        auto start = std::chrono::high_resolution_clock::now();
+        perftDivide(currentBoard, depth);        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        std::cout << "Took " << duration.count() << " ms\n";
     }
-
-// Already happening on the output of the iterative deepening, not needed twice
-//    std::cout << "info depth " << bm.depth
-//              << " time " << elapsed
-//              << " nodes " << bm.nodes
-//              << score
-//              << " pv ";
-//    for (Move &m: bm.pv) {
-//        std::cout << moveToString(m) << ' ';
-//    }
-//    std::cout << std::endl << std::flush;
-
-    std::cout << "bestmove " << moveToString(bm.bestMove) << '\n' << std::flush;
 }
 
 //-------------------------------------------------------------
@@ -185,7 +169,7 @@ int main() {
         if (line.rfind("go", 0) == 0) { // Keep at the top, the most common input
             startSearch(line);
         } else if (line == "uci") {
-            std::cout << "id name ECanBot-V8.1_EarlyExitFix\n" << std::flush;
+            std::cout << "id name ECanBot-V9.0_EvaluationImprovements\n" << std::flush;
             std::cout << "id author ECanDo\n" << std::flush;
 
             // Future options:
@@ -213,7 +197,7 @@ int main() {
             currentBoard.printBoard();
             std::cout << currentBoard.generateFen() << std::endl << std::flush;
         } else if (line == "eval") {
-            std::cout << "Evaluation: " << evaluate(currentBoard) << std::endl;
+            std::cout << "Evaluation: " << evaluateBoard(currentBoard) << std::endl;
             std::cout << "FEN: " << currentBoard.generateFen() << std::endl << std::flush;
         } else if (line == "debug") {
             rootDebugAlphaBeta(currentBoard, 6);

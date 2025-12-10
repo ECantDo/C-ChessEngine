@@ -7,7 +7,7 @@
 
 #include "Board/board.h"
 
-#define FILE_MASK 0x1010101010101010ULL
+#define FILE_MASK 0x0101010101010101ULL
 
 // =====================================================================================================================
 // Main Evaluation Functions

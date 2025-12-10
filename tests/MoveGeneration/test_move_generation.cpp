@@ -58,7 +58,9 @@ void testMoveGeneration(int depth) {
 
         std::cout << "perft found " << nodes << " in " << duration << ", at a depth of " << depth << "\n";
         if (nodes != test.results[depth]) {
-            std::cout << "[FAIL] Should have found " << (long)test.results[depth] << "\n\n";
+            std::cout << "[FAIL] Should have found " << (long) test.results[depth] << "\n\n";
+            perftDivide(board, depth);
+            break;
         } else {
             std::cout << "[PASS]\n\n";
         }
@@ -83,13 +85,18 @@ void perftDivide(Board &board, int depth) {
     std::vector<Move> moves;
     generateLegalMoves(board, moves);
 
+    uint64_t totalNodes = 0;
+
     for (Move m: moves) {
         UndoInfo undo = board.makeMove(m);
         uint64_t nodes = perft(depth - 1, board); // depth = 1 for counting leaf moves
         board.unmakeMove(m, undo);
 
-        std::cout << moveToString(m) << ": " << nodes << "\n";
+        totalNodes += nodes;
+        std::cout << moveToString(m) << ": " << nodes << std::endl << std::flush;
     }
+
+    std::cout << "\n\nNodes searched: " << totalNodes << "\n\n" << std::flush;
 }
 
 uint64_t perft(int depth, Board &board) {

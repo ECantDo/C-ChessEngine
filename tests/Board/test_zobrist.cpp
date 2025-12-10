@@ -29,4 +29,6 @@ void testZobrist() {
     std::cout << "Hash incremental: " << std::hex << hash1 << std::endl;
     std::cout << "Hash from scratch: " << std::hex << hash2 << std::endl;
     std::cout << "Match: " << (hash1 == hash2 ? "YES" : "NO") << std::endl;
+
+    std::cout << std::dec;
 }

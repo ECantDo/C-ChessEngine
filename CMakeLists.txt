@@ -29,6 +29,11 @@ add_executable(chessEngine
         src/Search/transposition_table.cpp
         src/Evaluation/evaluation.cpp
         src/Evaluation/evaluation.h
+        src/Search/quiescence_search.cpp
+        src/Search/quiescence_search.h
+
+        tests/MoveGeneration/test_move_generation.cpp
+        tests/MoveGeneration/test_move_generation.h
 )
 
 add_executable(testChessEngine tests/test_all.cpp
@@ -64,5 +69,7 @@ add_executable(testChessEngine tests/test_all.cpp
         src/Search/transposition_table.cpp
         src/Evaluation/evaluation.cpp
         src/Evaluation/evaluation.h
+        src/Search/quiescence_search.cpp
+        src/Search/quiescence_search.h
 )
 

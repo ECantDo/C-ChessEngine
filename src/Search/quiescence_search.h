@@ -1,0 +1,13 @@
+//
+// Created by ECanDo on 2025-12-09.
+//
+
+#ifndef CHESSENGINE_QUIESCENCE_SEARCH_H
+#define CHESSENGINE_QUIESCENCE_SEARCH_H
+
+#include "search.h"
+#include "generate_moves.h"
+
+BestMove quiescenceSearch(Board &board, int alpha, int beta, std::vector<uint64_t> searchPath);
+
+#endif //CHESSENGINE_QUIESCENCE_SEARCH_H
