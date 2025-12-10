@@ -11,8 +11,8 @@ add_executable(chessEngine
         src/Board/board.h
         src/Board/board.cpp
 
-        src/Board/generate_moves.h
-        src/Board/generate_moves.cpp
+        src/Search/generate_moves.h
+        src/Search/generate_moves.cpp
 
         src/Board/move.h
         src/Board/move.cpp
@@ -27,8 +27,8 @@ add_executable(chessEngine
         src/Board/zobrist_hash.h
         src/Search/transposition_table.h
         src/Search/transposition_table.cpp
-        src/Search/evaluation.cpp
-        src/Search/evaluation.h
+        src/Evaluation/evaluation.cpp
+        src/Evaluation/evaluation.h
 )
 
 add_executable(testChessEngine tests/test_all.cpp
@@ -51,8 +51,8 @@ add_executable(testChessEngine tests/test_all.cpp
         src/Board/move.h
         src/Board/move.cpp
 
-        src/Board/generate_moves.cpp
-        src/Board/generate_moves.h
+        src/Search/generate_moves.cpp
+        src/Search/generate_moves.h
         tests/MoveGeneration/test_move_generation.cpp
         tests/MoveGeneration/test_move_generation.h
 
@@ -62,7 +62,7 @@ add_executable(testChessEngine tests/test_all.cpp
         tests/Board/test_zobrist.h
         src/Search/transposition_table.h
         src/Search/transposition_table.cpp
-        src/Search/evaluation.cpp
-        src/Search/evaluation.h
+        src/Evaluation/evaluation.cpp
+        src/Evaluation/evaluation.h
 )
 

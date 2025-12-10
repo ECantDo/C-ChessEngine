@@ -17,8 +17,8 @@
 
 #include "Board/piece.h"
 #include "Board/board.h"
-#include "Board/generate_moves.h"
-#include "evaluation.h"
+#include "generate_moves.h"
+#include "Evaluation/evaluation.h"
 #include "transposition_table.h"
 
 struct BestMove {

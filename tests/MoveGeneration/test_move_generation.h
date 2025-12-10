@@ -9,7 +9,7 @@
 #include "string"
 #include <iostream>
 
-#include "Board/generate_moves.h"
+#include "Search/generate_moves.h"
 #include "Board/board.h"
 #include "Board/move.h"
 

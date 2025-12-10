@@ -9,8 +9,8 @@
 #include <cstdio>
 #include <vector>
 
-#include "move.h"
-#include "board.h"
+#include "Board/move.h"
+#include "Board/board.h"
 
 constexpr size_t MAX_MOVES = 256;
 
