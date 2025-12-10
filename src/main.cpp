@@ -11,6 +11,7 @@
 #include <atomic>
 #include <chrono>
 
+bool debug = false;
 std::atomic<bool> stopSearch{false};
 Board currentBoard;   // Global board state stored between commands
 
@@ -51,6 +52,18 @@ void setPosition(const std::string &line) {
             }
         }
     }
+}
+
+void parseDebug(const std::string &cmd) {
+    std::stringstream ss(cmd);
+    std::string tok;
+
+    ss >> tok; // "debug"
+
+    ss >> tok; // "on" or "off"
+
+    if (tok == "on") debug = true;
+    else if (tok == "off") debug = false;
 }
 
 //-------------------------------------------------------------
@@ -125,6 +138,8 @@ void startSearch(const std::string &goCmd) {
     //   depth      (ply) — maybe -1 if no depth limit
     //   nodes      (cnt) — maybe -1 if no node limit
     //---------------------------------------------------------
+    globalTT.overwrites = 0;
+    globalTT.overwriteSameKey = 0;
 
     if (!isPeft) {
         // Pass depth or time-based stopping to your search
@@ -141,10 +156,19 @@ void startSearch(const std::string &goCmd) {
                 return;  /* Early return */
             }
         }
+        if (debug) {
+            std::cout << "info string |"
+                      << " TT Stored = " << globalTT.stored
+                      << " TT Overwrite = " << globalTT.overwrites
+                      << " TT Overwrite same key " << globalTT.overwriteSameKey
+                      << " TT Size = " << globalTT.getSize()
+                      << std::endl << std::flush;
+        }
         std::cout << "bestmove " << moveToString(bm.bestMove) << '\n' << std::flush;
     } else {
         auto start = std::chrono::high_resolution_clock::now();
-        perftDivide(currentBoard, depth);        auto end = std::chrono::high_resolution_clock::now();
+        perftDivide(currentBoard, depth);
+        auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
         std::cout << "Took " << duration.count() << " ms\n";
     }
@@ -169,7 +193,7 @@ int main() {
         if (line.rfind("go", 0) == 0) { // Keep at the top, the most common input
             startSearch(line);
         } else if (line == "uci") {
-            std::cout << "id name ECanBot-V9.1_QuiescenceSearch\n" << std::flush;
+            std::cout << "id name ECanBot-V9.2_DepthReplace\n" << std::flush;
             std::cout << "id author ECanDo\n" << std::flush;
 
             // Future options:
@@ -199,8 +223,9 @@ int main() {
         } else if (line == "eval") {
             std::cout << "Evaluation: " << evaluateBoard(currentBoard) << std::endl;
             std::cout << "FEN: " << currentBoard.generateFen() << std::endl << std::flush;
-        } else if (line == "debug") {
-            rootDebugAlphaBeta(currentBoard, 6);
+        } else if (line.rfind("debug", 0) == 0) {
+//            rootDebugAlphaBeta(currentBoard, 6);
+            parseDebug(line);
         }
     }
 

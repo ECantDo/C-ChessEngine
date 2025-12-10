@@ -46,6 +46,13 @@ void testMoveGeneration(int depth) {
     }
 
     Board board = Board();
+//    std::string fen = "2R5/1R6/k7/8/8/8/8/4K3 b - - 10 8";
+//    board.loadFenPosition(fen);
+//    std::vector<Move> captures;
+//    generateLegalMoves(board, captures, true);
+//    for (Move m : captures){
+//        std::cout << moveToString(m) << std::endl << std::flush;
+//    }
 
     for (TestPerftResults &test: testPerft) {
         board.loadFenPosition(test.startingPosition);

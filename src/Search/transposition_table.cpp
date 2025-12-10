@@ -9,4 +9,6 @@ TranspositionTable globalTT(128);
 void TranspositionTable::clear() {
     delete[] table;
     table = new TTEntry[size];
+    overwrites = 0;
+    stored = 0;
 }

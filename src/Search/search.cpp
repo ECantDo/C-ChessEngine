@@ -69,7 +69,7 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
     // 50 move, and repetition
     if (depth > 0) {
         if (board.isDraw() || board.isRepetitionInSearch(searchPath)) {
-            return {0, 0, 1, depth, true, {}};  /* Draw score = 0 */
+            return {0, 0, 1, 0, depth, true, {}};  /* Draw score = 0 */
         }
     }
 
@@ -93,7 +93,7 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
 //            score += depth;
 //        }
 
-        return {ttEntry.bestMove, score, 1, maxDepth, true, {ttEntry.bestMove}};
+        return {ttEntry.bestMove, score, 1, 1, maxDepth, true, {ttEntry.bestMove}};
     }
 
     // ============ Generate Moves ============
@@ -108,12 +108,12 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
             /* Only seeing this move, or a from-here depth of 1
             */
             globalTT.store(board.zobristHash, 0, 1, mateScore, TT_EXACT);
-            return {0, mateScore, 1, depth, true, {}};
+            return {0, mateScore, 1, 0, depth, true, {}};
         }
         // King not in check -> Draw
         // Only seeing this move, or depth of 1
         globalTT.store(board.zobristHash, 0, 1, 0, TT_EXACT);
-        return {0, 0, 1, depth, true, {}};
+        return {0, 0, 1, 0, depth, true, {}};
     }
 
     // ============ Order Moves ============
@@ -131,7 +131,7 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
 
     // ============ Exceeded parameters ============
     if (depth >= maxDepth) {
-        return quiescenceSearch(board, alpha, beta, searchPath);
+        return quiescenceSearch(board, alpha, beta);
     }
 //    if (stopSearch) {
 //        return {0, 0, 1, depth, false, {bestMove}};
@@ -144,6 +144,7 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
     std::vector<Move> pv;
 
     unsigned long long nodes = 1;
+    unsigned long long tbHits = 0;
     bool completed = true;
 
     for (Move m: moveList) {
@@ -153,6 +154,7 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
                                     0, searchPath);
         int score = -result.score;
         nodes += result.nodes;
+        tbHits += result.tbHits;
 
         board.unmakeMove(m, undo);
 
@@ -193,9 +195,9 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
         globalTT.store(board.zobristHash, bestMove, maxDepth - depth, bestScore, flag);
 
         searchPath.pop_back();
-        return {bestMove, bestScore, nodes, depth, true, pv};
+        return {bestMove, bestScore, nodes, tbHits, depth, true, pv};
     } else {
-        return {bestMove, bestScore, nodes, depth, false, pv};
+        return {bestMove, bestScore, nodes, tbHits, depth, false, pv};
     }
 }
 
@@ -203,6 +205,7 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
     Move bestMove = 0;
     int bestScore = 0;
     unsigned long long totalNodes = 0;
+    unsigned long long totalTbHits = 0;
     int depth;
 
     auto startTime = std::chrono::steady_clock::now();
@@ -226,21 +229,22 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
         bestMove = result.bestMove;
         bestScore = result.score;
         totalNodes += result.nodes;
+        totalTbHits += result.tbHits;
 
 
         std::string score;
         bool isMate = false; // Check for early exit, if mate is found at some depth, it is the first mate; take it
         if (abs(bestScore) >= MATE_SCORE - 100) { // I doubt it can find a forced mate in 50
             //TODO: Re-enable when quiescence search is implemented -- Horizon effect (I think)
+            // Overall, likely needs more debugging...
 //            isMate = true;
-//            std::cout << std::format("Result Depth: {} | Depth: {}", result.depth, depth) << std::endl;
             int mateDistance = MATE_SCORE - abs(bestScore);
             int mateMoves = (mateDistance + 1) / 2;
 
-            std::cerr << "DEBUG: depth=" << depth
-                      << " bestScore=" << bestScore
-                      << " mateDistance=" << mateDistance
-                      << " mateMoves=" << mateMoves << std::endl << std::flush;
+//            std::cerr << "DEBUG: depth=" << depth
+//                      << " bestScore=" << bestScore
+//                      << " mateDistance=" << mateDistance
+//                      << " mateMoves=" << mateMoves << std::endl << std::flush;
 
             if (bestScore > 0)
                 score = std::format(" score mate {}", mateMoves);
@@ -252,8 +256,10 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
         }
 
         /* UCI info output */
-        std::cout << "info depth " << depth
+        std::cout << "info "
                   << score
+                  << " depth " << depth
+                  << " tbhits " << totalTbHits
                   << " nodes " << result.nodes
                   << " time " << elapsed
                   << " nps " << (elapsed > 0 ? (result.nodes * 1000 / elapsed) : 0)
@@ -269,7 +275,7 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
         }
     }
 
-    return {bestMove, bestScore, totalNodes, depth,};
+    return {bestMove, bestScore, totalNodes, 0, depth,};
 }
 
 BestMove selectMove(Board &board, int maxDepth, long timeLimitMS) {

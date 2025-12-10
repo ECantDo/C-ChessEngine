@@ -8,6 +8,8 @@
 #include <cstdint>
 #include "Board/move.h"
 
+// TODO : Implement buckets, but that is not a current issue. Don't waste time on that right now.
+
 enum TTFlag : uint8_t {
     TT_EXACT = 0,
     TT_ALPHA = 1,
@@ -28,10 +30,18 @@ class TranspositionTable {
 private:
     TTEntry *table;
     size_t size;
+
 public:
+    unsigned long long overwriteSameKey;
+    unsigned long long overwrites;
+    unsigned long long stored;
+
     TranspositionTable(size_t sizeMB) {
         size = (sizeMB * 1024 * 1024) / sizeof(TTEntry);
         table = new TTEntry[size];
+        overwrites = 0;
+        overwriteSameKey = 0;
+        stored = 0;
     }
 
     ~TranspositionTable() {
@@ -44,11 +54,27 @@ public:
     void store(uint64_t key, Move bestMove, int depth, int score, TTFlag flag) {
         size_t index = key % size;
 
+        if (table[index].depth > depth){
+            return; // The new search depth is smaller, don't overwrite.
+        }
+
+        if (table[index].zobristKey == key) {
+            overwriteSameKey += 1;
+        } else if (table[index].zobristKey != 0){
+            overwrites += 1;
+        } else {
+            stored += 1;
+        }
+
         table[index].zobristKey = key;
         table[index].bestMove = bestMove;
         table[index].depth = depth;
         table[index].score = score;
         table[index].flag = flag;
+    }
+
+    size_t getSize() {
+        return size;
     }
 
     /**
