@@ -20,9 +20,11 @@ constexpr size_t MAX_MOVES = 256;
  * @param moveList The array to output the moves into
  * @param moveCount The number of moves found.
  */
-void generatePseudoLegalMoves(const Board &board, std::vector<Move> &moveList);
+void generatePseudoLegalMoves(const Board &board, std::vector<Move> &moveList, bool capturesOnly);
 
-void generateLegalMoves(Board &board, std::vector<Move> &moveList);
+void generateLegalMoves(Board &board, std::vector<Move> &moveList, bool capturesOnly = false);
+
+void generateCaptures(Board &board, std::vector<Move> &moveList);
 
 /**
  * Generate pseudo legal moves
@@ -40,6 +42,19 @@ void generateQueenMoves(const Board &board, std::vector<Move> &moveList);
 void generateKnightMoves(const Board &board, std::vector<Move> &moveList);
 
 void generatePawnMoves(const Board &board, std::vector<Move> &moveList);
+
+// === Capture Generation ===
+void generateKingCaptures(const Board &board, std::vector<Move> &moveList);
+
+void generateRookCaptures(const Board &board, std::vector<Move> &moveList);
+
+void generateBishopCaptures(const Board &board, std::vector<Move> &moveList);
+
+void generateQueenCaptures(const Board &board, std::vector<Move> &moveList);
+
+void generateKnightCaptures(const Board &board, std::vector<Move> &moveList);
+
+void generatePawnCaptures(const Board &board, std::vector<Move> &moveList);
 
 // HELPER
 bool isEnemyPiece(const Board &board, int square, int myColor);
