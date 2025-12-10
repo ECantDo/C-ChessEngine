@@ -27,6 +27,8 @@ add_executable(chessEngine
         src/Board/zobrist_hash.h
         src/Search/transposition_table.h
         src/Search/transposition_table.cpp
+        src/Search/evaluation.cpp
+        src/Search/evaluation.h
 )
 
 add_executable(testChessEngine tests/test_all.cpp
@@ -60,5 +62,7 @@ add_executable(testChessEngine tests/test_all.cpp
         tests/Board/test_zobrist.h
         src/Search/transposition_table.h
         src/Search/transposition_table.cpp
+        src/Search/evaluation.cpp
+        src/Search/evaluation.h
 )
 

@@ -82,7 +82,8 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
     TTEntry ttEntry;
     // The depth is how many nodes from here it has been searched
     if (globalTT.probe(board.zobristHash, maxDepth - depth, alpha, beta, ttEntry)) {
-        return {ttEntry.bestMove, ttEntry.score, 1, maxDepth, true, {ttEntry.bestMove}};
+        return {ttEntry.bestMove, ttEntry.score, 1, maxDepth,
+                true, {ttEntry.bestMove}};
     }
 
     // ============ Generate Moves ============
@@ -94,11 +95,13 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
         // King in check -> Mate
         if (isKingInCheck(board, board.turn)) {
             int mateScore = -MATE_SCORE + depth;
-            globalTT.store(board.zobristHash, 0, maxDepth - depth, mateScore, TT_EXACT);
+            // Only seeing this move, or a from-here depth of 1
+            globalTT.store(board.zobristHash, 0, 1, mateScore, TT_EXACT);
             return {0, mateScore, 1, depth, true, {}};
         }
         // King not in check -> Draw
-        globalTT.store(board.zobristHash, 0, maxDepth - depth, 0, TT_EXACT);
+        // Only seeing this move, or depth of 1
+        globalTT.store(board.zobristHash, 0, 1, 0, TT_EXACT);
         return {0, 0, 1, depth, true, {}};
     }
 
@@ -117,7 +120,7 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
 
     // ============ Exceeded parameters ============
     if (depth >= maxDepth) {
-        return {bestMove, evaluate(board), 1, depth, true, {bestMove}};
+        return {bestMove, evaluateBoard(board), 1, depth, true, {bestMove}};
     }
 //    if (stopSearch) {
 //        return {0, 0, 1, depth, false, {bestMove}};
@@ -159,7 +162,7 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
             break;
         }
 
-        if (stopSearch){
+        if (stopSearch) {
             completed = false;
             break;
         }
@@ -216,10 +219,12 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
 
         std::string score;
         bool isMate = false; // Check for early exit, if mate is found at some depth, it is the first mate; take it
-        if (abs(bestScore) >= MATE_SCORE - 1000) {
+        if (abs(bestScore) >= MATE_SCORE - 100) { // I doubt it can find a forced mate in 50
             // it's a mate score
-            isMate = true;
-            int mateMoves = (depth + 1) >> 1;
+            //TODO: Re-enable when quiescence search is implemented -- Horizon effect (I think)
+//            isMate = true;
+//            std::cout << std::format("Result Depth: {} | Depth: {}", result.depth, depth) << std::endl;
+            int mateMoves = (MATE_SCORE - abs(bestScore)) >> 1;
 
             // negative means you're being mated
             if (bestScore > 0)
@@ -249,7 +254,7 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
         }
     }
 
-    return {bestMove, bestScore, totalNodes, depth, };
+    return {bestMove, bestScore, totalNodes, depth,};
 }
 
 BestMove selectMove(Board &board, int maxDepth, long timeLimitMS) {
@@ -260,63 +265,12 @@ BestMove selectMove(Board &board, int maxDepth, long timeLimitMS) {
     return iterativeDeepening(board, maxDepth);
 }
 
-int evaluate(Board &board) {
-    // TODO: Pawn structure
-
-    int score = 0;
-
-    for (char piece: ALL_PIECES) {
-        uint64_t bitboard = board.getBitboard(piece);
-        // Sum piece values
-        score += std::popcount(bitboard) * getPieceValue(piece);
-
-        // Piece square table values
-        bool isWhite = isupper(piece);
-        while (bitboard) {
-            int sq = std::countr_zero(bitboard);
-            bitboard &= bitboard - 1;
-
-            if (isWhite) { // Add white score
-                score += getPieceSquareValue(piece, sq);
-            } else { // Subtract black score
-                score -= getPieceSquareValue(piece, sq);
-            }
-        }
-    }
-
-    // Return from current player's perspective
-    return board.turn == 1 ? score : -score;
-//    return score; // Return only whites perspective???
-}
-
 bool isKingInCheck(const Board &board, int color) {
     uint64_t king = color == 1 ? board.whiteKing : board.blackKing;
     return isSquareAttacked(board, std::countr_zero(king), -color);
 }
 
 /* Helper to get piece-square table value */
-int getPieceSquareValue(char piece, int square) {
-    /* For black pieces, flip the square vertically */
-    bool isWhite = isupper(piece);
-    int sq = isWhite ? flipIndex(square) : square; // Seems backwards, but is fine
-
-    switch (tolower(piece)) {
-        case 'p':
-            return pawnTable[sq];
-        case 'n':
-            return knightTable[sq];
-        case 'b':
-            return bishopTable[sq];
-        case 'r':
-            return rookTable[sq];
-        case 'q':
-            return queenTable[sq];
-        case 'k':
-            return kingMiddleGameTable[sq];
-        default:
-            return 0;
-    }
-}
 
 // =====================================================================================================================
 // DEBUGGING FUNCTIONS
