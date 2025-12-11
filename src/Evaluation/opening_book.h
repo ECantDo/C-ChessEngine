@@ -6,6 +6,14 @@
 #define CHESSENGINE_OPENING_BOOK_H
 
 #include <vector>
+#include <iostream>
+#include <fstream>
+#include <iomanip>
+#include <unordered_map>
+#include "Evaluation/opening_book.h"
+#include "Board/move.h"
+#include "Board/board.h"
+
 #include "Board/move.h"
 
 // 16 bits, just in case I have 255+ versions, 65k versions is not going to happen
@@ -56,5 +64,21 @@ struct BookPosition {
 
     BookPosition() : zobristKey(0) {}
 };
+
+extern std::vector<BookPosition> OPENING_BOOK;
+extern std::unordered_map<uint64_t, std::vector<BookEntry>> OPENING_BOOK_MAP;
+
+void readBook(const std::string &filename);
+
+void loadBookToHashMap(const std::string &filename);
+
+Move lookupBookPosition(const Board &board);
+
+std::vector<BookEntry> getAllBookMoves(const Board &board);
+
+bool isInBook(const Board &board);
+
+Move getWeightedRandomBookMove(const Board &board);
+
 
 #endif //CHESSENGINE_OPENING_BOOK_H

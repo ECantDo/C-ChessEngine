@@ -17,7 +17,7 @@ int evaluatePawns(Board &board, int side) {
         // The idea is to have a smaller penalty for 2 pawns doubled, but a much larger one for 3+ pawns
         // with 2 pawns, penalty is -25; 3 pawns is -100, or a whole pawn, which is effectively what it is
         if (extraPawnsInFile > 0) {
-            score -= extraPawnsInFile * extraPawnsInFile * 25;
+            score -= extraPawnsInFile * extraPawnsInFile * 35;
         }
 
         // TODO:

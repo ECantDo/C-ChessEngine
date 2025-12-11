@@ -4,6 +4,7 @@
 
 #include "search.h"
 
+bool useOpeningBook = true;
 static bool stopSearch = false;
 
 static long g_timeLimitMS = 0;
@@ -275,10 +276,20 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
         }
     }
 
-    return {bestMove, bestScore, totalNodes, 0, depth,};
+    return {bestMove, bestScore, totalNodes, totalTbHits, depth, true, {}};
 }
 
 BestMove selectMove(Board &board, int maxDepth, long timeLimitMS) {
+
+    if (useOpeningBook) {
+        Move m = lookupBookPosition(board);
+        if (m) {
+            return {m, 0, 1, 1, 1, true, {}};
+        } else {
+            useOpeningBook = false;
+        }
+    }
+
     stopSearch = false;
     g_timeLimitMS = timeLimitMS;
     g_searchStart = std::chrono::steady_clock::now();

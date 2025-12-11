@@ -164,6 +164,30 @@ void startSearch(const std::string &goCmd) {
                       << " TT Size = " << globalTT.getSize()
                       << std::endl << std::flush;
         }
+
+        std::string score;
+        if (abs(bm.score) >= MATE_SCORE - 100) { // I doubt it can find a forced mate in 50
+            int mateDistance = MATE_SCORE - abs(bm.score);
+            int mateMoves = (mateDistance + 1) / 2;
+
+            if (bm.score > 0)
+                score = std::format("score mate {}", mateMoves);
+            else
+                score = std::format("score mate -{}", mateMoves);
+
+        } else {
+            score = std::format("score cp {}", bm.score);
+        }
+        std::cout << "info "
+                  << score
+                  << " depth " << depth
+                  << " tbhits " << bm.tbHits
+                  << " nodes " << bm.nodes
+                  // << " time " << elapsed
+                  // << " nps " << (elapsed > 0 ? (result.nodes * 1000 / elapsed) : 0)
+                  // << " pv ";
+                  << std::endl << std::flush;
+
         std::cout << "bestmove " << moveToString(bm.bestMove) << '\n' << std::flush;
     } else {
         auto start = std::chrono::high_resolution_clock::now();
@@ -181,6 +205,9 @@ int main() {
     Zobrist::init();
     globalTT.clear();
 
+    std::string openingBookLocation = "./openingBook.bin";
+    loadBookToHashMap(openingBookLocation);
+
     std::ios::sync_with_stdio(false);
     std::cin.tie(nullptr);
 
@@ -193,7 +220,7 @@ int main() {
         if (line.rfind("go", 0) == 0) { // Keep at the top, the most common input
             startSearch(line);
         } else if (line == "uci") {
-            std::cout << "id name ECanBot-V9.2_DepthReplace\n" << std::flush;
+            std::cout << "id name ECanBot-V9.3_OpeningBook\n" << std::flush;
             std::cout << "id author ECanDo\n" << std::flush;
 
             // Future options:
@@ -205,6 +232,7 @@ int main() {
         } else if (line.rfind("setoption", 0) == 0) {
             // TODO: handle engine options
         } else if (line == "ucinewgame") {
+            useOpeningBook = true;
             currentBoard = Board();
             globalTT.clear();
         } else if (line.rfind("position", 0) == 0) {

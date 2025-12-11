@@ -22,6 +22,10 @@
 #include "Evaluation/evaluation.h"
 #include "transposition_table.h"
 
+#include "Evaluation/opening_book.h"
+
+extern bool useOpeningBook;
+
 struct BestMove {
     Move bestMove;
     int score;
