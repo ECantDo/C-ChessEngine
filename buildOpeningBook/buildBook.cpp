@@ -19,8 +19,8 @@ BookPosition getBookPosition(std::string &fen, WeightingConfig &config, Stockfis
     BookPosition bookPosition;
     bookPosition.zobristKey = board.zobristHash;
 
-    std::vector<PVLine> topMoves = getTopMoves(sf, fen, 18, 10, false);
-    int bestScore = topMoves[0].scoreCp;
+    std::vector<PVLine> topMoves = getTopMoves(sf, fen, 15, 10, false);
+    int bestScore = topMoves[0].scoreCp; // Will always have a best move
 
     for (int i = 0; i < topMoves.size(); i++) {
         PVLine pv = topMoves[i];
@@ -61,11 +61,19 @@ int writeBook(std::vector<std::string> &fenPositions, std::string &outputFilenam
     std::vector<BookPosition> bookPositions;
     bookPositions.reserve(fenPositions.size());
 
-    for (std::string &fen: fenPositions) {
+    std::cout << "Processing " << fenPositions.size() << " positions..." << std::endl;
+
+    for (size_t i = 0; i < fenPositions.size(); i++) {
+        std::string &fen = fenPositions[i];
+
+        std::cout << "[" << (i + 1) << "/" << fenPositions.size() << "] " << std::flush;
+
         BookPosition bookPosition = getBookPosition(fen, config, sf);
         if (bookPosition.entries.empty()) {
+            std::cout << "Skipped (no valid moves)" << std::endl;
             continue;
         }
+        std::cout << "OK (" << bookPosition.entries.size() << " moves)" << std::endl;
         bookPositions.push_back(bookPosition);
     }
 
@@ -91,10 +99,8 @@ int writeBook(std::vector<std::string> &fenPositions, std::string &outputFilenam
                    pos.entries.size() * sizeof(BookEntry));
 
     }
-    file.close();
 
-    // Calculate file size
-    std::streampos fileSize = file.tellp();
+    file.close();
 
     std::cout << "\n=== Opening Book Created ===" << std::endl;
     std::cout << "File: " << outputFilename << std::endl;
