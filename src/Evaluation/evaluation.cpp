@@ -4,6 +4,34 @@
 
 #include "evaluation.h"
 
+int evaluatePawns(Board &board, int side) {
+    int score = 0;
+    // ==== Doubled Pawns ====
+    // White pawns, subtract from total score (penalty)
+    // Loop for each file
+    uint64_t pawnBitboard = side == 1 ? board.whitePawns : board.blackPawns;
+    for (int i = 0; i < 8; i++) {
+        int extraPawnsInFile = __builtin_popcount(pawnBitboard & (FILE_MASK << i)) - 1;
+
+        // Penalty = (x-1)^2 * 25 | x > 1 , where x = number of pawns in file
+        // The idea is to have a smaller penalty for 2 pawns doubled, but a much larger one for 3+ pawns
+        // with 2 pawns, penalty is -25; 3 pawns is -100, or a whole pawn, which is effectively what it is
+        if (extraPawnsInFile > 0) {
+            score -= extraPawnsInFile * extraPawnsInFile * 25;
+        }
+
+        // TODO:
+        //  Check for passed pawn
+        //  Check for isolated pawn
+        //  Unsupported Pawns
+    }
+    // ==== Pawns around the king, push the pawns on the other side ====
+    // also known as pawn shelter
+    // TODO
+
+    return score;
+}
+
 int evaluateBoard(Board &board) {
     int score = 0;
 
@@ -26,34 +54,18 @@ int evaluateBoard(Board &board) {
         }
     }
 
-    // ==== Doubled Pawns ====
-    // White pawns, subtract from total score (penalty)
-    // Loop for each file
-    uint64_t pawnBitboard = board.whitePawns;
-    for (int i = 0; i < 8; i++) {
-        int extraPawnsInFile = __builtin_popcount(pawnBitboard & (FILE_MASK << i)) - 1;
+    score += evaluatePawns(board, 1); // Add the score for white; when score is negative, bad for white
+    score -= evaluatePawns(board, -1); // Subtract the score for black; when score is negative, good for white
 
-        // Penalty = (x-1)^2 * 25 | x > 1 , where x = number of pawns in file
-        // The idea is to have a smaller penalty for 2 pawns doubled, but a much larger one for 3+ pawns
-        // with 2 pawns, penalty is -25; 3 pawns is -100, or a whole pawn, which is effectively what it is
-        if (extraPawnsInFile > 0) {
-            score -= extraPawnsInFile * extraPawnsInFile * 25;
-        }
-    }
-
-    pawnBitboard = board.blackPawns;
-    for (int i = 0; i < 8; i++) {
-        int extraPawnsInFile = __builtin_popcount(pawnBitboard & (FILE_MASK << i)) - 1;
-
-        // See above for penalty calc.
-        // Black having doubled pawns is good for white
-        if (extraPawnsInFile > 0) {
-            score += extraPawnsInFile * extraPawnsInFile * 25;
-        }
-    }
-
-    // ==== Pawns around the king, push the pawns on the other side ====
+    // ==== Mobility ====
     // TODO
+    // Should just be [mobility_bonus * (#whitemoves - #blackmoves)] and it should be good enough (for now)
+
+
+    // TODO:
+    //  Open files near king
+    //  Game phase
+    //  Hanging pieces
 
     // Return from current player's perspective; black does need to be negative
     return board.turn == 1 ? score : -score;

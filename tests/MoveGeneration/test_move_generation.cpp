@@ -66,25 +66,11 @@ void testMoveGeneration(int depth) {
         std::cout << "perft found " << nodes << " in " << duration << ", at a depth of " << depth << "\n";
         if (nodes != test.results[depth]) {
             std::cout << "[FAIL] Should have found " << (long) test.results[depth] << "\n\n";
-            perftDivide(board, depth);
-            break;
+//            perftDivide(board, depth);
+//            break;
         } else {
             std::cout << "[PASS]\n\n";
         }
-    }
-}
-
-void perftDivideTesting() {
-    std::vector<int> testCases = {3};
-    Board board = Board();
-
-    int depth = 2;
-
-    for (int t: testCases) {
-        board.loadFenPosition(testPerft[t].startingPosition);
-        std::cout << "POSITION " << testPerft[t].startingPosition << "\n";
-        perftDivide(board, depth);
-        std::cout << "\n\n";
     }
 }
 

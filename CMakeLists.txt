@@ -34,6 +34,8 @@ add_executable(chessEngine
 
         tests/MoveGeneration/test_move_generation.cpp
         tests/MoveGeneration/test_move_generation.h
+        src/Evaluation/opening_book.cpp
+        src/Evaluation/opening_book.h
 )
 
 add_executable(testChessEngine tests/test_all.cpp
@@ -71,5 +73,29 @@ add_executable(testChessEngine tests/test_all.cpp
         src/Evaluation/evaluation.h
         src/Search/quiescence_search.cpp
         src/Search/quiescence_search.h
+)
+
+add_executable(buildOpeningBook
+        buildOpeningBook/buildOpeningBook.cpp
+        buildOpeningBook/readFenFile.cpp
+        buildOpeningBook/readFenFile.h
+
+        src/Evaluation/opening_book.cpp
+        src/Evaluation/opening_book.h
+
+        buildOpeningBook/buildBook.cpp
+        buildOpeningBook/buildBook.h
+
+        buildOpeningBook/stockfishProcess.h
+
+        src/Board/board.cpp
+        src/Board/board.h
+
+        src/Board/move.cpp
+        src/Board/move.h
+        src/Board/zobrist_hash.cpp
+        src/Board/zobrist_hash.h
+        buildOpeningBook/moveWeighting.h
+
 )
 

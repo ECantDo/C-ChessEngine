@@ -28,6 +28,22 @@ inline void generateCaptures(Board &board, std::vector<Move> &moveList) {
     generateLegalMoves(board, moveList, true);
 }
 
+// HELPER
+bool isEnemyPiece(const Board &board, int square, int myColor);
+
+bool isEmpty(const Board &board, int square);
+
+bool isValidSquare(int square);
+
+bool isSquareAttacked(const Board &board, int square, int attackingColor);
+
+// OFFSETS
+const int kingOffsets[8] = {-9, -8, -7, -1, 1, 7, 8, 9};
+
+const int rookOffsets[4] = {8, -8, 1, -1};
+
+const int bishopOffsets[4] = {9, 7, -9, -7};
+
 /**
  * Generate pseudo legal moves
  * @param board
@@ -58,20 +74,5 @@ void generateKnightCaptures(const Board &board, std::vector<Move> &moveList);
 
 void generatePawnCaptures(const Board &board, std::vector<Move> &moveList);
 
-// HELPER
-bool isEnemyPiece(const Board &board, int square, int myColor);
-
-bool isEmpty(const Board &board, int square);
-
-bool isValidSquare(int square);
-
-bool isSquareAttacked(const Board &board, int square, int attackingColor);
-
-// OFFSETS
-const int kingOffsets[8] = {-9, -8, -7, -1, 1, 7, 8, 9};
-
-const int rookOffsets[4] = {8, -8, 1, -1};
-
-const int bishopOffsets[4] = {9, 7, -9, -7};
 
 #endif //CHESSENGINE_GENERATE_MOVES_H

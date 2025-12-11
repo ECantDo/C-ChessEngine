@@ -11,13 +11,14 @@
 
 class Board;
 
+// TODO: Refactor EVERYTHING to use uint16
 typedef uint32_t Move;
 
 /* Flag constants */
-#define MOVE_FLAG_CAPTURE 0x1000
-#define MOVE_FLAG_PROMOTION  0x2000
-#define MOVE_FLAG_EN_PASSANT 0x4000
-#define MOVE_FLAG_CASTLING   0x8000
+#define MOVE_FLAG_CAPTURE 0x10
+#define MOVE_FLAG_PROMOTION  0x20
+#define MOVE_FLAG_EN_PASSANT 0x40
+#define MOVE_FLAG_CASTLING   0x80
 
 /* Promotion pieces */
 #define PROMOTE_TO_KNIGHT 0

@@ -1,0 +1,9 @@
+// Initial Positions
+rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+
+// Kings Pawn Game
+
+
+// English Opening
+rnbqkbnr/pppppppp/8/8/2P5/8/PP1PPPPP/RNBQKBNR b KQkq - 0 1
+
