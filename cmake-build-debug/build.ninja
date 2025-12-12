@@ -285,6 +285,14 @@ build CMakeFiles/testChessEngine.dir/src/Search/quiescence_search.cpp.obj: CXX_C
   OBJECT_DIR = CMakeFiles\testChessEngine.dir
   OBJECT_FILE_DIR = CMakeFiles\testChessEngine.dir\src\Search
 
+build CMakeFiles/testChessEngine.dir/src/Evaluation/opening_book.cpp.obj: CXX_COMPILER__testChessEngine_unscanned_Debug E$:/CLionProjects/chessEngine/src/Evaluation/opening_book.cpp || cmake_object_order_depends_target_testChessEngine
+  CONFIG = Debug
+  DEP_FILE = CMakeFiles\testChessEngine.dir\src\Evaluation\opening_book.cpp.obj.d
+  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always
+  INCLUDES = -IE:/CLionProjects/chessEngine/src
+  OBJECT_DIR = CMakeFiles\testChessEngine.dir
+  OBJECT_FILE_DIR = CMakeFiles\testChessEngine.dir\src\Evaluation
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target testChessEngine
@@ -293,7 +301,7 @@ build CMakeFiles/testChessEngine.dir/src/Search/quiescence_search.cpp.obj: CXX_C
 #############################################
 # Link the executable testChessEngine.exe
 
-build testChessEngine.exe: CXX_EXECUTABLE_LINKER__testChessEngine_Debug CMakeFiles/testChessEngine.dir/tests/test_all.cpp.obj CMakeFiles/testChessEngine.dir/tests/Board/test_board.cpp.obj CMakeFiles/testChessEngine.dir/src/Board/board.cpp.obj CMakeFiles/testChessEngine.dir/src/Board/piece.cpp.obj CMakeFiles/testChessEngine.dir/tests/Board/test_moves.cpp.obj CMakeFiles/testChessEngine.dir/src/Board/zobrist_hash.cpp.obj CMakeFiles/testChessEngine.dir/src/Board/move.cpp.obj CMakeFiles/testChessEngine.dir/src/Search/generate_moves.cpp.obj CMakeFiles/testChessEngine.dir/tests/MoveGeneration/test_move_generation.cpp.obj CMakeFiles/testChessEngine.dir/src/Search/search.cpp.obj CMakeFiles/testChessEngine.dir/tests/Board/test_zobrist.cpp.obj CMakeFiles/testChessEngine.dir/src/Search/transposition_table.cpp.obj CMakeFiles/testChessEngine.dir/src/Evaluation/evaluation.cpp.obj CMakeFiles/testChessEngine.dir/src/Search/quiescence_search.cpp.obj
+build testChessEngine.exe: CXX_EXECUTABLE_LINKER__testChessEngine_Debug CMakeFiles/testChessEngine.dir/tests/test_all.cpp.obj CMakeFiles/testChessEngine.dir/tests/Board/test_board.cpp.obj CMakeFiles/testChessEngine.dir/src/Board/board.cpp.obj CMakeFiles/testChessEngine.dir/src/Board/piece.cpp.obj CMakeFiles/testChessEngine.dir/tests/Board/test_moves.cpp.obj CMakeFiles/testChessEngine.dir/src/Board/zobrist_hash.cpp.obj CMakeFiles/testChessEngine.dir/src/Board/move.cpp.obj CMakeFiles/testChessEngine.dir/src/Search/generate_moves.cpp.obj CMakeFiles/testChessEngine.dir/tests/MoveGeneration/test_move_generation.cpp.obj CMakeFiles/testChessEngine.dir/src/Search/search.cpp.obj CMakeFiles/testChessEngine.dir/tests/Board/test_zobrist.cpp.obj CMakeFiles/testChessEngine.dir/src/Search/transposition_table.cpp.obj CMakeFiles/testChessEngine.dir/src/Evaluation/evaluation.cpp.obj CMakeFiles/testChessEngine.dir/src/Search/quiescence_search.cpp.obj CMakeFiles/testChessEngine.dir/src/Evaluation/opening_book.cpp.obj
   CONFIG = Debug
   FLAGS = -g
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32

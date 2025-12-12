@@ -180,7 +180,7 @@ void startSearch(const std::string &goCmd) {
         }
         std::cout << "info "
                   << score
-                  << " depth " << depth
+                  << " depth " << bm.depth
                   << " tbhits " << bm.tbHits
                   << " nodes " << bm.nodes
                   // << " time " << elapsed

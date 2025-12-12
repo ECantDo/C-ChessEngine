@@ -280,15 +280,16 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
 }
 
 BestMove selectMove(Board &board, int maxDepth, long timeLimitMS) {
-
-    if (useOpeningBook) {
-        Move m = lookupBookPosition(board);
-        if (m) {
-            return {m, 0, 1, 1, 1, true, {}};
-        } else {
-            useOpeningBook = false;
-        }
-    }
+//    if (useOpeningBook) {
+//        Move m = lookupBookPosition(board);
+//
+//        std::cout << moveToString(m) << std::endl << std::flush;
+//        if (m) {
+//            return {m, 0, 1, 1, 1, true, {}};
+//        } else {
+//            useOpeningBook = false;
+//        }
+//    }
 
     stopSearch = false;
     g_timeLimitMS = timeLimitMS;

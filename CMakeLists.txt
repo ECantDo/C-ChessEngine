@@ -73,6 +73,9 @@ add_executable(testChessEngine tests/test_all.cpp
         src/Evaluation/evaluation.h
         src/Search/quiescence_search.cpp
         src/Search/quiescence_search.h
+
+        src/Evaluation/opening_book.cpp
+        src/Evaluation/opening_book.h
 )
 
 add_executable(buildOpeningBook

@@ -9,8 +9,6 @@
 
 BookPosition getBookPosition(std::string &fen, WeightingConfig &config, StockfishProcess &sf) {
     Board board = Board(fen);
-    // Get top 10 moves
-    board.loadFenPosition(fen);
 
     // Get a vector
     std::vector<BookEntry> bookEntries;
@@ -30,9 +28,11 @@ BookPosition getBookPosition(std::string &fen, WeightingConfig &config, Stockfis
             break; // All further weights are also going to be 0
         }
 
-        bookEntries.emplace_back(stringToMove(pv.move, board), weight);
+        Move m = stringToMove(pv.move, board);
+//        std::cout << "(" << moveToString(m) << ", " << pv.move << ") ";
+        bookEntries.emplace_back(m, weight);
     }
-
+    std::cout << std::endl << std::flush;
     bookPosition.entries = bookEntries;
 
     return bookPosition;
@@ -94,9 +94,16 @@ int writeBook(std::vector<std::string> &fenPositions, std::string &outputFilenam
 
         file.write(reinterpret_cast<const char *>(&posHeader), sizeof(posHeader));
 
+        for (BookEntry be: pos.entries) {
+//            std::cout << "BE: (m." << be.move << " w." << ((uint8_t) be.weight) << ")  ";
+            file.write(reinterpret_cast<const char *>(&be), sizeof(BookEntry));
+        }
+
+        std::cout << std::endl << std::flush;
+
         // Empty positions will not be considered as they are not added to the list (see above fen loop)
-        file.write(reinterpret_cast<const char *>(pos.entries.data()),
-                   pos.entries.size() * sizeof(BookEntry));
+//        file.write(reinterpret_cast<const char *>(pos.entries.data()),
+//                   pos.entries.size() * sizeof(BookEntry));
 
     }
 

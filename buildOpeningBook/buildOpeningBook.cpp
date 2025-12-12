@@ -7,8 +7,10 @@
 #include "buildBook.h"
 
 int main() {
+    Zobrist::init();
+
     std::string inputFile = R"(E:\CLionProjects\chessEngine\buildOpeningBook\openings.txt)";
-    std::string outputFile = R"(E:\CLionProjects\chessEngine\buildOpeningBook\openingBook.bin)";
+    std::string outputFile = R"(.\openingBook.bin)";
     std::vector<std::string> fens = readFENFile(inputFile);
 
     std::cout << "Loaded " << fens.size() << " FEN positions:\n";

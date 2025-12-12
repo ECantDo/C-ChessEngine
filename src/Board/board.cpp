@@ -220,6 +220,8 @@ bool Board::loadFenPosition(std::string &fen) {
     newBoard.halfMoveClock = 0;
     newBoard.castling = 0b1111;
     newBoard.turn = 1;
+    newBoard.enPassantSquare = -1;
+    newBoard.zobristHash = 0;
 
 
     /* ===== PART 1: Piece Placement ===== */
@@ -355,9 +357,9 @@ bool Board::loadFenPosition(std::string &fen) {
     newBoard.fullMove = fullmove;
 
     /* ===== Success - Update Board ===== */
-    *this = newBoard;
+    newBoard.zobristHash = newBoard.computeZobristHash();
 
-    zobristHash = computeZobristHash();
+    *this = newBoard;
     return true;
 }
 

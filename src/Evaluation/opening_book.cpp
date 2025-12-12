@@ -29,13 +29,13 @@ void readBook(const std::string &filename) {
         return;  // Must return here!
     }
 
-//    if (!isCompatibleVersion(header.version)) {
-//        std::cerr << "Incompatible book version " << header.version << std::endl;
-//        std::cerr << "Expected version " << OPENING_BOOK_VERSION << std::endl;
-//        file.close();
-//        OPENING_BOOK = positions;
-//        return;  // Must return here!
-//    }
+    if (header.version != OPENING_BOOK_VERSION) {
+        std::cerr << "Incompatible book version " << header.version << std::endl;
+        std::cerr << "Expected version " << OPENING_BOOK_VERSION << std::endl;
+        file.close();
+        OPENING_BOOK = positions;
+        return;  // Must return here!
+    }
 
     std::cout << "Reading opening book version " << header.version
               << " with " << header.numPositions << " positions..." << std::endl;
@@ -50,6 +50,12 @@ void readBook(const std::string &filename) {
         BookPosition pos;
         pos.zobristKey = posHeader.zobristKey;
         pos.entries.resize(posHeader.numEntries);
+
+
+//        for (int j = 0; j < posHeader.numEntries; j++){
+//            file.read(reinterpret_cast<char *>(&pos.entries[j]), sizeof(BookEntry));
+//        }
+
 
         if (posHeader.numEntries > 0) {
             file.read(reinterpret_cast<char *>(pos.entries.data()),
@@ -69,12 +75,16 @@ void readBook(const std::string &filename) {
 void loadBookToHashMap(const std::string &filename) {
     readBook(filename);
 
+    std::cout << "Opening book size: " << OPENING_BOOK.size()
+              << std::endl << std::flush;
+
     if (OPENING_BOOK.empty()) {
         std::cerr << "Warning: Opening book is empty!" << std::endl;
         return;
     }
 
-    for (auto &pos: OPENING_BOOK) {
+    for (BookPosition &pos: OPENING_BOOK) {
+//        OPENING_BOOK_MAP.emplace(pos.zobristKey, pos.entries);
         OPENING_BOOK_MAP[pos.zobristKey] = std::move(pos.entries);
     }
 
@@ -149,7 +159,7 @@ Move getWeightedRandomBookMove(const Board &board) {
 
     // Calculate total weight
     int totalWeight = 0;
-    for (const auto &entry : entries) {
+    for (const auto &entry: entries) {
         totalWeight += entry.weight;
     }
 
@@ -161,7 +171,7 @@ Move getWeightedRandomBookMove(const Board &board) {
 
     // Find corresponding move
     int currentWeight = 0;
-    for (const auto &entry : entries) {
+    for (const auto &entry: entries) {
         currentWeight += entry.weight;
         if (random < currentWeight) {
             return entry.move;
