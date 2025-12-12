@@ -97,4 +97,19 @@ inline const int kingMiddleGameTable[64] = {
 
 // ==== Endgame ====
 
+// ==== ====
+inline const int PASSED_PAWN_BONUS[] = {0, 0, 10, 20, 40, 80, 150, 250};
+
+inline const int SHELTER_BONUS[4] = {
+        25,   // Pawn on starting rank (unmoved)
+        15,   // Pawn 1 square advanced
+        5,    // Pawn 2 squares advanced
+        -10   // Pawn 3+ squares advanced (weakens shelter)
+};
+
+inline const int PAWN_STORM_BONUS[8] = {
+        0, 0, 5, 10, 20, 35, 50, 70  // Bonus for advancing pawns toward enemy king
+};
+
+
 #endif //CHESSENGINE_EVALUATION_H
