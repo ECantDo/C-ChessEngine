@@ -219,10 +219,40 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
 
 
     for (depth = 1; depth <= maxDepth; depth++) {
-        std::vector<uint64_t> searchPath;
+        int alpha, beta;
+//        alpha = -INF_SCORE;
+//        beta = INF_SCORE;
 
-        BestMove result = alphaBeta(board, 0, depth, -INF_SCORE, INF_SCORE,
+        // Asperation window: It is better, but only barely
+        if (depth <= 4){
+            alpha = -INF_SCORE;
+            beta = INF_SCORE;
+        } else {
+            // Tuning: 50 -> -30 ELO; +7 ELO; 75 -> -31 ELO; 125 -> +5 ELO; 250 -> +9 ELO
+            int window = 250;
+            alpha = bestScore - window;
+            beta = bestScore + window;
+        }
+
+        std::vector<uint64_t> searchPath;
+        searchPath.reserve(32); // Reserve a depth of 32 moves
+
+        BestMove result = alphaBeta(board, 0, depth, alpha, beta,
                                     bestMove, searchPath);
+
+        // If we fail outside the window, re-search with wider window
+        if (result.score <= alpha || result.score >= beta) {
+            // Failed low
+            if (result.score <= alpha) {
+                alpha = -INF_SCORE;
+            }
+            // Failed high
+            if (result.score >= beta) {
+                beta = INF_SCORE;
+            }
+            // Recompute if failed -- hopefully this happens infrequently enough to not matter
+            result = alphaBeta(board, 0, depth, alpha, beta, bestMove, searchPath);
+        }
 
         auto endTime = std::chrono::steady_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();

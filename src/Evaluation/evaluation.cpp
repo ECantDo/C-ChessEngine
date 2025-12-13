@@ -99,6 +99,7 @@ int evaluatePawnShelter(Board &board, int side, int kingSquare, int kingFile, in
             }
         }
 
+
         // After minor tuning, doesn't add anything to it
         // === Enemy Pawn Storm ===
 //        if (theirPawnsOnFile != 0) {
@@ -131,7 +132,7 @@ int evaluatePawnShelter(Board &board, int side, int kingSquare, int kingFile, in
 //                }
 //            }
 //        }
-//    }
+    }
 
     // === Fianchetto Bonus ===
 //    if (kingsideCastle || queensideCastle) {
