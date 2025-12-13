@@ -6,6 +6,12 @@
 
 int evaluatePawnShelter(Board &board, int side, int kingSquare, int kingFile, int kingRank,
                         uint64_t myPawns, uint64_t theirPawns) {
+
+    int totalPieces = std::popcount(board.getWhiteBitboard() | board.getBlackBitboard());
+    if (totalPieces < 16){
+        return 0;
+    }
+
     int score = 0;
 
     // Only evaluate if king is on back ranks
@@ -26,10 +32,11 @@ int evaluatePawnShelter(Board &board, int side, int kingSquare, int kingFile, in
     for (int fileOffset = -1; fileOffset <= 1; fileOffset++) {
         int file = kingFile + fileOffset;
 
-        if (file < 0 || file > 7) {
-            score -= 40;
-            continue;
-        }
+        // ... What is this???
+//        if (file < 0 || file > 7) {
+//            score -= 40;
+//            continue;
+//        }
 
         uint64_t fileMask = FILE_MASK << file;
         uint64_t myPawnsOnFile = myPawns & fileMask;
@@ -79,58 +86,58 @@ int evaluatePawnShelter(Board &board, int side, int kingSquare, int kingFile, in
         }
 
         // === Enemy Pawn Storm ===
-        if (theirPawnsOnFile != 0) {
-            uint64_t stormPawns = theirPawnsOnFile;
-            while (stormPawns) {
-                int pawnSquare = std::countr_zero(stormPawns);
-                stormPawns &= stormPawns - 1;
-                int pawnRank = pawnSquare >> 3;
-
-                // Calculate advancement: how far from starting rank
-                int advancementRank;
-                if (side == 1) {
-                    // Black pawns advancing down (start rank 6)
-                    advancementRank = 6 - pawnRank;
-                } else {
-                    // White pawns advancing up (start rank 1)
-                    advancementRank = pawnRank - 1;
-                }
-
-                if (advancementRank >= 2 && advancementRank < 8) {
-                    score -= PAWN_STORM_BONUS[advancementRank] / 2;
-
-                    if (fileOffset == 0) {
-                        score -= 10;
-                    }
-
-                    if (myPawnsOnFile == 0) {
-                        score -= 15;
-                    }
-                }
-            }
-        }
+//        if (theirPawnsOnFile != 0) {
+//            uint64_t stormPawns = theirPawnsOnFile;
+//            while (stormPawns) {
+//                int pawnSquare = std::countr_zero(stormPawns);
+//                stormPawns &= stormPawns - 1;
+//                int pawnRank = pawnSquare >> 3;
+//
+//                // Calculate advancement: how far from starting rank
+//                int advancementRank;
+//                if (side == 1) {
+//                    // Black pawns advancing down (start rank 6)
+//                    advancementRank = 6 - pawnRank;
+//                } else {
+//                    // White pawns advancing up (start rank 1)
+//                    advancementRank = pawnRank - 1;
+//                }
+//
+//                if (advancementRank >= 2 && advancementRank < 8) {
+//                    score -= PAWN_STORM_BONUS[advancementRank] / 2;
+//
+//                    if (fileOffset == 0) {
+//                        score -= 10;
+//                    }
+//
+//                    if (myPawnsOnFile == 0) {
+//                        score -= 15;
+//                    }
+//                }
+//            }
+//        }
     }
 
     // === Fianchetto Bonus ===
-    if (kingsideCastle || queensideCastle) {
-        uint64_t myBishops = (side == 1) ? board.whiteBishops : board.blackBishops;
-
-        int fianchettoSquare, pawnSquare;
-        if (kingsideCastle) {
-            fianchettoSquare = (side == 1) ? 14 : 62;  // g2 or g7
-            pawnSquare = (side == 1) ? 23 : 55;        // h3 or h6
-        } else {
-            fianchettoSquare = (side == 1) ? 9 : 57;   // b2 or b7
-            pawnSquare = (side == 1) ? 16 : 48;        // a3 or a6
-        }
-
-        bool hasFianchettoBishop = myBishops & (1ULL << fianchettoSquare);
-        bool hasFianchettoPawn = myPawns & (1ULL << pawnSquare);
-
-        if (hasFianchettoBishop && hasFianchettoPawn) {
-            score += 20;
-        }
-    }
+//    if (kingsideCastle || queensideCastle) {
+//        uint64_t myBishops = (side == 1) ? board.whiteBishops : board.blackBishops;
+//
+//        int fianchettoSquare, pawnSquare;
+//        if (kingsideCastle) {
+//            fianchettoSquare = (side == 1) ? 14 : 62;  // g2 or g7
+//            pawnSquare = (side == 1) ? 23 : 55;        // h3 or h6
+//        } else {
+//            fianchettoSquare = (side == 1) ? 9 : 57;   // b2 or b7
+//            pawnSquare = (side == 1) ? 16 : 48;        // a3 or a6
+//        }
+//
+//        bool hasFianchettoBishop = myBishops & (1ULL << fianchettoSquare);
+//        bool hasFianchettoPawn = myPawns & (1ULL << pawnSquare);
+//
+//        if (hasFianchettoBishop && hasFianchettoPawn) {
+//            score += 20;
+//        }
+//    }
 
     return score;
 }
@@ -164,7 +171,7 @@ int evaluatePawns(Board &board, int side) {
         // The idea is to have a smaller penalty for 2 pawns doubled, but a much larger one for 3+ pawns
         // with 2 pawns, penalty is -25; 3 pawns is -100, or a whole pawn, which is effectively what it is
         if (extraPawnsInFile > 0) {
-            score -= extraPawnsInFile * extraPawnsInFile * 25;
+            score -= extraPawnsInFile * extraPawnsInFile * 12; // TODO: Test this value
         }
     }
 
@@ -187,7 +194,7 @@ int evaluatePawns(Board &board, int side) {
         // [myPawns] & [mask] -> get pawns on adjacent files
         if ((myPawns & mask) == 0) {
             // There are no pawns on adjacent files; apply penalty
-            score -= 50;
+            score -= 50; // TODO: Test this value
         }
 
         // Add in the center file to check for a passed pawn
@@ -229,7 +236,7 @@ int evaluatePawns(Board &board, int side) {
 
     // ==== Pawns around the king, push the pawns on the other side ====
     // also known as pawn shelter
-    score += evaluatePawnShelter(board, side, kingSquare, kingFile, kingRank, myPawns, theirPawns);
+//    score += evaluatePawnShelter(board, side, kingSquare, kingFile, kingRank, myPawns, theirPawns);
 
     return score;
 }

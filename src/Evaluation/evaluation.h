@@ -29,15 +29,17 @@ inline int flipIndex(int index) {
 // Piece Square Tables
 // =====================================================================================================================
 // ==== Opening ====
+
+// Tables are from the viewers perspective
 inline const int pawnTable[64] = {
-        0, 0, 0, 0, 0, 0, 0, 0,
-        40, 40, 40, 40, 40, 40, 40, 40,
-        10, 10, 20, 30, 30, 20, 10, 10,
-        5, 5, 10, 25, 25, 10, 5, 5,
-        0, 0, 0, 20, 20, 0, 0, 0,
-        5, -5, -10, 0, 0, -10, -5, 5,
-        5, 10, 10, -20, -20, 10, 10, 5,
-        0, 0, 0, 0, 0, 0, 0, 0
+        0, 0, 0, 0, 0, 0, 0, 0,                // 8th rank
+        40, 40, 40, 40, 40, 40, 40, 40,    // 7th rank
+        10, 10, 20, 30, 30, 20, 10, 10,  // 6th rank
+        5, 5, 10, 25, 25, 10, 5, 5,     // 5th rank
+        0, 0, 0, 20, 20, 0, 0, 0,       // 4th rank
+        5, -5, -10, 0, 0, -10, -5, 5,   // 3rd rank
+        5, 10, 10, -20, -20, 10, 10, 5, // 2nd rank
+        0, 0, 0, 0, 0, 0, 0, 0          // 1st rank
 };
 
 inline const int knightTable[64] = {
@@ -98,7 +100,7 @@ inline const int kingMiddleGameTable[64] = {
 // ==== Endgame ====
 
 // ==== ====
-inline const int PASSED_PAWN_BONUS[] = {0, 0, 10, 20, 40, 80, 150, 250};
+inline const int PASSED_PAWN_BONUS[] = {0, 0, 10, 20, 60, 150, 250, 250};
 
 inline const int SHELTER_BONUS[4] = {
         25,   // Pawn on starting rank (unmoved)
