@@ -8,7 +8,7 @@ int evaluatePawnShelter(Board &board, int side, int kingSquare, int kingFile, in
                         uint64_t myPawns, uint64_t theirPawns) {
 
     int totalPieces = std::popcount(board.getWhiteBitboard() | board.getBlackBitboard());
-    if (totalPieces < 16){
+    if (totalPieces < 16) {
         return 0;
     }
 
@@ -241,6 +241,53 @@ int evaluatePawns(Board &board, int side) {
     return score;
 }
 
+int kingBetweenRooksScore(Board &board, int side) {
+    int score = 0;
+
+    uint64_t rookBitboard, kingBitboard;
+    int backRank, castlingRights;
+    if (side == 1) {
+        rookBitboard = board.whiteRooks;
+        kingBitboard = board.whiteKing;
+        backRank = 0;
+        castlingRights = board.castling & 0b1100;
+    } else {
+        rookBitboard = board.blackRooks;
+        kingBitboard = board.blackKing;
+        backRank = 7;
+        castlingRights = board.castling & 0b0011;
+    }
+
+    // If there is a king in between the two rooks, on the back backRank, and no castling rights, bad
+
+    // If castling is still possible, doesn't matter
+    if (castlingRights) {
+        return 0;
+    }
+    // There are not 2 rooks on the back backRank, doesn't matter
+    if (std::popcount(rookBitboard & (RANK_MASK << (backRank << 3 /* Same as [n * 8] */))) != 2) {
+        return 0;
+    }
+
+    int rookFile1 = std::countr_zero(rookBitboard) & 0x7;
+    rookBitboard &= rookBitboard - 1;
+    int rookFile2 = std::countr_zero(rookBitboard) & 0x7;
+
+    int minFile = std::min(rookFile1, rookFile2);
+    int maxFile = std::max(rookFile1, rookFile2);
+
+    // Check if king is on back rank and between the rooks
+    int kingSquare = std::countr_zero(kingBitboard);
+    int kingFile = kingSquare & 0x7;
+    int kingRank = kingSquare >> 3;
+
+    if (kingRank == backRank && kingFile > minFile && kingFile < maxFile) {
+        score -= 100;
+    }
+
+    return score;
+}
+
 int evaluateBoard(Board &board) {
     int score = 0;
 
@@ -269,6 +316,14 @@ int evaluateBoard(Board &board) {
     // ==== Mobility ====
     // TODO
     // Should just be [mobility_bonus * (#whitemoves - #blackmoves)] and it should be good enough (for now)
+
+    score += kingBetweenRooksScore(board, 1);
+    score -= kingBetweenRooksScore(board, -1);
+
+
+
+
+
 
 
     // TODO:
