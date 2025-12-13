@@ -220,43 +220,58 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
 
     for (depth = 1; depth <= maxDepth; depth++) {
         int alpha, beta;
-//        alpha = -INF_SCORE;
-//        beta = INF_SCORE;
+
+        // TUNING FOR SINGLE TRY
+        // 50 -> -30 ELO; 100 -> +7 ELO; 75 -> -31 ELO; 125 -> +5 ELO; 250 -> +9 ELO
+
+        // TUNING FOR 4 ATTEMPTS
+        // 250 -> +12.2 ELO; 100 -> -83.2 ELO; 150 -> -31 ELO; 225 -> -43.7 ELO; 275 -> -28 ELO
+        int window = 250;
 
         // Asperation window: It is better, but only barely
-        if (depth <= 4){
-            alpha = -INF_SCORE;
-            beta = INF_SCORE;
-        } else {
-            // Tuning: 50 -> -30 ELO; +7 ELO; 75 -> -31 ELO; 125 -> +5 ELO; 250 -> +9 ELO
-            int window = 250;
-            alpha = bestScore - window;
-            beta = bestScore + window;
-        }
+//        if (depth <= 3) {
+//            alpha = -INF_SCORE;
+//            beta = INF_SCORE;
+//        } else {
+//            alpha = bestScore - window;
+//            beta = bestScore + window;
+//        }
+        alpha = -INF_SCORE;
+        beta = INF_SCORE;
 
         std::vector<uint64_t> searchPath;
         searchPath.reserve(32); // Reserve a depth of 32 moves
+        BestMove result;
+        bool validResult = false;
 
-        BestMove result = alphaBeta(board, 0, depth, alpha, beta,
-                                    bestMove, searchPath);
+//        for (int attempt = 0; attempt < 4; attempt++) {
+        result = alphaBeta(board, 0, depth, alpha, beta,
+                           bestMove, searchPath);
 
-        // If we fail outside the window, re-search with wider window
-        if (result.score <= alpha || result.score >= beta) {
-            // Failed low
-            if (result.score <= alpha) {
-                alpha = -INF_SCORE;
-            }
-            // Failed high
-            if (result.score >= beta) {
-                beta = INF_SCORE;
-            }
-            // Recompute if failed -- hopefully this happens infrequently enough to not matter
-            result = alphaBeta(board, 0, depth, alpha, beta, bestMove, searchPath);
-        }
+
+//            if (result.score > alpha && result.score < beta) {
+//                validResult = true;
+//                break; // Score is within the window
+//            }
+//
+//            // Failed - widen window
+//            if (result.score <= alpha) {
+//                alpha -= window * (1 << attempt);  // Widen by 50, 100, 200, 400...
+//            }
+//            if (result.score >= beta) {
+//                beta += window * (1 << attempt);
+//            }
+//
+//            // Last attempt - use full window
+//            if (attempt == 3) {
+//                alpha = -INF_SCORE;
+//                beta = INF_SCORE;
+//            }
+//        }
+
 
         auto endTime = std::chrono::steady_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
-
 
         if (!result.completed) {
             // Throw out partial-computations ; (really not good), need to look into more

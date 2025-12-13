@@ -6,6 +6,8 @@
 #define CHESSENGINE_TRANSPOSITION_TABLE_H
 
 #include <cstdint>
+#include <mutex>
+#include <vector>
 #include "Board/move.h"
 
 // TODO : Implement buckets, but that is not a current issue. Don't waste time on that right now.
@@ -30,13 +32,14 @@ class TranspositionTable {
 private:
     TTEntry *table;
     size_t size;
+    std::vector<std::mutex> locks;
 
 public:
     unsigned long long overwriteSameKey;
     unsigned long long overwrites;
     unsigned long long stored;
 
-    TranspositionTable(size_t sizeMB) {
+    explicit TranspositionTable(size_t sizeMB) {
         size = (sizeMB * 1024 * 1024) / sizeof(TTEntry);
         table = new TTEntry[size];
         overwrites = 0;
