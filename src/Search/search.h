@@ -14,6 +14,8 @@
 #include <algorithm>
 #include <chrono>
 #include <atomic>
+#include <thread>
+
 
 #include "Board/piece.h"
 #include "Board/board.h"
@@ -25,6 +27,7 @@
 #include "Evaluation/opening_book.h"
 
 extern bool useOpeningBook;
+extern std::atomic<bool> stopSearch;
 
 struct BestMove {
     Move bestMove;
@@ -36,8 +39,16 @@ struct BestMove {
     std::vector<Move> pv;
 };
 
+struct ThreadResult {
+    Move bestMove;
+    int bestScore;
+    int depth;
+    std::vector<Move> pv;
+    unsigned long long nodes;
+};
 
-BestMove selectMove(Board &board, int maxDepth, long timeLimitMS);
+
+BestMove selectMove(Board &board, int maxDepth, long timeLimitMS, int numThreads = 1);
 
 BestMove iterativeDeepening(Board &board, int maxDepth);
 
@@ -48,5 +59,8 @@ bool isKingInCheck(const Board &board, int color);
 void rootDebugAlphaBeta(const Board &board, int maxDepth);
 
 void orderMoves(std::vector<Move> &moves, const Board &board, Move previousBest);
+
+ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThreads);
+
 
 #endif //CHESSENGINE_SEARCH_H

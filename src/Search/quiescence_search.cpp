@@ -5,7 +5,9 @@
 #include "quiescence_search.h"
 #include "search.h"
 
-BestMove quiescenceSearch(Board &board, int alpha, int beta) {
+BestMove quiescenceSearch(Board &board, int alpha, int beta, int qDepth) {
+//    const int MAX_Q_DEPTH  = 10;
+
     // If we do nothing, what's the score???
     int standPat = evaluateBoard(board);
 
@@ -16,6 +18,11 @@ BestMove quiescenceSearch(Board &board, int alpha, int beta) {
     if (standPat > alpha) {
         alpha = standPat;
     }
+    // Stop quiescence if too deep
+    if (qDepth >= MAX_Q_DEPTH) {
+        return {0, standPat, 1, 0, qDepth, true, {}};
+    }
+
 
     std::vector<Move> captures;
     generateLegalMoves(board, captures, true);

@@ -9,6 +9,6 @@
 
 class BestMove;
 
-BestMove quiescenceSearch(Board &board, int alpha, int beta);
+BestMove quiescenceSearch(Board &board, int alpha, int beta, int qDepth = 0);
 
 #endif //CHESSENGINE_QUIESCENCE_SEARCH_H

@@ -5,6 +5,8 @@ set(CMAKE_CXX_STANDARD 20)
 
 include_directories(${CMAKE_SOURCE_DIR}/src)
 
+find_package(Threads REQUIRED)
+
 add_executable(chessEngine
         src/main.cpp
 
@@ -101,4 +103,6 @@ add_executable(buildOpeningBook
         buildOpeningBook/moveWeighting.h
 
 )
+
+target_link_libraries(chessEngine PRIVATE Threads::Threads)
 

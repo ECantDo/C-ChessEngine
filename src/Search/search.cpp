@@ -5,7 +5,7 @@
 #include "search.h"
 
 bool useOpeningBook = true;
-static bool stopSearch = false;
+std::atomic<bool> stopSearch{false};
 
 static long g_timeLimitMS = 0;
 static std::chrono::steady_clock::time_point g_searchStart;
@@ -62,6 +62,8 @@ int scoreMoveForOrdering(Move m, const Board &board) {
 
     return score;
 }
+
+
 
 BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, Move previousBest,
                    std::vector<uint64_t> &searchPath) {
@@ -138,16 +140,19 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
     Move bestMove = moveList[0];
 
     // ============ Time Check ============
-    if (!stopSearch && g_timeLimitMS > 0) {
-        auto now = std::chrono::steady_clock::now();
-        long elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - g_searchStart).count();
-        if (elapsed >= g_timeLimitMS) {
-            stopSearch = true;
-        }
-    }
+    // Don't need it since it's in the main thread now
+//    if (!stopSearch && g_timeLimitMS > 0) {
+//        auto now = std::chrono::steady_clock::now();
+//        long elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - g_searchStart).count();
+//        if (elapsed >= g_timeLimitMS) {
+//            stopSearch = true;
+//        }
+//    }
 
     // ============ Exceeded parameters ============
     if (depth >= maxDepth) {
+        searchPath.pop_back();
+
         return quiescenceSearch(board, alpha, beta);
     }
 //    if (stopSearch) {
@@ -195,6 +200,7 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
         }
     }
 
+    searchPath.pop_back();
     if (completed) {
         // ==== STORE TT MOVE ====
         TTFlag flag;
@@ -208,7 +214,6 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
 
         globalTT.store(board.zobristHash, bestMove, maxDepth - depth, bestScore, flag);
 
-        searchPath.pop_back();
         return {bestMove, bestScore, nodes, tbHits, depth, true, pv};
     } else {
         return {bestMove, bestScore, nodes, tbHits, depth, false, {}};
@@ -341,24 +346,129 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
     return {bestMove, bestScore, totalNodes, totalTbHits, depth - 1, true, pv};
 }
 
-BestMove selectMove(Board &board, int maxDepth, long timeLimitMS) {
-//    if (useOpeningBook) {
-//        Move m = lookupBookPosition(board);
-//
-//        std::cout << moveToString(m) << std::endl << std::flush;
-//        if (m) {
-//            return {m, 0, 1, 1, 1, true, {}};
-//        } else {
-//            useOpeningBook = false;
-//        }
-//    }
-
+BestMove selectMove(Board &board, int maxDepth, long timeLimitMS, int numThreads) {
     stopSearch = false;
     g_timeLimitMS = timeLimitMS;
     g_searchStart = std::chrono::steady_clock::now();
 
-    return iterativeDeepening(board, maxDepth);
+    std::vector<std::thread> threads;
+    std::vector<ThreadResult> results(numThreads);
+
+    // Launch all threads
+    for (int i = 0; i < numThreads; i++) {
+//        std::cerr << "Launching thread " << i << std::endl;
+
+        threads.emplace_back([&results, board, maxDepth, i, numThreads]() {
+            results[i] = searchThread(board, maxDepth, i, numThreads);
+        });
+    }
+    // All threads are running
+//    std::cerr << "All threads launched, monitoring time... (" << g_timeLimitMS << " ms)" << std::endl;
+
+    // Main thread monitors time ONLY if there's a time limit
+    if (g_timeLimitMS > 0) {
+        while (!stopSearch) {
+            auto now = std::chrono::steady_clock::now();
+            unsigned long elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    now - g_searchStart).count();
+
+            if (elapsed >= g_timeLimitMS) {
+                stopSearch = true;
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+    }
+    // If no time limit, threads will search to maxDepth and stop naturally
+
+//    std::cerr << "Setting stopSearch and joining threads..." << std::endl;
+//    stopSearch = true;
+    for (auto &thread: threads) {
+        thread.join();
+    }
+//    std::cerr << "All threads joined, collecting results..." << std::endl;
+
+    // All threads done - get the best result
+    ThreadResult best = results[0];
+    unsigned long long totalNodes = results[0].nodes;
+    for (int i = 1; i < numThreads; i++) {
+        // Prefer deeper search, or more nodes at same depth
+        if (results[i].depth > best.depth ||
+            (results[i].depth == best.depth && results[i].nodes > best.nodes)) {
+            best = results[i];
+        }
+        totalNodes += results[i].nodes;
+    }
+
+    // TODO: Add a TB hit counter
+    return {best.bestMove, best.bestScore, totalNodes, 0, best.depth, true, best.pv};
 }
+
+std::mutex g_outputMutex;  // Global
+
+ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThreads) {
+    Move bestMove = 0;
+    int bestScore = 0;
+    std::vector<Move> pv;
+    unsigned long long totalNodes = 0;
+    int completedDepth = 0;
+
+    int startDepth = 1 + (threadId % std::min(8, totalThreads));
+    auto startTime = std::chrono::steady_clock::now();
+
+    for (int depth = startDepth; depth <= maxDepth; depth++) {
+        if (stopSearch) break;
+
+        std::vector<uint64_t> searchPath;
+        searchPath.reserve(30);
+
+        BestMove result = alphaBeta(board, 0, depth, -INF_SCORE, INF_SCORE,
+                                    bestMove, searchPath);
+
+        if (!result.completed || stopSearch) break;
+
+        bestMove = result.bestMove;
+        bestScore = result.score;
+        pv = result.pv;
+        totalNodes += result.nodes;
+        completedDepth = depth;
+
+        // Print UCI info
+        auto now = std::chrono::steady_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
+
+        {
+            std::lock_guard<std::mutex> lock(g_outputMutex);
+
+            std::string score;
+            if (abs(bestScore) >= MATE_SCORE - 100) {
+                int mateDistance = MATE_SCORE - abs(bestScore);
+                int mateMoves = (mateDistance + 1) / 2;
+                score = (bestScore > 0)
+                        ? std::format(" score mate {}", mateMoves)
+                        : std::format(" score mate -{}", mateMoves);
+            } else {
+                score = std::format(" score cp {}", bestScore);
+            }
+
+            std::cout << "info "
+                      << score
+                      << " depth " << depth
+                      << " nodes " << result.nodes
+                      << " time " << elapsed
+                      << " nps " << (elapsed > 0 ? (result.nodes * 1000 / elapsed) : 0)
+                      << " pv ";
+
+            for (Move &m : pv) {
+                std::cout << moveToString(m) << ' ';
+            }
+            std::cout << std::endl << std::flush;
+        }
+    }
+
+    return {bestMove, bestScore, completedDepth, pv, totalNodes};
+}
+
 
 bool isKingInCheck(const Board &board, int color) {
     uint64_t king = color == 1 ? board.whiteKing : board.blackKing;

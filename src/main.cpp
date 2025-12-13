@@ -8,12 +8,11 @@
 #include <iostream>
 #include <string>
 #include <sstream>
-#include <atomic>
 #include <chrono>
 
 bool debug = false;
-std::atomic<bool> stopSearch{false};
 Board currentBoard;   // Global board state stored between commands
+int g_numThreads = 1;
 
 //-------------------------------------------------------------
 // Parse "position ..." command
@@ -144,7 +143,7 @@ void startSearch(const std::string &goCmd) {
     if (!isPeft) {
         // Pass depth or time-based stopping to your search
         static std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
-        BestMove bm = selectMove(currentBoard, depth, timeLimit);
+        BestMove bm = selectMove(currentBoard, depth, timeLimit, g_numThreads);
         if (bm.bestMove == 0) {
             std::vector<Move> moves;
             generateLegalMoves(currentBoard, moves);
@@ -227,7 +226,7 @@ int main() {
         if (line.rfind("go", 0) == 0) { // Keep at the top, the most common input
             startSearch(line);
         } else if (line == "uci") {
-            std::cout << "id name ECanBot-V10.6_MoreDrawFixes\n" << std::flush;
+            std::cout << "id name ECanBot-V11.0_MultiThreading\n" << std::flush;
             std::cout << "id author ECanDo\n" << std::flush;
 
             // Future options:

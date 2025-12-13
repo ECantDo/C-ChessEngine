@@ -8,7 +8,10 @@
 #include <cstdint>
 #include <mutex>
 #include <vector>
+#include <atomic>
 #include "Board/move.h"
+
+#define LOCK_SIZE_FACTOR 512
 
 // TODO : Implement buckets, but that is not a current issue. Don't waste time on that right now.
 
@@ -30,21 +33,25 @@ struct TTEntry {
 
 class TranspositionTable {
 private:
-    TTEntry *table;
     size_t size;
+    size_t numLocks;
+    TTEntry *table;
     std::vector<std::mutex> locks;
 
-public:
-    unsigned long long overwriteSameKey;
-    unsigned long long overwrites;
-    unsigned long long stored;
 
-    explicit TranspositionTable(size_t sizeMB) {
-        size = (sizeMB * 1024 * 1024) / sizeof(TTEntry);
-        table = new TTEntry[size];
-        overwrites = 0;
-        overwriteSameKey = 0;
-        stored = 0;
+public:
+    std::atomic<unsigned long long> overwriteSameKey{0};  // Make atomic
+    std::atomic<unsigned long long> overwrites{0};
+    std::atomic<unsigned long long> stored{0};
+
+    explicit TranspositionTable(size_t sizeMB)
+            : size((sizeMB * 1024 * 1024) / sizeof(TTEntry)),
+              table(new TTEntry[size]),
+              numLocks((size / LOCK_SIZE_FACTOR) + 1),
+              locks(numLocks),  // Construct vector with numLocks default-constructed mutexes
+              overwrites(0),
+              overwriteSameKey(0),
+              stored(0) {
     }
 
     ~TranspositionTable() {
@@ -56,14 +63,19 @@ public:
 
     void store(uint64_t key, Move bestMove, int depth, int score, TTFlag flag) {
         size_t index = key % size;
+        size_t lockIndex = index / LOCK_SIZE_FACTOR;
 
-        if (table[index].depth > depth){
+        // Lock this section of the table - other threads must wait
+        std::lock_guard<std::mutex> lock(locks[lockIndex]);
+
+        // We now have exclusive access - safe to read/write
+        if (table[index].depth > depth) {
             return; // The new search depth is smaller, don't overwrite.
         }
 
         if (table[index].zobristKey == key) {
             overwriteSameKey += 1;
-        } else if (table[index].zobristKey != 0){
+        } else if (table[index].zobristKey != 0) {
             overwrites += 1;
         } else {
             stored += 1;
@@ -74,6 +86,8 @@ public:
         table[index].depth = depth;
         table[index].score = score;
         table[index].flag = flag;
+
+        // Lock automatically releases here when the guard goes out of scope
     }
 
     size_t getSize() {
@@ -92,7 +106,14 @@ public:
      * @return
      */
     bool probe(uint64_t key, int depth, int alpha, int beta, TTEntry &entry) {
-        TTEntry &e = table[key % size];
+        size_t index = key % size;
+        size_t lockIndex = index / LOCK_SIZE_FACTOR;
+
+        // Lock on read - prevent writing from another thread
+        std::lock_guard<std::mutex> lock(locks[lockIndex]);
+
+        TTEntry &e = table[index];
+
 
         if (e.zobristKey != key) {
             return false; // Miss; position not in table
