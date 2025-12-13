@@ -258,30 +258,26 @@ int kingBetweenRooksScore(Board &board, int side) {
         castlingRights = board.castling & 0b0011;
     }
 
-    // If there is a king in between the two rooks, on the back backRank, and no castling rights, bad
+    // Check if the king is trapping the rook
 
-    // If castling is still possible, doesn't matter
+    // If it can castle, not trapped
     if (castlingRights) {
         return 0;
     }
-    // There are not 2 rooks on the back backRank, doesn't matter
-    if (std::popcount(rookBitboard & (RANK_MASK << (backRank << 3 /* Same as [n * 8] */))) != 2) {
-        return 0;
-    }
 
-    int rookFile1 = std::countr_zero(rookBitboard) & 0x7;
-    rookBitboard &= rookBitboard - 1;
-    int rookFile2 = std::countr_zero(rookBitboard) & 0x7;
-
-    int minFile = std::min(rookFile1, rookFile2);
-    int maxFile = std::max(rookFile1, rookFile2);
-
-    // Check if king is on back rank and between the rooks
     int kingSquare = std::countr_zero(kingBitboard);
     int kingFile = kingSquare & 0x7;
     int kingRank = kingSquare >> 3;
 
-    if (kingRank == backRank && kingFile > minFile && kingFile < maxFile) {
+    // If king not on back rank, doesn't matter
+    if (kingRank != backRank) {
+        return 0;
+    }
+
+    // There is a rook trapped on the king side \\ queen side
+    if (kingFile > 4 && (0xC0 << (backRank << 3)) & rookBitboard) {
+        score -= 100;
+    } else if ((0x03 << (backRank << 3)) & rookBitboard) {
         score -= 100;
     }
 
