@@ -22,11 +22,25 @@ int evaluatePawnShelter(Board &board, int side, int kingSquare, int kingFile, in
 
     // Check if king has castled by seeing if rook has moved
     uint64_t rookBitBoard = (side == 1) ? board.whiteRooks : board.blackRooks;
-    uint64_t kingsideRookSquare = (side == 1) ? (1ULL << 7) : (1ULL << 63);   // h1/h8
-    uint64_t queensideRookSquare = (side == 1) ? (1ULL << 0) : (1ULL << 56);  // a1/a8
+    uint64_t kingsideRookMask; // = (side == 1) ? (1ULL << 7) : (1ULL << 63);   // h1/h8
+    uint64_t queensideRookMask; // = (side == 1) ? (1ULL << 0) : (1ULL << 56);  // a1/a8
 
-    bool kingsideCastle = (kingFile >= 6) && !(rookBitBoard & kingsideRookSquare);
-    bool queensideCastle = (kingFile <= 2) && !(rookBitBoard & queensideRookSquare);
+    if (side == 1) {
+        kingsideRookMask = (1ULL << 7);
+        queensideRookMask = (1ULL << 0);
+    } else {
+        kingsideRookMask = (1ULL << 63);   // h1/h8
+        queensideRookMask = (1ULL << 56);
+    }
+
+
+    bool kingsideCastle = (kingFile >= 6) && !(rookBitBoard & kingsideRookMask);
+    bool queensideCastle = (kingFile <= 2) && !(rookBitBoard & queensideRookMask);
+
+    if (!(kingsideCastle || queensideCastle)) {
+        return 0;
+    }
+
 
     // Check shelter on files around the king
     for (int fileOffset = -1; fileOffset <= 1; fileOffset++) {
@@ -85,6 +99,7 @@ int evaluatePawnShelter(Board &board, int side, int kingSquare, int kingFile, in
             }
         }
 
+        // After minor tuning, doesn't add anything to it
         // === Enemy Pawn Storm ===
 //        if (theirPawnsOnFile != 0) {
 //            uint64_t stormPawns = theirPawnsOnFile;
@@ -104,7 +119,7 @@ int evaluatePawnShelter(Board &board, int side, int kingSquare, int kingFile, in
 //                }
 //
 //                if (advancementRank >= 2 && advancementRank < 8) {
-//                    score -= PAWN_STORM_BONUS[advancementRank] / 2;
+//                    score -= PAWN_STORM_BONUS[advancementRank] >> 3;
 //
 //                    if (fileOffset == 0) {
 //                        score -= 10;
@@ -116,7 +131,7 @@ int evaluatePawnShelter(Board &board, int side, int kingSquare, int kingFile, in
 //                }
 //            }
 //        }
-    }
+//    }
 
     // === Fianchetto Bonus ===
 //    if (kingsideCastle || queensideCastle) {
@@ -236,7 +251,7 @@ int evaluatePawns(Board &board, int side) {
 
     // ==== Pawns around the king, push the pawns on the other side ====
     // also known as pawn shelter
-//    score += evaluatePawnShelter(board, side, kingSquare, kingFile, kingRank, myPawns, theirPawns);
+    score += evaluatePawnShelter(board, side, kingSquare, kingFile, kingRank, myPawns, theirPawns);
 
     return score;
 }

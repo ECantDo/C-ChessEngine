@@ -143,6 +143,7 @@ void startSearch(const std::string &goCmd) {
 
     if (!isPeft) {
         // Pass depth or time-based stopping to your search
+        static std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
         BestMove bm = selectMove(currentBoard, depth, timeLimit);
         if (bm.bestMove == 0) {
             std::vector<Move> moves;
@@ -165,6 +166,9 @@ void startSearch(const std::string &goCmd) {
                       << std::endl << std::flush;
         }
 
+        long long elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - startTime).count();
+
         std::string score;
         if (abs(bm.score) >= MATE_SCORE - 100) { // I doubt it can find a forced mate in 50
             int mateDistance = MATE_SCORE - abs(bm.score);
@@ -183,10 +187,13 @@ void startSearch(const std::string &goCmd) {
                   << " depth " << bm.depth
                   << " tbhits " << bm.tbHits
                   << " nodes " << bm.nodes
-                  // << " time " << elapsed
-                  // << " nps " << (elapsed > 0 ? (result.nodes * 1000 / elapsed) : 0)
-                  // << " pv ";
-                  << std::endl << std::flush;
+                  << " time " << elapsed
+                  << " nps " << (elapsed > 0 ? (bm.nodes * 1000 / elapsed) : 0)
+                  << " pv";
+        for (Move &m: bm.pv) {
+            std::cout << ' ' << moveToString(m);
+        }
+        std::cout << std::endl << std::flush;
 
         std::cout << "bestmove " << moveToString(bm.bestMove) << '\n' << std::flush;
     } else {
@@ -220,7 +227,7 @@ int main() {
         if (line.rfind("go", 0) == 0) { // Keep at the top, the most common input
             startSearch(line);
         } else if (line == "uci") {
-            std::cout << "id name ECanBot-V10.3_KingTrappingRookFix\n" << std::flush;
+            std::cout << "id name ECanBot-V10.4_ReaddingPawnSheltering\n" << std::flush;
             std::cout << "id author ECanDo\n" << std::flush;
 
             // Future options:

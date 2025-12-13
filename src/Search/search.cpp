@@ -102,7 +102,7 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
 //            score += depth;
 //        }
 
-        return {ttEntry.bestMove, score, 1, 1, maxDepth, true, {ttEntry.bestMove}};
+        return {ttEntry.bestMove, score, 0, 1, maxDepth, true, {ttEntry.bestMove}};
     }
 
     // ============ Generate Moves ============
@@ -215,6 +215,7 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
     int depth;
 
     auto startTime = std::chrono::steady_clock::now();
+    std::vector<Move> pv;
 
 
     for (depth = 1; depth <= maxDepth; depth++) {
@@ -236,6 +237,8 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
         bestScore = result.score;
         totalNodes += result.nodes;
         totalTbHits += result.tbHits;
+
+        pv = result.pv;
 
 
         std::string score;
@@ -281,7 +284,8 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
         }
     }
 
-    return {bestMove, bestScore, totalNodes, totalTbHits, depth, true, {}};
+    // Subtract 1 from depth because it's off by one
+    return {bestMove, bestScore, totalNodes, totalTbHits, depth - 1, true, pv};
 }
 
 BestMove selectMove(Board &board, int maxDepth, long timeLimitMS) {
