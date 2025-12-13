@@ -7,60 +7,6 @@
 const uint64_t FILE_MASK = 0x0101010101010101ULL;
 const uint64_t RANK_MASK = 0x00000000000000FFULL;
 
-
-void generateLegalMoves(Board &board, std::vector<Move> &moveList, bool capturesOnly) {
-    std::vector<Move> pseudoLegal;
-    generatePseudoLegalMoves(board, pseudoLegal, capturesOnly);
-
-    moveList.clear();
-    moveList.reserve(pseudoLegal.size());
-
-    for (Move m: pseudoLegal) {
-        UndoInfo undoInfo = board.makeMove(m);
-
-        uint64_t ourKing = (board.turn == -1) ? board.whiteKing : board.blackKing;
-        int kingSquare = std::countr_zero(ourKing);
-
-        bool inCheck = isSquareAttacked(board, kingSquare, board.turn);
-
-        board.unmakeMove(m, undoInfo);
-
-        if (!inCheck) {
-            moveList.push_back(m);
-        }
-    }
-
-}
-
-void generatePseudoLegalMoves(const Board &board, std::vector<Move> &moveList, bool capturesOnly) {
-    //
-    moveList.clear();
-    if (capturesOnly) {
-        // The maximum number of captures possible in a single, legally reachable chess board position is 13. - Google AI
-        // So double it, add a bit of leeway, and we should be good to go for minimizing disc space without compromising
-        // search time with reallocating memory
-        moveList.reserve(32);
-
-        generatePawnCaptures(board, moveList);
-        generateKingCaptures(board, moveList);
-        generateRookCaptures(board, moveList);
-        generateBishopCaptures(board, moveList);
-        generateQueenCaptures(board, moveList);
-        generateKnightCaptures(board, moveList);
-
-    } else {
-        moveList.reserve(MAX_MOVES);
-
-        generatePawnMoves(board, moveList);
-        generateKingMoves(board, moveList);
-        generateRookMoves(board, moveList);
-        generateBishopMoves(board, moveList);
-        generateQueenMoves(board, moveList);
-        generateKnightMoves(board, moveList);
-    }
-}
-
-
 // =====================================================================================================================
 // Single capture functions
 // =====================================================================================================================
@@ -884,4 +830,60 @@ bool isSquareAttacked(const Board &board, int square, int attackingColor) {
     }
 
     return false;
+}
+
+// =====================================================================================================================
+// Generate moves
+// =====================================================================================================================
+
+void generateLegalMoves(Board &board, std::vector<Move> &moveList, bool capturesOnly) {
+    std::vector<Move> pseudoLegal;
+    generatePseudoLegalMoves(board, pseudoLegal, capturesOnly);
+
+    moveList.clear();
+    moveList.reserve(pseudoLegal.size());
+
+    for (Move m: pseudoLegal) {
+        UndoInfo undoInfo = board.makeMove(m);
+
+        uint64_t ourKing = (board.turn == -1) ? board.whiteKing : board.blackKing;
+        int kingSquare = std::countr_zero(ourKing);
+
+        bool inCheck = isSquareAttacked(board, kingSquare, board.turn);
+
+        board.unmakeMove(m, undoInfo);
+
+        if (!inCheck) {
+            moveList.push_back(m);
+        }
+    }
+
+}
+
+void generatePseudoLegalMoves(const Board &board, std::vector<Move> &moveList, bool capturesOnly) {
+    //
+    moveList.clear();
+    if (capturesOnly) {
+        // The maximum number of captures possible in a single, legally reachable chess board position is 13. - Google AI
+        // So double it, add a bit of leeway, and we should be good to go for minimizing disc space without compromising
+        // search time with reallocating memory
+        moveList.reserve(32);
+
+        generatePawnCaptures(board, moveList);
+        generateKingCaptures(board, moveList);
+        generateRookCaptures(board, moveList);
+        generateBishopCaptures(board, moveList);
+        generateQueenCaptures(board, moveList);
+        generateKnightCaptures(board, moveList);
+
+    } else {
+        moveList.reserve(MAX_MOVES);
+
+        generatePawnMoves(board, moveList);
+        generateKingMoves(board, moveList);
+        generateRookMoves(board, moveList);
+        generateBishopMoves(board, moveList);
+        generateQueenMoves(board, moveList);
+        generateKnightMoves(board, moveList);
+    }
 }

@@ -44,35 +44,5 @@ const int rookOffsets[4] = {8, -8, 1, -1};
 
 const int bishopOffsets[4] = {9, 7, -9, -7};
 
-/**
- * Generate pseudo legal moves
- * @param board
- * @param moves
- */
-void generateKingMoves(const Board &board, std::vector<Move> &moveList);
-
-void generateRookMoves(const Board &board, std::vector<Move> &moveList);
-
-void generateBishopMoves(const Board &board, std::vector<Move> &moveList);
-
-void generateQueenMoves(const Board &board, std::vector<Move> &moveList);
-
-void generateKnightMoves(const Board &board, std::vector<Move> &moveList);
-
-void generatePawnMoves(const Board &board, std::vector<Move> &moveList);
-
-// === Capture Generation ===
-void generateKingCaptures(const Board &board, std::vector<Move> &moveList);
-
-void generateRookCaptures(const Board &board, std::vector<Move> &moveList);
-
-void generateBishopCaptures(const Board &board, std::vector<Move> &moveList);
-
-void generateQueenCaptures(const Board &board, std::vector<Move> &moveList);
-
-void generateKnightCaptures(const Board &board, std::vector<Move> &moveList);
-
-void generatePawnCaptures(const Board &board, std::vector<Move> &moveList);
-
 
 #endif //CHESSENGINE_GENERATE_MOVES_H
