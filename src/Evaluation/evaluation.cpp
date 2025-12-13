@@ -275,10 +275,9 @@ int kingBetweenRooksScore(Board &board, int side) {
     }
 
     // There is a rook trapped on the king side \\ queen side
-    if (kingFile > 4 && (0xC0 << (backRank << 3)) & rookBitboard) {
-        score -= 100;
-    } else if ((0x03 << (backRank << 3)) & rookBitboard) {
-        score -= 100;
+    if ((kingFile > 4 && (0xC0 << (backRank << 3)) & rookBitboard)
+        || (kingFile <= 4 && (0x03 << (backRank << 3)) & rookBitboard)) {
+        score -= 40;
     }
 
     return score;
@@ -313,10 +312,23 @@ int evaluateBoard(Board &board) {
     // TODO
     // Should just be [mobility_bonus * (#whitemoves - #blackmoves)] and it should be good enough (for now)
 
-    score += kingBetweenRooksScore(board, 1);
-    score -= kingBetweenRooksScore(board, -1);
+    // Doesn't help, bot now does ~3 ELO worse than V10.2
+//    score += kingBetweenRooksScore(board, 1);
+//    score -= kingBetweenRooksScore(board, -1);
 
-
+    // Doesn't seem to help ~30 ELO worse than V10.2
+//    std::vector<Move> moves;
+//    moves.reserve(50);
+//
+//    generateRookMoves(board, moves);
+//    size_t numMyMoves = moves.size();
+//    board.turn *= -1;
+//
+//    moves.clear();
+//    generateRookMoves(board, moves);
+//    board.turn *= -1;
+//
+//    score += (int) (numMyMoves - moves.size()) * 4;
 
 
 
