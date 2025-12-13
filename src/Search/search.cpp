@@ -80,6 +80,14 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
         return {0, 0, 1, 0, depth, true, {}};  /* Draw score = 0 */
     }
 
+    // Draw on insufficient material (one of the)
+    if ((board.whitePawns | board.blackPawns | board.whiteRooks | board.blackRooks |
+         board.whiteBishops | board.blackBishops | board.whiteKnights | board.blackKnights |
+         board.whiteQueens | board.blackQueens) == 0) {
+        return {0, 0, 1, 0, depth, true, {}};  /* Draw score = 0 */
+
+    }
+
 
 
     // ============ TT Storage consts ============
@@ -94,13 +102,13 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
         int score = ttEntry.score;
 
 //        // Adjust mate scores relative to current position
-//        if (score >= MATE_SCORE - 100) {
-//            // We're delivering mate - subtract depth to make it closer
-//            score -= depth;
-//        } else if (score <= -MATE_SCORE + 100) {
-//            // We're being mated - add depth to make it further away
-//            score += depth;
-//        }
+        if (score >= MATE_SCORE - 100) {
+            // We're delivering mate - subtract depth to make it closer
+            score -= depth;
+        } else if (score <= -MATE_SCORE + 100) {
+            // We're being mated - add depth to make it further away
+            score += depth;
+        }
 
         return {ttEntry.bestMove, score, 0, 1, maxDepth, true, {ttEntry.bestMove}};
     }
@@ -116,7 +124,7 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
             int mateScore = -MATE_SCORE + depth;
             /* Only seeing this move, or a from-here depth of 1
             */
-            globalTT.store(board.zobristHash, 0, 1, mateScore, TT_EXACT);
+            globalTT.store(board.zobristHash, 0, 1, -MATE_SCORE, TT_EXACT);
             return {0, mateScore, 1, 0, depth, true, {}};
         }
         // King not in check -> Draw
