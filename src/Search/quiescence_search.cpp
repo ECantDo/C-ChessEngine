@@ -10,7 +10,7 @@ BestMove quiescenceSearch(Board &board, int alpha, int beta) {
     int standPat = evaluateBoard(board);
 
     if (standPat >= beta) {
-        return {0, beta, 1, 0, true, {}}; // Beta cutoff
+        return {0, beta, 1, 0, 1, true, {}}; // Beta cutoff
     }
 
     if (standPat > alpha) {
@@ -21,7 +21,7 @@ BestMove quiescenceSearch(Board &board, int alpha, int beta) {
     generateLegalMoves(board, captures, true);
 
     if (captures.empty()) {
-        return {0, standPat, 1, 0, true, {}};
+        return {0, standPat, 1, 0, 1, true, {}};
     }
 
 //    orderMoves(captures, board, 0);
@@ -52,5 +52,5 @@ BestMove quiescenceSearch(Board &board, int alpha, int beta) {
             break; // Beta cutoff
         }
     }
-    return {0, bestScore, nodes, 0, true, {}};
+    return {0, bestScore, nodes, 0, 1, true, {}};
 }

@@ -66,13 +66,21 @@ int scoreMoveForOrdering(Move m, const Board &board) {
 BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, Move previousBest,
                    std::vector<uint64_t> &searchPath) {
 
+
+
     // ============ Check for Draw ============
     // 50 move, and repetition
-    if (depth > 0) {
-        if (board.isDraw() || board.isRepetitionInSearch(searchPath)) {
-            return {0, 0, 1, 0, depth, true, {}};  /* Draw score = 0 */
-        }
+    // Add current board early to check for repetition
+    searchPath.push_back(board.zobristHash);
+
+    if (board.halfMoveClock >= 100) {
+        return {0, 0, 1, 0, depth, true, {}};
     }
+    if (board.isRepetitionInSearch(searchPath)) {
+        return {0, 0, 1, 0, depth, true, {}};  /* Draw score = 0 */
+    }
+
+
 
     // ============ TT Storage consts ============
 
@@ -138,9 +146,6 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
 //        return {0, 0, 1, depth, false, {bestMove}};
 //    }
 
-    // Now add to search path
-    searchPath.push_back(board.zobristHash);
-
     int bestScore = -INF_SCORE;
     std::vector<Move> pv;
 
@@ -198,7 +203,7 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
         searchPath.pop_back();
         return {bestMove, bestScore, nodes, tbHits, depth, true, pv};
     } else {
-        return {bestMove, bestScore, nodes, tbHits, depth, false, pv};
+        return {bestMove, bestScore, nodes, tbHits, depth, false, {}};
     }
 }
 

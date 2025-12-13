@@ -109,7 +109,7 @@ public:
 
     [[nodiscard]] uint64_t computeZobristHash() const;
 
-    std::vector<uint64_t> gameHistory; // Positions from actual game
+    std::vector<uint64_t> gameHistory; // Positions from actual game, update from setting up board position
 
     [[nodiscard]] bool isDraw() const {
         // Fifty move rule
@@ -132,15 +132,35 @@ public:
     }
 
     [[nodiscard]] bool isRepetitionInSearch(const std::vector<uint64_t> &searchPath) const {
-        /* Check if this exact position occurred earlier in the search */
-        for (size_t i = 0; i < searchPath.size(); i += 2) {  /* Skip opponent moves */
-            if (searchPath[i] == zobristHash) {
+        // Start from the most recent board position, and go back until the half move clock is 0
+        // -- as that is where repetitions can start from
+        int startIdx = (int) (searchPath.size() + gameHistory.size() - halfMoveClock);
+
+        // Count the number of times this board position has been reached
+        int reps = 0;
+        for (int i = startIdx; i < gameHistory.size(); i++) {
+            if (gameHistory[i] == zobristHash) {
+                reps++;
+            }
+            if (reps >= 2) {
                 return true;
             }
         }
+
+        //
+        startIdx = std::max((int) (searchPath.size() - halfMoveClock), 0);
+        for (int i = startIdx; i < searchPath.size(); i++) {
+            if (searchPath[i] == zobristHash) {
+                reps++;
+            }
+
+            if (reps >= 2) {
+                return true;
+            }
+        }
+
         return false;
     }
-
 };
 
 /**
