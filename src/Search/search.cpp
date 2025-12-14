@@ -63,10 +63,21 @@ int scoreMoveForOrdering(Move m, const Board &board) {
     return score;
 }
 
+int calculateExtension(Board &board, int extensionsUsed) {
+    if (extensionsUsed >= MAX_EXTENSIONS) {
+        return 0;
+    }
+    int extension = 0;
+    bool inCheck = isKingInCheck(board, board.turn);
+    if (inCheck) {
+        extension += 1;
+    }
 
+    return extension;
+}
 
 BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, Move previousBest,
-                   std::vector<uint64_t> &searchPath) {
+                   std::vector<uint64_t> &searchPath, int extensionsUsed = 0) {
 
 
 
@@ -149,8 +160,10 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
 //        }
 //    }
 
+    int extension = calculateExtension(board, extensionsUsed);
+
     // ============ Exceeded parameters ============
-    if (depth >= maxDepth) {
+    if (depth >= maxDepth + extension) {
         searchPath.pop_back();
 
         return quiescenceSearch(board, alpha, beta);
@@ -170,7 +183,7 @@ BestMove alphaBeta(Board &board, int depth, int maxDepth, int alpha, int beta, M
         UndoInfo undo = board.makeMove(m);
 
         BestMove result = alphaBeta(board, depth + 1, maxDepth, -beta, -alpha,
-                                    0, searchPath);
+                                    0, searchPath, extensionsUsed + extension);
         int score = -result.score;
         nodes += result.nodes;
         tbHits += result.tbHits;
@@ -459,7 +472,7 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
                       << " nps " << (elapsed > 0 ? (result.nodes * 1000 / elapsed) : 0)
                       << " pv ";
 
-            for (Move &m : pv) {
+            for (Move &m: pv) {
                 std::cout << moveToString(m) << ' ';
             }
             std::cout << std::endl << std::flush;

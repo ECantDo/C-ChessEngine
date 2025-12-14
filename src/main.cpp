@@ -226,7 +226,7 @@ int main() {
         if (line.rfind("go", 0) == 0) { // Keep at the top, the most common input
             startSearch(line);
         } else if (line == "uci") {
-            std::cout << "id name ECanBot-V11.0_MultiThreading\n" << std::flush;
+            std::cout << "id name ECanBot-V12.0_Extensions\n" << std::flush;
             std::cout << "id author ECanDo\n" << std::flush;
 
             // Future options:

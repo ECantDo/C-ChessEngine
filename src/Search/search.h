@@ -26,6 +26,8 @@
 
 #include "Evaluation/opening_book.h"
 
+#define MAX_EXTENSIONS 10
+
 extern bool useOpeningBook;
 extern std::atomic<bool> stopSearch;
 
