@@ -11,6 +11,7 @@
 
 #include "Board/move.h"
 #include "Board/board.h"
+#include "magicBitboards.h"
 
 constexpr size_t MAX_MOVES = 256;
 

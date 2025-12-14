@@ -155,44 +155,24 @@ void generateRookCaptures(const Board &board, std::vector<Move> &moveList) {
         rookBitBoard = board.blackRooks;
     }
 
+    uint64_t blockers = myPieces | theirPieces;
+
     while (rookBitBoard) {
-        int rookSquare = std::countr_zero(rookBitBoard);
+        int startingSquare = std::countr_zero(rookBitBoard);
         rookBitBoard &= rookBitBoard - 1; // Clear the bit we just processed
 
-        for (int dir: rookOffsets) {
-            int targetSquare = rookSquare + dir;
+        uint64_t attacks = getRookAttacks(startingSquare, blockers);
+        uint64_t captures = attacks & theirPieces; // Use for making moves with the capture flag
 
-            // Keep sliding until we are off the board
-            while (isValidSquare(targetSquare)) {
-                // If horizontal movement; stop when wrapping around the board.
-                if (dir == 1 || dir == -1) {
-                    int fromFile = (targetSquare - dir) % 8;
-                    int toFile = targetSquare % 8;
-                    if (abs(toFile - fromFile) > 1) {
-                        break;
-                    }
-                }
-
-                uint64_t targetMask = 1ULL << targetSquare;
-
-                // Hit our own piece --- stop
-                if (targetMask & myPieces) break;
-
-                // Hit opponent piece --- add and stop
-                if (targetMask & theirPieces) {
-                    moveList.push_back(encodeMove(rookSquare, targetSquare, MOVE_FLAG_CAPTURE));
-                    break;
-                }
-
-                // Otherwise the square is empty
-                targetSquare += dir;
-            }
+        while (captures) {
+            int destinationSquare = std::countr_zero(captures);
+            captures &= captures - 1;
+            moveList.push_back(encodeMove(startingSquare, destinationSquare, MOVE_FLAG_CAPTURE));
         }
     }
 }
 
 void generateBishopCaptures(const Board &board, std::vector<Move> &moveList) {
-//TODO: Magic bitboards
     uint64_t bishopBitboard;
     uint64_t myPieces, theirPieces;
 
@@ -208,36 +188,21 @@ void generateBishopCaptures(const Board &board, std::vector<Move> &moveList) {
         bishopBitboard = board.blackBishops;
     }
 
+    uint64_t blockers = myPieces | theirPieces;
+
     while (bishopBitboard) {
-        int bishopSquare = std::countr_zero(bishopBitboard);
+        int startingSquare = std::countr_zero(bishopBitboard);
         bishopBitboard &= bishopBitboard - 1; // Clear the bit we just processed
 
-        for (int dir: bishopOffsets) {
-            int targetSquare = bishopSquare + dir;
+        uint64_t attacks = getBishopAttacks(startingSquare, blockers);
+        uint64_t captures = attacks & theirPieces; // Use for making moves with the capture flag
 
-            // Keep sliding until we are off the board
-            while (isValidSquare(targetSquare)) {
-                int fromFile = (targetSquare - dir) % 8;
-                int toFile = targetSquare % 8;
-                if (abs(toFile - fromFile) > 1) {
-                    break;
-                }
-
-                uint64_t targetMask = 1ULL << targetSquare;
-
-                // Hit our own piece --- stop
-                if (targetMask & myPieces) break;
-
-                // Hit opponent piece --- add and stop
-                if (targetMask & theirPieces) {
-                    moveList.push_back(encodeMove(bishopSquare, targetSquare, MOVE_FLAG_CAPTURE));
-                    break;
-                }
-
-                // Otherwise the square is empty
-                targetSquare += dir;
-            }
+        while (captures) {
+            int destinationSquare = std::countr_zero(captures);
+            captures &= captures - 1;
+            moveList.push_back(encodeMove(startingSquare, destinationSquare, MOVE_FLAG_CAPTURE));
         }
+
     }
 }
 
@@ -255,32 +220,19 @@ void generateQueenCaptures(const Board &board, std::vector<Move> &moveList) {
         queenBitboard = board.blackQueens;
     }
 
+    uint64_t blockers = myPieces | theirPieces;
+
     while (queenBitboard) {
-        int queenSquare = std::countr_zero(queenBitboard);
-        queenBitboard &= queenBitboard - 1;
+        int startingSquare = std::countr_zero(queenBitboard);
+        queenBitboard &= queenBitboard - 1; // Clear the bit we just processed
 
-        /* Queen moves = rook directions + bishop directions */
-        const int directions[8] = {8, -8, 1, -1, 9, -9, 7, -7};
+        uint64_t attacks = getQueenAttacks(startingSquare, blockers);
+        uint64_t captures = attacks & theirPieces; // Use for making moves with the capture flag
 
-        for (int dir: directions) {
-            int targetSquare = queenSquare + dir;
-
-            while (isValidSquare(targetSquare)) {
-                /* Check for wrap (horizontal or diagonal) */
-                int fromFile = (targetSquare - dir) % 8;
-                int toFile = targetSquare % 8;
-                if (abs(toFile - fromFile) > 2) break;  /* Wrapped */
-
-                uint64_t targetMask = 1ULL << targetSquare;
-
-                if (targetMask & myPieces) break;
-
-                if (targetMask & theirPieces) {
-                    moveList.push_back(encodeMove(queenSquare, targetSquare, MOVE_FLAG_CAPTURE));
-                    break;
-                }
-                targetSquare += dir;
-            }
+        while (captures) {
+            int destinationSquare = std::countr_zero(captures);
+            captures &= captures - 1;
+            moveList.push_back(encodeMove(startingSquare, destinationSquare, MOVE_FLAG_CAPTURE));
         }
     }
 }
@@ -408,7 +360,6 @@ void generateKingMoves(const Board &board, std::vector<Move> &moveList) {
 }
 
 void generateRookMoves(const Board &board, std::vector<Move> &moveList) {
-    //TODO: Magic bitboards
     uint64_t rookBitBoard;
     uint64_t myPieces, theirPieces;
 
@@ -424,45 +375,31 @@ void generateRookMoves(const Board &board, std::vector<Move> &moveList) {
         rookBitBoard = board.blackRooks;
     }
 
+    uint64_t blockers = myPieces | theirPieces;
+
     while (rookBitBoard) {
-        int rookSquare = std::countr_zero(rookBitBoard);
+        int startingSquare = std::countr_zero(rookBitBoard);
         rookBitBoard &= rookBitBoard - 1; // Clear the bit we just processed
 
-        for (int dir: rookOffsets) {
-            int targetSquare = rookSquare + dir;
+        uint64_t attacks = getRookAttacks(startingSquare, blockers);
+        uint64_t captures = attacks & theirPieces; // Use for making moves with the capture flag
+        attacks &= ~blockers;
 
-            // Keep sliding until we are off the board
-            while (isValidSquare(targetSquare)) {
-                // If horizontal movement; stop when wrapping around the board.
-                if (dir == 1 || dir == -1) {
-                    int fromFile = (targetSquare - dir) % 8;
-                    int toFile = targetSquare % 8;
-                    if (abs(toFile - fromFile) > 1) {
-                        break;
-                    }
-                }
+        while (attacks) {
+            int destinationSquare = std::countr_zero(attacks);
+            attacks &= attacks - 1;
+            moveList.push_back(encodeMove(startingSquare, destinationSquare, 0));
+        }
 
-                uint64_t targetMask = 1ULL << targetSquare;
-
-                // Hit our own piece --- stop
-                if (targetMask & myPieces) break;
-
-                // Hit opponent piece --- add and stop
-                if (targetMask & theirPieces) {
-                    moveList.push_back(encodeMove(rookSquare, targetSquare, MOVE_FLAG_CAPTURE));
-                    break;
-                }
-
-                // Otherwise the square is empty
-                moveList.push_back(encodeMove(rookSquare, targetSquare, 0));
-                targetSquare += dir;
-            }
+        while (captures) {
+            int destinationSquare = std::countr_zero(captures);
+            captures &= captures - 1;
+            moveList.push_back(encodeMove(startingSquare, destinationSquare, MOVE_FLAG_CAPTURE));
         }
     }
 }
 
 void generateBishopMoves(const Board &board, std::vector<Move> &moveList) {
-//TODO: Magic bitboards
     uint64_t bishopBitboard;
     uint64_t myPieces, theirPieces;
 
@@ -478,37 +415,28 @@ void generateBishopMoves(const Board &board, std::vector<Move> &moveList) {
         bishopBitboard = board.blackBishops;
     }
 
+    uint64_t blockers = myPieces | theirPieces;
+
     while (bishopBitboard) {
-        int bishopSquare = std::countr_zero(bishopBitboard);
+        int startingSquare = std::countr_zero(bishopBitboard);
         bishopBitboard &= bishopBitboard - 1; // Clear the bit we just processed
 
-        for (int dir: bishopOffsets) {
-            int targetSquare = bishopSquare + dir;
+        uint64_t attacks = getBishopAttacks(startingSquare, blockers);
+        uint64_t captures = attacks & theirPieces; // Use for making moves with the capture flag
+        attacks &= ~blockers;
 
-            // Keep sliding until we are off the board
-            while (isValidSquare(targetSquare)) {
-                int fromFile = (targetSquare - dir) % 8;
-                int toFile = targetSquare % 8;
-                if (abs(toFile - fromFile) > 1) {
-                    break;
-                }
-
-                uint64_t targetMask = 1ULL << targetSquare;
-
-                // Hit our own piece --- stop
-                if (targetMask & myPieces) break;
-
-                // Hit opponent piece --- add and stop
-                if (targetMask & theirPieces) {
-                    moveList.push_back(encodeMove(bishopSquare, targetSquare, MOVE_FLAG_CAPTURE));
-                    break;
-                }
-
-                // Otherwise the square is empty
-                moveList.push_back(encodeMove(bishopSquare, targetSquare, 0));
-                targetSquare += dir;
-            }
+        while (attacks) {
+            int destinationSquare = std::countr_zero(attacks);
+            attacks &= attacks - 1;
+            moveList.push_back(encodeMove(startingSquare, destinationSquare, 0));
         }
+
+        while (captures) {
+            int destinationSquare = std::countr_zero(captures);
+            captures &= captures - 1;
+            moveList.push_back(encodeMove(startingSquare, destinationSquare, MOVE_FLAG_CAPTURE));
+        }
+
     }
 }
 
@@ -526,34 +454,26 @@ void generateQueenMoves(const Board &board, std::vector<Move> &moveList) {
         queenBitboard = board.blackQueens;
     }
 
+    uint64_t blockers = myPieces | theirPieces;
+
     while (queenBitboard) {
-        int queenSquare = std::countr_zero(queenBitboard);
-        queenBitboard &= queenBitboard - 1;
+        int startingSquare = std::countr_zero(queenBitboard);
+        queenBitboard &= queenBitboard - 1; // Clear the bit we just processed
 
-        /* Queen moves = rook directions + bishop directions */
-        const int directions[8] = {8, -8, 1, -1, 9, -9, 7, -7};
+        uint64_t attacks = getQueenAttacks(startingSquare, blockers);
+        uint64_t captures = attacks & theirPieces; // Use for making moves with the capture flag
+        attacks &= ~blockers;
 
-        for (int dir: directions) {
-            int targetSquare = queenSquare + dir;
+        while (attacks) {
+            int destinationSquare = std::countr_zero(attacks);
+            attacks &= attacks - 1;
+            moveList.push_back(encodeMove(startingSquare, destinationSquare, 0));
+        }
 
-            while (isValidSquare(targetSquare)) {
-                /* Check for wrap (horizontal or diagonal) */
-                int fromFile = (targetSquare - dir) % 8;
-                int toFile = targetSquare % 8;
-                if (abs(toFile - fromFile) > 2) break;  /* Wrapped */
-
-                uint64_t targetMask = 1ULL << targetSquare;
-
-                if (targetMask & myPieces) break;
-
-                if (targetMask & theirPieces) {
-                    moveList.push_back(encodeMove(queenSquare, targetSquare, MOVE_FLAG_CAPTURE));
-                    break;
-                }
-
-                moveList.push_back(encodeMove(queenSquare, targetSquare, 0));
-                targetSquare += dir;
-            }
+        while (captures) {
+            int destinationSquare = std::countr_zero(captures);
+            captures &= captures - 1;
+            moveList.push_back(encodeMove(startingSquare, destinationSquare, MOVE_FLAG_CAPTURE));
         }
     }
 }
@@ -724,6 +644,8 @@ bool isValidSquare(int square) {
 }
 
 bool isSquareAttacked(const Board &board, int square, int attackingColor) {
+    //TODO: Use the magic bitboards on this
+
     /* Check if 'square' is attacked by pieces of 'attackingColor' */
     /* attackingColor: 1 = white, -1 = black */
 

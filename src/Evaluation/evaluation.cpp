@@ -179,18 +179,6 @@ int evaluatePawns(Board &board, int side) {
     kingFile = kingSquare & 0x7;
     kingRank = kingSquare >> 3;
 
-
-    for (int i = 0; i < 8; i++) {
-        int extraPawnsInFile = __builtin_popcount(myPawns & (FILE_MASK << i)) - 1;
-
-        // Penalty = (x-1)^2 * 25 | x > 1 , where x = number of pawns in file
-        // The idea is to have a smaller penalty for 2 pawns doubled, but a much larger one for 3+ pawns
-        // with 2 pawns, penalty is -25; 3 pawns is -100, or a whole pawn, which is effectively what it is
-        if (extraPawnsInFile > 0) {
-            score -= extraPawnsInFile * extraPawnsInFile * 12; // TODO: Test this value
-        }
-    }
-
     // TODO:
     //  Backwards Pawns
     //  Incorporate doubled pawn checks into the below loop
@@ -203,6 +191,16 @@ int evaluatePawns(Board &board, int side) {
         int pawnFile = pawnSquare & 0x7;
         int pawnRank = pawnSquare >> 3;
 
+        uint64_t centerMask = FILE_MASK << pawnFile;
+        // Doubled pawns
+
+        int extraPawnsInFile = __builtin_popcount(myPawns & centerMask) - 1;
+        if (extraPawnsInFile > 0) {
+            // Real value = [x 12]; but for 2 pawns doubled, they are counted twice; so it becomes exponential
+            //  for 3+ pawns stacked
+            score -= extraPawnsInFile * extraPawnsInFile * 6; // TODO: Test this value
+        }
+
         uint64_t mask = (pawnFile - 1 >= 0 ? FILE_MASK << (pawnFile - 1) : 0) |
                         (pawnFile + 1 < 8 ? FILE_MASK << (pawnFile + 1) : 0);
 
@@ -214,7 +212,7 @@ int evaluatePawns(Board &board, int side) {
         }
 
         // Add in the center file to check for a passed pawn
-        mask |= FILE_MASK << pawnFile;
+        mask |= centerMask;
 
         // Move mask to in front of the pawn
         if (side == 1) {

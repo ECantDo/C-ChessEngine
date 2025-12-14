@@ -38,6 +38,9 @@ add_executable(chessEngine
         tests/MoveGeneration/test_move_generation.h
         src/Evaluation/opening_book.cpp
         src/Evaluation/opening_book.h
+        src/Search/magicBitboards.cpp
+        src/Search/magicBitboards.h
+
 )
 
 add_executable(testChessEngine tests/test_all.cpp
@@ -59,6 +62,9 @@ add_executable(testChessEngine tests/test_all.cpp
         src/Board/zobrist_hash.h
         src/Board/move.h
         src/Board/move.cpp
+
+        src/Search/magicBitboards.cpp
+        src/Search/magicBitboards.h
 
         src/Search/generate_moves.cpp
         src/Search/generate_moves.h

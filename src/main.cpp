@@ -210,6 +210,7 @@ void startSearch(const std::string &goCmd) {
 int main() {
     Zobrist::init();
     globalTT.clear();
+    initMagicBitboards();
 
 //    std::string openingBookLocation = "./openingBook.bin";
 //    loadBookToHashMap(openingBookLocation);
@@ -226,7 +227,7 @@ int main() {
         if (line.rfind("go", 0) == 0) { // Keep at the top, the most common input
             startSearch(line);
         } else if (line == "uci") {
-            std::cout << "id name ECanBot-V12.0_Extensions\n" << std::flush;
+            std::cout << "id name ECanBot-V13.0_MagicBitboards\n" << std::flush;
             std::cout << "id author ECanDo\n" << std::flush;
 
             // Future options:
