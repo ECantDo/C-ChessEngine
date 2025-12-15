@@ -382,12 +382,14 @@ void generateRookMoves(const Board &board, std::vector<Move> &moveList) {
         rookBitBoard &= rookBitBoard - 1; // Clear the bit we just processed
 
         uint64_t attacks = getRookAttacks(startingSquare, blockers);
-        uint64_t captures = attacks & theirPieces; // Use for making moves with the capture flag
-        attacks &= ~blockers;
+        attacks &= ~myPieces;
 
-        while (attacks) {
-            int destinationSquare = std::countr_zero(attacks);
-            attacks &= attacks - 1;
+        uint64_t quietMoves = attacks & ~theirPieces;
+        uint64_t captures = attacks & theirPieces; // Use for making moves with the capture flag
+
+        while (quietMoves) {
+            int destinationSquare = std::countr_zero(quietMoves);
+            quietMoves &= quietMoves - 1;
             moveList.push_back(encodeMove(startingSquare, destinationSquare, 0));
         }
 
@@ -422,12 +424,14 @@ void generateBishopMoves(const Board &board, std::vector<Move> &moveList) {
         bishopBitboard &= bishopBitboard - 1; // Clear the bit we just processed
 
         uint64_t attacks = getBishopAttacks(startingSquare, blockers);
-        uint64_t captures = attacks & theirPieces; // Use for making moves with the capture flag
-        attacks &= ~blockers;
+        attacks &= ~myPieces;
 
-        while (attacks) {
-            int destinationSquare = std::countr_zero(attacks);
-            attacks &= attacks - 1;
+        uint64_t quietMoves = attacks & ~theirPieces;
+        uint64_t captures = attacks & theirPieces; // Use for making moves with the capture flag
+
+        while (quietMoves) {
+            int destinationSquare = std::countr_zero(quietMoves);
+            quietMoves &= quietMoves - 1;
             moveList.push_back(encodeMove(startingSquare, destinationSquare, 0));
         }
 
@@ -461,12 +465,14 @@ void generateQueenMoves(const Board &board, std::vector<Move> &moveList) {
         queenBitboard &= queenBitboard - 1; // Clear the bit we just processed
 
         uint64_t attacks = getQueenAttacks(startingSquare, blockers);
-        uint64_t captures = attacks & theirPieces; // Use for making moves with the capture flag
-        attacks &= ~blockers;
+        attacks &= ~myPieces;
 
-        while (attacks) {
-            int destinationSquare = std::countr_zero(attacks);
-            attacks &= attacks - 1;
+        uint64_t quietMoves = attacks & ~theirPieces;
+        uint64_t captures = attacks & theirPieces; // Use for making moves with the capture flag
+
+        while (quietMoves) {
+            int destinationSquare = std::countr_zero(quietMoves);
+            quietMoves &= quietMoves - 1;
             moveList.push_back(encodeMove(startingSquare, destinationSquare, 0));
         }
 
