@@ -10,7 +10,7 @@
 #include <sstream>
 #include <chrono>
 
-#define VERSION "V14.0_KillerMoves"
+#define VERSION "V16.0_NullMove"
 
 bool debug = false;
 Board currentBoard;   // Global board state stored between commands
