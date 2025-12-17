@@ -47,6 +47,7 @@ struct ThreadResult {
     int depth;
     std::vector<Move> pv;
     unsigned long long nodes;
+    unsigned long long tbHits;
 };
 
 

@@ -252,6 +252,7 @@ BestMove iterativeDeepening(Board &board, int maxDepth) {
 
         // TUNING FOR 4 ATTEMPTS
         // 250 -> +12.2 ELO; 100 -> -83.2 ELO; 150 -> -31 ELO; 225 -> -43.7 ELO; 275 -> -28 ELO
+        // Testing it again seems to have made it think all positions are worse
         int window = 250;
 
         // Asperation window: It is better, but only barely
@@ -414,7 +415,7 @@ BestMove selectMove(Board &board, int maxDepth, long timeLimitMS, int numThreads
     }
 
     // TODO: Add a TB hit counter
-    return {best.bestMove, best.bestScore, totalNodes, 0, best.depth, true, best.pv};
+    return {best.bestMove, best.bestScore, totalNodes, best.tbHits, best.depth, true, best.pv};
 }
 
 std::mutex g_outputMutex;  // Global
@@ -423,7 +424,7 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
     Move bestMove = 0;
     int bestScore = 0;
     std::vector<Move> pv;
-    unsigned long long totalNodes = 0;
+    unsigned long long totalNodes = 0, totalTbHits = 0;
     int completedDepth = 0;
 
     int startDepth = 1 + (threadId % std::min(8, totalThreads));
@@ -445,6 +446,7 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
         pv = result.pv;
         totalNodes += result.nodes;
         completedDepth = depth;
+        totalTbHits += result.tbHits;
 
         // Print UCI info
         auto now = std::chrono::steady_clock::now();
@@ -479,7 +481,7 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
         }
     }
 
-    return {bestMove, bestScore, completedDepth, pv, totalNodes};
+    return {bestMove, bestScore, completedDepth, pv, totalNodes, totalTbHits};
 }
 
 

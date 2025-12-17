@@ -128,7 +128,7 @@ void startSearch(const std::string &goCmd) {
     }
 
     if (timeLimit > 50) {
-        timeLimit -= 20; // Allow for 20ms of outputting time
+        timeLimit -= 30; // Allow for 20ms of outputting time
     }
 
     //---------------------------------------------------------
@@ -200,7 +200,7 @@ void startSearch(const std::string &goCmd) {
         perftDivide(currentBoard, depth);
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-        std::cout << "Took " << duration.count() << " ms\n";
+        std::cout << "Took " << duration.count() << " ms\n" << std::flush;
     }
 }
 
