@@ -258,49 +258,62 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
         BestMove result;
 
-        // LATE MOVE REDUCTIONS
-        // Reduce if:
-        // - Not first few moves
-        // - Not a capture
-        // - Not in check
-        // - Not giving check
-        // - Depth is high enough
-        if (movesSearched >= 5 &&
-            plys >= 3 &&
-            !(m & MOVE_FLAG_CAPTURE) &&
-            !isKingInCheck(board, -board.turn) && // Am I in check?
-            !isKingInCheck(board, board.turn) // Is opponent in check
-                ) {
-
-            int reduction = 1;
-            // TODO: Tweak
-            if (movesSearched > 6 && plys > 6) {
-                reduction = 2; // More reduction for later moves
-
-                // Add more reduction when gone past the halfway point
-                if (movesSearched > moveList.size() >> 1) {
-                    reduction += 2;
-                }
-            }
-
-            result = alphaBeta(board, depth - 1 - reduction, plys + 1, -beta, -alpha,
-                               0, searchPath, killerMoves, historyTable,
-                               extensionsUsed + extension, nullMoveAllowed);
-
-            int score = -result.score;
-
-            // If better than expected, re-search at full plys
-            if (score > alpha) {
-                result = alphaBeta(board, depth - 1, plys + 1, -beta, -alpha,
-                                   0, searchPath, killerMoves, historyTable,
-                                   extensionsUsed + extension);
-            }
-        } else {
-            // Normal full plys search
-            // TODO: PVS (Principal Variation Search
+        // Get PV node
+        if (movesSearched == 0){
             result = alphaBeta(board, depth - 1, plys + 1, -beta, -alpha,
                                0, searchPath, killerMoves, historyTable,
                                extensionsUsed + extension, nullMoveAllowed);
+        } else {
+            // Later moves: try null window search first
+            if (movesSearched >= 5 && plys >= 3 &&
+                !(m & MOVE_FLAG_CAPTURE) &&
+                !isKingInCheck(board, -board.turn) &&
+                !isKingInCheck(board, board.turn)) {
+                // LMR with null window
+                int reduction = 1;
+                if (movesSearched > 6 && plys > 6) {
+                    reduction = 2;
+                    if (movesSearched > moveList.size() >> 1) {
+                        reduction += 2;
+                    }
+                }
+
+                // Try reduced null window search
+                result = alphaBeta(board, depth - 1 - reduction, plys + 1,
+                                   -alpha - 1, -alpha,  // NULL WINDOW
+                                   0, searchPath, killerMoves, historyTable,
+                                   extensionsUsed + extension, nullMoveAllowed);
+
+                // If it beat alpha, re-search at full depth
+                if (-result.score > alpha && reduction > 0) {
+                    result = alphaBeta(board, depth - 1, plys + 1,
+                                       -alpha - 1, -alpha,  // Still null window
+                                       0, searchPath, killerMoves, historyTable,
+                                       extensionsUsed + extension, nullMoveAllowed);
+                }
+
+                // If STILL beat alpha, do full window search
+                if (-result.score > alpha) {
+                    result = alphaBeta(board, depth - 1, plys + 1,
+                                       -beta, -alpha,  // FULL WINDOW
+                                       0, searchPath, killerMoves, historyTable,
+                                       extensionsUsed + extension, nullMoveAllowed);
+                }
+            } else {
+                // Non-LMR moves: null window then full if needed
+                result = alphaBeta(board, depth - 1, plys + 1,
+                                   -alpha - 1, -alpha,  // NULL WINDOW
+                                   0, searchPath, killerMoves, historyTable,
+                                   extensionsUsed + extension, nullMoveAllowed);
+
+                // Beat alpha? Re-search with full window
+                if (-result.score > alpha /*&& -result.score < beta*/) {
+                    result = alphaBeta(board, depth - 1, plys + 1,
+                                       -beta, -alpha,  // FULL WINDOW
+                                       0, searchPath, killerMoves, historyTable,
+                                       extensionsUsed + extension, nullMoveAllowed);
+                }
+            }
         }
 
         int score = -result.score;
@@ -334,6 +347,16 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
                 int from = getMoveFrom(m);
                 int to = getMoveTo(m);
                 historyTable[color][from][to] += depth * depth;
+                if (historyTable[color][from][to] > 100000) {
+                    // Age all history values
+                    for (int c = 0; c < 2; c++) {
+                        for (int f = 0; f < 64; f++) {
+                            for (int t = 0; t < 64; t++) {
+                                historyTable[c][f][t] >>= 1;  // Divide by 2
+                            }
+                        }
+                    }
+                }
             }
             break;
         }
