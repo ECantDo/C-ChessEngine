@@ -10,7 +10,7 @@
 #include <sstream>
 #include <chrono>
 
-#define VERSION "V17.2_DeltaPruning"
+#define VERSION "V17.3_isAttackedUpdated"
 
 bool debug = false;
 Board currentBoard;   // Global board state stored between commands
@@ -129,8 +129,8 @@ void startSearch(const std::string &goCmd) {
             depth = 6; // fallback
     }
 
-    if (timeLimit > 50) {
-        timeLimit -= 30; // Allow for 20ms of outputting time
+    if (timeLimit > 100) {
+        timeLimit -= 80; // Allow for 20ms of outputting time
     }
 
     //---------------------------------------------------------
@@ -142,9 +142,10 @@ void startSearch(const std::string &goCmd) {
     globalTT.overwrites = 0;
     globalTT.overwriteSameKey = 0;
 
+    std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
+
     if (!isPeft) {
         // Pass plys or time-based stopping to your search
-        static std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
         BestMove bm = selectMove(currentBoard, depth, timeLimit, g_numThreads);
         if (bm.bestMove == 0) {
             std::vector<Move> moves;

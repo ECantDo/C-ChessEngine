@@ -157,7 +157,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
     // ============ Generate Moves ============
     std::vector<Move> moveList;
-    generatePseudoLegalMoves(board, moveList, false);
+    generateLegalMoves(board, moveList, false);
     bool inCheck = isKingInCheck(board, board.turn);
 
     // ============ Legal moves is empty; check/draw ============
@@ -167,8 +167,8 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
         // King in check -> Mate
         if (inCheck) {
             int mateScore = -MATE_SCORE + plys;
-            /* Only seeing this move, or a from-here plys of 1
-            */
+            // Only seeing this move, or a from-here plys of 1
+
             globalTT.store(board.zobristHash, 0, depth, -MATE_SCORE, TT_EXACT);
             return {0, mateScore, 1, 0, plys, true, {}};
         }
@@ -222,7 +222,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
                 margin = 1000;
         }
 
-        if (staticEval - margin >= beta){
+        if (staticEval - margin >= beta) {
             searchPath.pop_back();
             return {0, staticEval - margin, 1, 0, plys, true, {}};
         }
@@ -285,10 +285,10 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
         UndoInfo undo = board.makeMove(m);
 
         // Since using genPseudoLegal(), only actually checking when it's for a move I have made
-        if (isKingInCheck(board, -board.turn)){
-            board.unmakeMove(m, undo);
-            continue;
-        }
+//        if (isKingInCheck(board, -board.turn)) {
+//            board.unmakeMove(m, undo);
+//            continue;
+//        }
 
         BestMove result;
 
@@ -363,7 +363,10 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
             pv.clear();
             pv.push_back(m);
-            pv.insert(pv.end(), result.pv.begin(), result.pv.end());
+            if (!result.pv.empty() && result.pv[0] != 0) {
+                pv.insert(pv.end(), result.pv.begin(), result.pv.end());
+
+            }
         }
 
         if (score > alpha) {
@@ -413,7 +416,14 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
             flag = TT_EXACT;
         }
 
-        globalTT.store(board.zobristHash, bestMove, depth, bestScore, flag);
+        int ttScore = bestScore;
+        if (ttScore >= MATE_SCORE - 100){
+            ttScore += plys;
+        } else if (ttScore <= -MATE_SCORE + 100){
+            ttScore -= plys;
+        }
+
+        globalTT.store(board.zobristHash, bestMove, depth, ttScore, flag);
 
         return {bestMove, bestScore, nodes, tbHits, plys, true, pv};
     } else {
@@ -563,19 +573,20 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 
             std::string score;
             if (abs(bestScore) >= MATE_SCORE - 100) {
-                int mateDistance = MATE_SCORE - abs(bestScore);
-                int mateMoves = (mateDistance + 1) / 2;
+                int mateDistance = MATE_SCORE - std::abs(bestScore);
+                int mateMoves = (mateDistance + 1) >> 1;
+
                 score = (bestScore > 0)
                         ? std::format(" score mate {}", mateMoves)
                         : std::format(" score mate -{}", mateMoves);
             } else {
                 score = std::format(" score cp {}", bestScore);
             }
-
             std::cout << "info "
                       << score
                       << " depth " << completedDepth
                       << " nodes " << result.nodes
+                      << " tbhits " << result.tbHits
                       << " time " << elapsed
                       << " nps " << (elapsed > 0 ? (result.nodes * 1000 / elapsed) : 0)
                       << " pv ";

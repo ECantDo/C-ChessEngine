@@ -14,6 +14,9 @@
 uint64_t rook_attacks[64][4096];   // Max table size
 uint64_t bishop_attacks[64][512];  // Max table size
 
+uint64_t KNIGHT_ATTACKS[64];
+uint64_t KING_ATTACKS[64];
+
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
