@@ -200,6 +200,34 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
         return quiescenceSearch(board, alpha, beta);
     }
 
+    // ============ Reverse Futility Pruning ============
+    // How good is my static eval? Is it so far above beta that even if I make a bad move, I will still beat beta
+    if (depth <= 3 &&
+        !inCheck &&
+        abs(beta) < MATE_SCORE - 100) {
+
+        int staticEval = evaluateBoard(board);
+        int margin;
+        switch (depth) {
+            case 1:
+                margin = 200;
+                break;
+            case 2:
+                margin = 400;
+                break;
+            case 3:
+                margin = 600;
+                break;
+            default:
+                margin = 1000;
+        }
+
+        if (staticEval - margin >= beta){
+            searchPath.pop_back();
+            return {0, staticEval - margin, 1, 0, plys, true, {}};
+        }
+    }
+
     // ============ Null Move Pruning ============
     if (nullMoveAllowed && !inCheck && depth >= 3 && hasNonPawnMaterial(board)) {
         // Save values
@@ -259,7 +287,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
         BestMove result;
 
         // Get PV node
-        if (movesSearched == 0){
+        if (movesSearched == 0) {
             result = alphaBeta(board, depth - 1, plys + 1, -beta, -alpha,
                                0, searchPath, killerMoves, historyTable,
                                extensionsUsed + extension, nullMoveAllowed);
@@ -499,7 +527,7 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
                 searchPath.clear();
 
                 // Prevent inf widening
-                if (delta > 1000){
+                if (delta > 1000) {
                     alpha = -INF_SCORE;
                     beta = INF_SCORE;
                 }
