@@ -70,7 +70,7 @@ public:
 
         // We now have exclusive access - safe to read/write
         if (table[index].depth > depth) {
-            return; // The new search depth is smaller, don't overwrite.
+            return; // The new search plys is smaller, don't overwrite.
         }
 
         if (table[index].zobristKey == key) {

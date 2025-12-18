@@ -41,7 +41,7 @@ void testMoveGeneration(int depth) {
     // Test from several starting locations
 
     if (depth < 1 || depth > 5) {
-        std::cout << "Cannot test below depth of 1, or above 5. 5 is the max depth that I have recorded\n";
+        std::cout << "Cannot test below plys of 1, or above 5. 5 is the max plys that I have recorded\n";
         return;
     }
 
@@ -63,10 +63,10 @@ void testMoveGeneration(int depth) {
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-        std::cout << "perft found " << nodes << " in " << duration << ", at a depth of " << depth << "\n";
+        std::cout << "perft found " << nodes << " in " << duration << ", at a plys of " << depth << "\n";
         if (nodes != test.results[depth]) {
             std::cout << "[FAIL] Should have found " << (long) test.results[depth] << "\n\n";
-//            perftDivide(board, depth);
+//            perftDivide(board, plys);
 //            break;
         } else {
             std::cout << "[PASS]\n\n";
@@ -82,7 +82,7 @@ void perftDivide(Board &board, int depth) {
 
     for (Move m: moves) {
         UndoInfo undo = board.makeMove(m);
-        uint64_t nodes = perft(depth - 1, board); // depth = 1 for counting leaf moves
+        uint64_t nodes = perft(depth - 1, board); // plys = 1 for counting leaf moves
         board.unmakeMove(m, undo);
 
         totalNodes += nodes;

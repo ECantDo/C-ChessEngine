@@ -37,7 +37,7 @@ struct BestMove {
     int score;
     unsigned long long nodes;
     unsigned long long tbHits;
-    int depth;
+    int plys;
     bool completed;
     std::vector<Move> pv;
 };

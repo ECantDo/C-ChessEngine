@@ -215,16 +215,16 @@ public:
 // Helper function to get best move
 inline std::string getBestmove(StockfishProcess &sf, const std::string &fen, int depth, bool verbose = false) {
     sf.send("position fen " + fen);
-    sf.send("go depth " + std::to_string(depth));
+    sf.send("go plys " + std::to_string(depth));
 
-    if (verbose) std::cout << "Calculating best move (depth " << depth << ")..." << std::endl;
+    if (verbose) std::cout << "Calculating best move (plys " << depth << ")..." << std::endl;
 
     while (true) {
         auto lines = sf.readLines(100);
 
         for (const auto &line: lines) {
             // Debug output
-            if (verbose && line.find("info depth") == 0) {
+            if (verbose && line.find("info plys") == 0) {
                 std::cout << "  " << line << std::endl;
             }
 
@@ -270,9 +270,9 @@ getTopMoves(StockfishProcess &sf, const std::string &fen, int depth, int multipv
     }
 
     sf.send("position fen " + fen);
-    sf.send("go depth " + std::to_string(depth));
+    sf.send("go plys " + std::to_string(depth));
 
-    if (verbose) std::cout << "Calculating top " << multipvCount << " moves (depth " << depth << ")..." << std::endl;
+    if (verbose) std::cout << "Calculating top " << multipvCount << " moves (plys " << depth << ")..." << std::endl;
 
     std::vector<PVLine> results;
     results.resize(multipvCount);  // Pre-allocate
@@ -291,13 +291,13 @@ getTopMoves(StockfishProcess &sf, const std::string &fen, int depth, int multipv
                 int multipv = 0, scoreCp = 0, depth_curr = 0;
                 char moveStr[256] = "";
 
-                // Parse the line - format: "info depth X ... multipv Y score cp Z ... pv MOVE ..."
+                // Parse the line - format: "info plys X ... multipv Y score cp Z ... pv MOVE ..."
                 std::istringstream iss(line);
                 std::string token;
                 bool foundMultipv = false, foundScore = false, foundPv = false;
 
                 while (iss >> token) {
-                    if (token == "depth") {
+                    if (token == "plys") {
                         iss >> depth_curr;
                     } else if (token == "multipv") {
                         iss >> multipv;
@@ -322,7 +322,7 @@ getTopMoves(StockfishProcess &sf, const std::string &fen, int depth, int multipv
                     }
                 }
 
-                // Only update if we're at the target depth and have all required info
+                // Only update if we're at the target plys and have all required info
                 if (foundMultipv && foundScore && foundPv && depth_curr == depth && multipv > 0 &&
                     multipv <= multipvCount) {
                     results[multipv - 1].multipv = multipv;

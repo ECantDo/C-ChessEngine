@@ -10,7 +10,7 @@
 #include <sstream>
 #include <chrono>
 
-#define VERSION "V16.0_NullMove"
+#define VERSION "V16.1_NullMoveFixes"
 
 bool debug = false;
 Board currentBoard;   // Global board state stored between commands
@@ -76,7 +76,7 @@ void startSearch(const std::string &goCmd) {
     bool isPeft = false;
 
     long movetime = -1;     // exact time to use (ms)
-    long depth = -1;     // depth limit
+    long depth = -1;     // plys limit
     long nodes = -1;     // node limit
 
     long wtime = -1, btime = -1;   // remaining time (ms)
@@ -109,7 +109,7 @@ void startSearch(const std::string &goCmd) {
 
     if (movetime > 0) {
         timeLimit = movetime;
-        depth = 30; // No need in going any higher than 30 tbh
+        depth = 50; // No need in going any higher than 30 tbh
     } else if (wtime >= 0 && btime >= 0) {
         // Allocate time based on whose move it is
         long remaining = (currentBoard.turn == 1 ? wtime : btime);
@@ -122,9 +122,9 @@ void startSearch(const std::string &goCmd) {
         if (timeLimit > remaining * 4 / 5)
             timeLimit = remaining * 4 / 5;
 
-        depth = 30;
+        depth = 50;
     } else {
-        // No time controls given — default to depth search
+        // No time controls given — default to plys search
         if (depth <= 0)
             depth = 6; // fallback
     }
@@ -136,14 +136,14 @@ void startSearch(const std::string &goCmd) {
     //---------------------------------------------------------
     // Now you have:
     //   timeLimit  (ms)  — guaranteed non-negative
-    //   depth      (ply) — maybe -1 if no depth limit
+    //   plys      (ply) — maybe -1 if no plys limit
     //   nodes      (cnt) — maybe -1 if no node limit
     //---------------------------------------------------------
     globalTT.overwrites = 0;
     globalTT.overwriteSameKey = 0;
 
     if (!isPeft) {
-        // Pass depth or time-based stopping to your search
+        // Pass plys or time-based stopping to your search
         static std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
         BestMove bm = selectMove(currentBoard, depth, timeLimit, g_numThreads);
         if (bm.bestMove == 0) {
@@ -185,7 +185,7 @@ void startSearch(const std::string &goCmd) {
         }
         std::cout << "info "
                   << score
-                  << " depth " << bm.depth
+                  << " depth " << bm.plys
                   << " tbhits " << bm.tbHits
                   << " nodes " << bm.nodes
                   << " time " << elapsed
