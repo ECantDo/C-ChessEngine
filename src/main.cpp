@@ -10,7 +10,7 @@
 #include <sstream>
 #include <chrono>
 
-#define VERSION "V17.1_PVS"
+#define VERSION "V17.2_DeltaPruning"
 
 bool debug = false;
 Board currentBoard;   // Global board state stored between commands

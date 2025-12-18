@@ -102,6 +102,17 @@ inline const int BISHOP_SHIFTS[64] = {
         58, 59, 59, 59, 59, 59, 59, 58
 };
 
+extern uint64_t KNIGHT_ATTACKS[64];
+extern uint64_t KING_ATTACKS[64];
+
+inline uint64_t getKnightAttacks(int square) {
+    return KNIGHT_ATTACKS[square];
+}
+
+inline uint64_t getKingAttacks(int square) {
+    return KING_ATTACKS[square];
+}
+
 uint64_t getRookAttacks(int square, uint64_t occupancy);
 
 uint64_t getBishopAttacks(int square, uint64_t occupancy);

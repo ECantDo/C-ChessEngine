@@ -650,112 +650,60 @@ bool isValidSquare(int square) {
 }
 
 bool isSquareAttacked(const Board &board, int square, int attackingColor) {
-    //TODO: Use the magic bitboards on this
+    // Pre-calculate once
+    uint64_t blockers = board.getBlackBitboard() | board.getWhiteBitboard();
 
-    /* Check if 'square' is attacked by pieces of 'attackingColor' */
-    /* attackingColor: 1 = white, -1 = black */
+    uint64_t enemyRooks, enemyBishops, enemyQueens, enemyKnights, enemyKing, enemyPawns;
 
-    uint64_t occupied = board.getWhiteBitboard() | board.getBlackBitboard();
-    int file = square % 8;
-    int rank = square / 8;
-
-    /* === Check Knight attacks === */
-    const int knightOffsets[8] = {-17, -15, -10, -6, 6, 10, 15, 17};
-    uint64_t enemyKnights = (attackingColor == 1) ? board.whiteKnights : board.blackKnights;
-
-    for (int offset: knightOffsets) {
-        int from = square + offset;
-        if (!isValidSquare(from)) continue;
-
-        int fromFile = from % 8;
-        int fileDist = abs(fromFile - file);
-        if (fileDist != 1 && fileDist != 2) continue;
-
-        if (enemyKnights & (1ULL << from)) return true;
+    if (attackingColor == 1) {
+        enemyRooks = board.whiteRooks;
+        enemyBishops = board.whiteBishops;
+        enemyQueens = board.whiteQueens;
+        enemyKnights = board.whiteKnights;
+        enemyKing = board.whiteKing;
+        enemyPawns = board.whitePawns;
+    } else {
+        enemyRooks = board.blackRooks;
+        enemyBishops = board.blackBishops;
+        enemyQueens = board.blackQueens;
+        enemyKnights = board.blackKnights;
+        enemyKing = board.blackKing;
+        enemyPawns = board.blackPawns;
     }
 
-    /* === Check King attacks === */
-    const int kingOffsets[8] = {-9, -8, -7, -1, 1, 7, 8, 9};
-    uint64_t enemyKing = (attackingColor == 1) ? board.whiteKing : board.blackKing;
+    // === FASTEST CHECKS FIRST ===
 
-    for (int offset: kingOffsets) {
-        int from = square + offset;
-        if (!isValidSquare(from)) continue;
+    // 1. Pawn attacks (most common, cheapest)
+    int pawnDir = (attackingColor == 1) ? -8 : 8;
+    int file = square & 0x7;
 
-        int fromFile = from % 8;
-        if (abs(fromFile - file) > 1) continue;
-
-        if (enemyKing & (1ULL << from)) return true;
+    if (file > 0) {
+        int leftAttack = square + pawnDir - 1;
+        if ((leftAttack >= 0 && leftAttack < 64) && (enemyPawns & (1ULL << leftAttack))) {
+            return true;
+        }
     }
-
-    /* === Check Pawn attacks === */
-    uint64_t enemyPawns = (attackingColor == 1) ? board.whitePawns : board.blackPawns;
-    int pawnDir = (attackingColor == 1) ? -8 : 8;  /* Pawns attack opposite direction */
-
-    int leftAttack = square + pawnDir - 1;
-    int rightAttack = square + pawnDir + 1;
-
-    if (isValidSquare(leftAttack) && file > 0) {
-        if (enemyPawns & (1ULL << leftAttack)) return true;
-    }
-    if (isValidSquare(rightAttack) && file < 7) {
-        if (enemyPawns & (1ULL << rightAttack)) return true;
-    }
-
-    /* === Check Sliding pieces (Rook, Bishop, Queen) === */
-    uint64_t enemyRooks = (attackingColor == 1) ? board.whiteRooks : board.blackRooks;
-    uint64_t enemyBishops = (attackingColor == 1) ? board.whiteBishops : board.blackBishops;
-    uint64_t enemyQueens = (attackingColor == 1) ? board.whiteQueens : board.blackQueens;
-
-    /* Rook directions: N, S, E, W */
-    const int rookDirs[4] = {8, -8, 1, -1};
-    for (int dir: rookDirs) {
-        int target = square + dir;
-        while (isValidSquare(target)) {
-            // Horizontal wrap check
-            if (dir == 1 || dir == -1) {
-                int fromFile = (target - dir) % 8;
-                int toFile = target % 8;
-                if (abs(toFile - fromFile) > 1) {
-                    break;
-                }
-            }
-
-            uint64_t targetMask = 1ULL << target;
-
-            /* Hit a piece */
-            if (occupied & targetMask) {
-                /* Is it an attacking rook or queen? */
-                if ((enemyRooks | enemyQueens) & targetMask) return true;
-                break;  /* Blocked */
-            }
-
-            target += dir;
+    if (file < 7) {
+        int rightAttack = square + pawnDir + 1;
+        if ((rightAttack >= 0 && rightAttack < 64) && (enemyPawns & (1ULL << rightAttack))) {
+            return true;
         }
     }
 
-    /* Bishop directions: NE, NW, SE, SW */
-    const int bishopDirs[4] = {9, 7, -7, -9};
-    for (int dir: bishopDirs) {
-        int target = square + dir;
-        while (isValidSquare(target)) {
-            /* Check wrap */
-            int fromFile = (target - dir) % 8;
-            int toFile = target % 8;
-            if (abs(toFile - fromFile) > 1) {
-                break;
-            }
+    // 2. Knight attacks (common in middle game, no loops)
+    uint64_t knightAttacks = getKnightAttacks(square);  // Pre-computed lookup
+    if (knightAttacks & enemyKnights) return true;
 
-            uint64_t targetMask = 1ULL << target;
+    // 3. Sliding pieces (rook/bishop/queen)
+    uint64_t rookAttacks = getRookAttacks(square, blockers);
+    if (rookAttacks & (enemyRooks | enemyQueens)) return true;
 
-            if (occupied & targetMask) {
-                if ((enemyBishops | enemyQueens) & targetMask) return true;
-                break;
-            }
+    uint64_t bishopAttacks = getBishopAttacks(square, blockers);
+    if (bishopAttacks & (enemyBishops | enemyQueens)) return true;
 
-            target += dir;
-        }
-    }
+    // 4. King attacks (least common, check last)
+    uint64_t kingAttacks = getKingAttacks(square);  // Pre-computed lookup
+    if (kingAttacks & enemyKing) return true;
 
     return false;
 }

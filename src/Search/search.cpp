@@ -157,7 +157,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
     // ============ Generate Moves ============
     std::vector<Move> moveList;
-    generateLegalMoves(board, moveList, false);
+    generatePseudoLegalMoves(board, moveList, false);
     bool inCheck = isKingInCheck(board, board.turn);
 
     // ============ Legal moves is empty; check/draw ============
@@ -283,6 +283,12 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
     for (Move m: moveList) {
         UndoInfo undo = board.makeMove(m);
+
+        // Since using genPseudoLegal(), only actually checking when it's for a move I have made
+        if (isKingInCheck(board, -board.turn)){
+            board.unmakeMove(m, undo);
+            continue;
+        }
 
         BestMove result;
 

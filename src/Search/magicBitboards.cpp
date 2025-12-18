@@ -4,6 +4,7 @@
 
 
 #include <bit>
+#include <valarray>
 #include "magicBitboards.h"
 
 // ============================================================================
@@ -155,6 +156,38 @@ uint64_t calculate_bishop_attacks(int square, uint64_t occupancy) {
 // ============================================================================
 // INITIALIZATION (Call this once at program startup)
 // ============================================================================
+void initAttackTables() {
+    for (int sq = 0; sq < 64; sq++) {
+        // Knight attacks
+        uint64_t attacks = 0;
+        int offsets[8] = {-17, -15, -10, -6, 6, 10, 15, 17};
+        for (int offset: offsets) {
+            int target = sq + offset;
+            if (target >= 0 && target < 64) {
+                int fileDiff = abs((sq & 7) - (target & 7));
+                int rankDiff = abs((sq >> 3) - (target >> 3));
+                if ((fileDiff == 2 && rankDiff == 1) || (fileDiff == 1 && rankDiff == 2)) {
+                    attacks |= (1ULL << target);
+                }
+            }
+        }
+        KNIGHT_ATTACKS[sq] = attacks;
+
+        // King attacks
+        attacks = 0;
+        int kingOffsets[8] = {-9, -8, -7, -1, 1, 7, 8, 9};
+        for (int offset: kingOffsets) {
+            int target = sq + offset;
+            if (target >= 0 && target < 64) {
+                int fileDiff = abs((sq & 7) - (target & 7));
+                if (fileDiff <= 1) {
+                    attacks |= (1ULL << target);
+                }
+            }
+        }
+        KING_ATTACKS[sq] = attacks;
+    }
+}
 
 void initMagicBitboards() {
     // Initialize rook attack tables
@@ -190,6 +223,7 @@ void initMagicBitboards() {
             bishop_attacks[square][index] = attacks;
         }
     }
+    initAttackTables();
 }
 
 // ============================================================================

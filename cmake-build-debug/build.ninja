@@ -328,90 +328,6 @@ build testChessEngine.exe: CXX_EXECUTABLE_LINKER__testChessEngine_Debug CMakeFil
   TARGET_IMPLIB = libtestChessEngine.dll.a
   TARGET_PDB = testChessEngine.exe.dbg
 
-# =============================================================================
-# Object build statements for EXECUTABLE target buildOpeningBook
-
-
-#############################################
-# Order-only phony target for buildOpeningBook
-
-build cmake_object_order_depends_target_buildOpeningBook: phony || .
-
-build CMakeFiles/buildOpeningBook.dir/buildOpeningBook/buildOpeningBook.cpp.obj: CXX_COMPILER__buildOpeningBook_unscanned_Debug E$:/CLionProjects/chessEngine/buildOpeningBook/buildOpeningBook.cpp || cmake_object_order_depends_target_buildOpeningBook
-  CONFIG = Debug
-  DEP_FILE = CMakeFiles\buildOpeningBook.dir\buildOpeningBook\buildOpeningBook.cpp.obj.d
-  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always
-  INCLUDES = -IE:/CLionProjects/chessEngine/src
-  OBJECT_DIR = CMakeFiles\buildOpeningBook.dir
-  OBJECT_FILE_DIR = CMakeFiles\buildOpeningBook.dir\buildOpeningBook
-
-build CMakeFiles/buildOpeningBook.dir/buildOpeningBook/readFenFile.cpp.obj: CXX_COMPILER__buildOpeningBook_unscanned_Debug E$:/CLionProjects/chessEngine/buildOpeningBook/readFenFile.cpp || cmake_object_order_depends_target_buildOpeningBook
-  CONFIG = Debug
-  DEP_FILE = CMakeFiles\buildOpeningBook.dir\buildOpeningBook\readFenFile.cpp.obj.d
-  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always
-  INCLUDES = -IE:/CLionProjects/chessEngine/src
-  OBJECT_DIR = CMakeFiles\buildOpeningBook.dir
-  OBJECT_FILE_DIR = CMakeFiles\buildOpeningBook.dir\buildOpeningBook
-
-build CMakeFiles/buildOpeningBook.dir/src/Evaluation/opening_book.cpp.obj: CXX_COMPILER__buildOpeningBook_unscanned_Debug E$:/CLionProjects/chessEngine/src/Evaluation/opening_book.cpp || cmake_object_order_depends_target_buildOpeningBook
-  CONFIG = Debug
-  DEP_FILE = CMakeFiles\buildOpeningBook.dir\src\Evaluation\opening_book.cpp.obj.d
-  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always
-  INCLUDES = -IE:/CLionProjects/chessEngine/src
-  OBJECT_DIR = CMakeFiles\buildOpeningBook.dir
-  OBJECT_FILE_DIR = CMakeFiles\buildOpeningBook.dir\src\Evaluation
-
-build CMakeFiles/buildOpeningBook.dir/buildOpeningBook/buildBook.cpp.obj: CXX_COMPILER__buildOpeningBook_unscanned_Debug E$:/CLionProjects/chessEngine/buildOpeningBook/buildBook.cpp || cmake_object_order_depends_target_buildOpeningBook
-  CONFIG = Debug
-  DEP_FILE = CMakeFiles\buildOpeningBook.dir\buildOpeningBook\buildBook.cpp.obj.d
-  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always
-  INCLUDES = -IE:/CLionProjects/chessEngine/src
-  OBJECT_DIR = CMakeFiles\buildOpeningBook.dir
-  OBJECT_FILE_DIR = CMakeFiles\buildOpeningBook.dir\buildOpeningBook
-
-build CMakeFiles/buildOpeningBook.dir/src/Board/board.cpp.obj: CXX_COMPILER__buildOpeningBook_unscanned_Debug E$:/CLionProjects/chessEngine/src/Board/board.cpp || cmake_object_order_depends_target_buildOpeningBook
-  CONFIG = Debug
-  DEP_FILE = CMakeFiles\buildOpeningBook.dir\src\Board\board.cpp.obj.d
-  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always
-  INCLUDES = -IE:/CLionProjects/chessEngine/src
-  OBJECT_DIR = CMakeFiles\buildOpeningBook.dir
-  OBJECT_FILE_DIR = CMakeFiles\buildOpeningBook.dir\src\Board
-
-build CMakeFiles/buildOpeningBook.dir/src/Board/move.cpp.obj: CXX_COMPILER__buildOpeningBook_unscanned_Debug E$:/CLionProjects/chessEngine/src/Board/move.cpp || cmake_object_order_depends_target_buildOpeningBook
-  CONFIG = Debug
-  DEP_FILE = CMakeFiles\buildOpeningBook.dir\src\Board\move.cpp.obj.d
-  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always
-  INCLUDES = -IE:/CLionProjects/chessEngine/src
-  OBJECT_DIR = CMakeFiles\buildOpeningBook.dir
-  OBJECT_FILE_DIR = CMakeFiles\buildOpeningBook.dir\src\Board
-
-build CMakeFiles/buildOpeningBook.dir/src/Board/zobrist_hash.cpp.obj: CXX_COMPILER__buildOpeningBook_unscanned_Debug E$:/CLionProjects/chessEngine/src/Board/zobrist_hash.cpp || cmake_object_order_depends_target_buildOpeningBook
-  CONFIG = Debug
-  DEP_FILE = CMakeFiles\buildOpeningBook.dir\src\Board\zobrist_hash.cpp.obj.d
-  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always
-  INCLUDES = -IE:/CLionProjects/chessEngine/src
-  OBJECT_DIR = CMakeFiles\buildOpeningBook.dir
-  OBJECT_FILE_DIR = CMakeFiles\buildOpeningBook.dir\src\Board
-
-
-# =============================================================================
-# Link build statements for EXECUTABLE target buildOpeningBook
-
-
-#############################################
-# Link the executable buildOpeningBook.exe
-
-build buildOpeningBook.exe: CXX_EXECUTABLE_LINKER__buildOpeningBook_Debug CMakeFiles/buildOpeningBook.dir/buildOpeningBook/buildOpeningBook.cpp.obj CMakeFiles/buildOpeningBook.dir/buildOpeningBook/readFenFile.cpp.obj CMakeFiles/buildOpeningBook.dir/src/Evaluation/opening_book.cpp.obj CMakeFiles/buildOpeningBook.dir/buildOpeningBook/buildBook.cpp.obj CMakeFiles/buildOpeningBook.dir/src/Board/board.cpp.obj CMakeFiles/buildOpeningBook.dir/src/Board/move.cpp.obj CMakeFiles/buildOpeningBook.dir/src/Board/zobrist_hash.cpp.obj
-  CONFIG = Debug
-  FLAGS = -g
-  LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
-  OBJECT_DIR = CMakeFiles\buildOpeningBook.dir
-  POST_BUILD = cd .
-  PRE_LINK = cd .
-  TARGET_FILE = buildOpeningBook.exe
-  TARGET_IMPLIB = libbuildOpeningBook.dll.a
-  TARGET_PDB = buildOpeningBook.exe.dbg
-
 
 #############################################
 # Utility command for edit_cache
@@ -438,8 +354,6 @@ build rebuild_cache: phony CMakeFiles/rebuild_cache.util
 # =============================================================================
 # Target aliases.
 
-build buildOpeningBook: phony buildOpeningBook.exe
-
 build chessEngine: phony chessEngine.exe
 
 build testChessEngine: phony testChessEngine.exe
@@ -452,7 +366,7 @@ build testChessEngine: phony testChessEngine.exe
 #############################################
 # Folder: E:/CLionProjects/chessEngine/cmake-build-debug
 
-build all: phony chessEngine.exe testChessEngine.exe buildOpeningBook.exe
+build all: phony chessEngine.exe testChessEngine.exe
 
 # =============================================================================
 # Built-in targets

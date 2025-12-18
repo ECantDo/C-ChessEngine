@@ -1,7 +1,8 @@
-cmake_minimum_required(VERSION 3.30)
+cmake_minimum_required(VERSION 3.28)
 project(chessEngine)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
 
 include_directories(${CMAKE_SOURCE_DIR}/src)
 
@@ -84,30 +85,6 @@ add_executable(testChessEngine tests/test_all.cpp
 
         src/Evaluation/opening_book.cpp
         src/Evaluation/opening_book.h
-)
-
-add_executable(buildOpeningBook
-        buildOpeningBook/buildOpeningBook.cpp
-        buildOpeningBook/readFenFile.cpp
-        buildOpeningBook/readFenFile.h
-
-        src/Evaluation/opening_book.cpp
-        src/Evaluation/opening_book.h
-
-        buildOpeningBook/buildBook.cpp
-        buildOpeningBook/buildBook.h
-
-        buildOpeningBook/stockfishProcess.h
-
-        src/Board/board.cpp
-        src/Board/board.h
-
-        src/Board/move.cpp
-        src/Board/move.h
-        src/Board/zobrist_hash.cpp
-        src/Board/zobrist_hash.h
-        buildOpeningBook/moveWeighting.h
-
 )
 
 target_link_libraries(chessEngine PRIVATE Threads::Threads)

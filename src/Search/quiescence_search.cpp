@@ -6,7 +6,7 @@
 #include "search.h"
 
 BestMove quiescenceSearch(Board &board, int alpha, int beta, int qDepth) {
-    const int MAX_Q_DEPTH  = 20;
+    const int MAX_Q_DEPTH = 20;
 
     // If we do nothing, what's the score???
     int standPat = evaluateBoard(board);
@@ -39,6 +39,11 @@ BestMove quiescenceSearch(Board &board, int alpha, int beta, int qDepth) {
 
     for (Move move: captures) {
 //        std::cout << "CAPTURE! " << moveToString(move) << std::endl << std::flush;
+        int captured = abs(getPieceValue(board.pieceAtSquare(getMoveTo(move))));
+        if (standPat + captured + 200 < alpha){
+            continue;
+        }
+
         UndoInfo ui = board.makeMove(move);
 
         BestMove result = quiescenceSearch(board, -beta, -alpha);
