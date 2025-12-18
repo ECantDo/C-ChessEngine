@@ -10,7 +10,7 @@
 #include <sstream>
 #include <chrono>
 
-#define VERSION "V16.1_NullMoveFixes"
+#define VERSION "V17.0_AspirationWindowsPt2"
 
 bool debug = false;
 Board currentBoard;   // Global board state stored between commands

@@ -441,10 +441,52 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
         if (stopSearch) break;
 
         std::vector<uint64_t> searchPath;
-        searchPath.reserve(30);
+        searchPath.reserve(64);
 
-        BestMove result = alphaBeta(board, depth, 1, -INF_SCORE, INF_SCORE,
-                                    bestMove, searchPath, killerMoves, historyTable, 0);
+        BestMove result;
+
+        // ==== Aspiration Windows ====
+        if (depth >= 5 && abs(bestScore) < MATE_SCORE - 100) {
+            int delta = 100; // Window size; typical is 50, but I am going with 100 for now, to make sure it works
+            int alpha = bestScore - delta;
+            int beta = bestScore + delta;
+
+            while (true) {
+                result = alphaBeta(board, depth, 1, alpha, beta, bestMove, searchPath,
+                                   killerMoves, historyTable, 0);
+                if (stopSearch || !result.completed) break;
+
+                // Is score within the window?
+                if (result.score > alpha && result.score < beta) {
+                    break; // yay! It worked!
+                }
+
+                // Failed low; widen lower bound
+                if (result.score <= alpha) {
+                    alpha = std::max(alpha - delta, -INF_SCORE);
+                    // Exponentially widen the window
+                    delta <<= 1; // Same as *= 2
+                }
+                    // Failed high; widen upper bound
+                else if (result.score >= beta) {
+                    beta = std::min(beta + delta, INF_SCORE);
+                    delta <<= 1; // Same as *= 2
+                }
+
+                searchPath.clear();
+
+                // Prevent inf widening
+                if (delta > 1000){
+                    alpha = -INF_SCORE;
+                    beta = INF_SCORE;
+                }
+
+            }
+        } else {
+            // Depth < 4, or mate score, use full window.
+            result = alphaBeta(board, depth, 1, -INF_SCORE, INF_SCORE,
+                               bestMove, searchPath, killerMoves, historyTable, 0);
+        }
 
         if (!result.completed || stopSearch) break;
 
