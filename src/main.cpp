@@ -10,7 +10,7 @@
 #include <sstream>
 #include <chrono>
 
-#define VERSION "V17.3_isAttackedUpdated"
+#define VERSION "V17.4_slidingPieceMasksLookups"
 
 bool debug = false;
 Board currentBoard;   // Global board state stored between commands

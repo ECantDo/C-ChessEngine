@@ -17,57 +17,20 @@ uint64_t bishop_attacks[64][512];  // Max table size
 uint64_t KNIGHT_ATTACKS[64];
 uint64_t KING_ATTACKS[64];
 
+uint64_t BISHOP_ATTACK_MASKS[64];
+uint64_t ROOK_ATTACK_MASKS[64];
+
+
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
 
-uint64_t get_rook_mask(int square) {
-    uint64_t mask = 0;
-
-    // Same as square /8 * 8, with integer math -> /8 shift right x3, *8 shift left x3
-    //  -> results in the lowest 3 bits being 0, and the rest being the same
-    int rankShift = square & (~0x7);
-    int file = square & 0x7;
-
-    // Rank (exclude edges)
-    mask |= RANK_BLOCKER_MASK << rankShift;
-
-    // File (exclude edges)
-    mask |= FILE_BLOCKER_MASK << file;
-
-    mask &= ~(1ULL << square);
-
-    return mask;
+uint64_t getRookMask(int square) {
+    return ROOK_ATTACK_MASKS[square];
 }
 
-uint64_t get_bishop_mask(int square) {
-    uint64_t mask = 0ULL;
-    int rank = square >> 3;
-    int file = square & 0x7;
-
-    // I'm sad I can't do the same fun mask trick as the rook...
-
-    // NE
-    for (int r = rank + 1, f = file + 1; r < 7 && f < 7; r++, f++) {
-        mask |= 1ULL << (r * 8 + f);
-    }
-
-    // NW
-    for (int r = rank + 1, f = file - 1; r < 7 && f > 0; r++, f--) {
-        mask |= 1ULL << (r * 8 + f);
-    }
-
-    // SE
-    for (int r = rank - 1, f = file + 1; r > 0 && f < 7; r--, f++) {
-        mask |= 1ULL << (r * 8 + f);
-    }
-
-    // SW
-    for (int r = rank - 1, f = file - 1; r > 0 && f > 0; r--, f--) {
-        mask |= 1ULL << (r * 8 + f);
-    }
-
-    return mask;
+uint64_t getBishopMask(int square) {
+    return BISHOP_ATTACK_MASKS[square];
 }
 
 uint64_t index_to_occupancy(int index, uint64_t mask) {
@@ -159,12 +122,66 @@ uint64_t calculate_bishop_attacks(int square, uint64_t occupancy) {
 // ============================================================================
 // INITIALIZATION (Call this once at program startup)
 // ============================================================================
+void initRookMasks() {
+    for (int square = 0; square < 64; square++) {
+        uint64_t mask = 0;
+
+        // Same as square /8 * 8, with integer math -> /8 shift right x3, *8 shift left x3
+        //  -> results in the lowest 3 bits being 0, and the rest being the same
+        int rankShift = square & (~0x7);
+        int file = square & 0x7;
+
+        // Rank (exclude edges)
+        mask |= RANK_BLOCKER_MASK << rankShift;
+
+        // File (exclude edges)
+        mask |= FILE_BLOCKER_MASK << file;
+
+        mask &= ~(1ULL << square);
+
+        ROOK_ATTACK_MASKS[square] = mask;
+    }
+}
+
+void initBishopMasks() {
+    for (int square = 0; square < 64; square++) {
+        int64_t mask = 0ULL;
+        int rank = square >> 3;
+        int file = square & 0x7;
+
+        // I'm sad I can't do the same fun mask trick as the rook...
+
+        // NE
+        for (int r = rank + 1, f = file + 1; r < 7 && f < 7; r++, f++) {
+            mask |= 1ULL << (r * 8 + f);
+        }
+
+        // NW
+        for (int r = rank + 1, f = file - 1; r < 7 && f > 0; r++, f--) {
+            mask |= 1ULL << (r * 8 + f);
+        }
+
+        // SE
+        for (int r = rank - 1, f = file + 1; r > 0 && f < 7; r--, f++) {
+            mask |= 1ULL << (r * 8 + f);
+        }
+
+        // SW
+        for (int r = rank - 1, f = file - 1; r > 0 && f > 0; r--, f--) {
+            mask |= 1ULL << (r * 8 + f);
+        }
+        BISHOP_ATTACK_MASKS[square] = mask;
+    }
+}
+
 void initAttackTables() {
+    int kingOffsets[8] = {-9, -8, -7, -1, 1, 7, 8, 9};
+    int knightOffsets[8] = {-17, -15, -10, -6, 6, 10, 15, 17};
+
     for (int sq = 0; sq < 64; sq++) {
         // Knight attacks
         uint64_t attacks = 0;
-        int offsets[8] = {-17, -15, -10, -6, 6, 10, 15, 17};
-        for (int offset: offsets) {
+        for (int offset: knightOffsets) {
             int target = sq + offset;
             if (target >= 0 && target < 64) {
                 int fileDiff = abs((sq & 7) - (target & 7));
@@ -178,7 +195,6 @@ void initAttackTables() {
 
         // King attacks
         attacks = 0;
-        int kingOffsets[8] = {-9, -8, -7, -1, 1, 7, 8, 9};
         for (int offset: kingOffsets) {
             int target = sq + offset;
             if (target >= 0 && target < 64) {
@@ -193,9 +209,13 @@ void initAttackTables() {
 }
 
 void initMagicBitboards() {
+    initAttackTables();
+    initRookMasks();
+    initBishopMasks();
+
     // Initialize rook attack tables
     for (int square = 0; square < 64; square++) {
-        uint64_t mask = get_rook_mask(square);
+        uint64_t mask = getRookMask(square);
         int bits = std::popcount(mask);
         int permutations = 1 << bits;
 
@@ -212,7 +232,7 @@ void initMagicBitboards() {
 
     // Initialize bishop attack tables
     for (int square = 0; square < 64; square++) {
-        uint64_t mask = get_bishop_mask(square);
+        uint64_t mask = getBishopMask(square);
         int bits = std::popcount(mask);
         int permutations = 1 << bits;
 
@@ -226,7 +246,6 @@ void initMagicBitboards() {
             bishop_attacks[square][index] = attacks;
         }
     }
-    initAttackTables();
 }
 
 // ============================================================================
@@ -234,13 +253,13 @@ void initMagicBitboards() {
 // ============================================================================
 
 uint64_t getRookAttacks(int square, uint64_t occupancy) {
-    occupancy &= get_rook_mask(square);
+    occupancy &= getRookMask(square);
     int index = (occupancy * ROOK_MAGICS[square]) >> ROOK_SHIFTS[square];
     return rook_attacks[square][index];
 }
 
 uint64_t getBishopAttacks(int square, uint64_t occupancy) {
-    occupancy &= get_bishop_mask(square);
+    occupancy &= getBishopMask(square);
     int index = (occupancy * BISHOP_MAGICS[square]) >> BISHOP_SHIFTS[square];
     return bishop_attacks[square][index];
 }
