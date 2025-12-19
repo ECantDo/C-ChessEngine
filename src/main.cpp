@@ -10,7 +10,7 @@
 #include <sstream>
 #include <chrono>
 
-#define VERSION "V17.5_makeMoveRefactor"
+#define VERSION "V17.6_generalTuning"
 
 bool debug = false;
 Board currentBoard;   // Global board state stored between commands

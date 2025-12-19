@@ -16,14 +16,14 @@
 // =====================================================================================================================
 int evaluateBoard(Board &board);
 
-int getPieceSquareValue(char piece, int square);
+int getPieceSquareValue(Piece piece, int square);
 
 // =====================================================================================================================
 // Helper Functions
 // =====================================================================================================================
 inline int flipIndex(int index) {
-    int rank = index / 8;
-    int file = index % 8;
+    int rank = index >> 3;
+    int file = index & 0x7;
     return (7 - rank) * 8 + file;
 }
 

@@ -104,10 +104,13 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 				   unsigned long long historyTable[2][64][64],
 				   int extensionsUsed = 0, bool nullMoveAllowed = true) {
 
-	if (plys == 0){
+	if (plys == 0) {
 		alpha = -INF_SCORE;
 		beta = INF_SCORE;
 	}
+
+	bool inCheck = isKingInCheck(board, board.turn);
+
 
 	// ============ Check for Draw ============
 	// 50 move, and repetition
@@ -131,8 +134,6 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		return {0, 0, 1, 0, plys, true, {}};  /* Draw score = 0 */
 
 	}
-
-
 
 	// ============ TT Storage consts ============
 
@@ -161,7 +162,6 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 	// ============ Generate Moves ============
 	std::vector<Move> moveList;
 	generateLegalMoves(board, moveList, false);
-	bool inCheck = isKingInCheck(board, board.turn);
 
 	// ============ Legal moves is empty; check/draw ============
 	if (moveList.empty()) {
@@ -185,16 +185,6 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 	// Depth also happens to be the ply
 	orderMoves(moveList, board, ttEntry.bestMove, plys, killerMoves, historyTable);
 	Move bestMove = moveList[0];
-
-	// ============ Time Check ============
-	// Don't need it since it's in the main thread now
-//    if (!stopSearch && g_timeLimitMS > 0) {
-//        auto now = std::chrono::steady_clock::now();
-//        long elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - g_searchStart).count();
-//        if (elapsed >= g_timeLimitMS) {
-//            stopSearch = true;
-//        }
-//    }
 
 	// ============ Exceeded parameters ============
 	if (depth <= 0) {

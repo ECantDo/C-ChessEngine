@@ -5,103 +5,103 @@
 #include "evaluation.h"
 
 int evaluatePawnShelter(Board &board, int side, int kingSquare, int kingFile, int kingRank,
-                        uint64_t myPawns, uint64_t theirPawns) {
+						uint64_t myPawns, uint64_t theirPawns) {
 
-    int totalPieces = std::popcount(board.getWhiteBitboard() | board.getBlackBitboard());
-    if (totalPieces < 16) {
-        return 0;
-    }
+	int totalPieces = std::popcount(board.getWhiteBitboard() | board.getBlackBitboard());
+	if (totalPieces < 16) {
+		return 0;
+	}
 
-    int score = 0;
+	int score = 0;
 
-    // Only evaluate if king is on back ranks
-    bool kingOnBackRank = (side == 1 && kingRank <= 2) || (side == -1 && kingRank >= 5);
-    if (!kingOnBackRank) {
-        return 0;  // King has advanced, shelter less important
-    }
+	// Only evaluate if king is on back ranks
+	bool kingOnBackRank = (side == 1 && kingRank <= 2) || (side == -1 && kingRank >= 5);
+	if (!kingOnBackRank) {
+		return 0;  // King has advanced, shelter less important
+	}
 
-    // Check if king has castled by seeing if rook has moved
-    uint64_t rookBitBoard = (side == 1) ? board.whiteRooks : board.blackRooks;
-    uint64_t kingsideRookMask; // = (side == 1) ? (1ULL << 7) : (1ULL << 63);   // h1/h8
-    uint64_t queensideRookMask; // = (side == 1) ? (1ULL << 0) : (1ULL << 56);  // a1/a8
+	// Check if king has castled by seeing if rook has moved
+	uint64_t rookBitBoard = (side == 1) ? board.whiteRooks : board.blackRooks;
+	uint64_t kingsideRookMask; // = (side == 1) ? (1ULL << 7) : (1ULL << 63);   // h1/h8
+	uint64_t queensideRookMask; // = (side == 1) ? (1ULL << 0) : (1ULL << 56);  // a1/a8
 
-    if (side == 1) {
-        kingsideRookMask = (1ULL << 7);
-        queensideRookMask = (1ULL << 0);
-    } else {
-        kingsideRookMask = (1ULL << 63);   // h1/h8
-        queensideRookMask = (1ULL << 56);
-    }
-
-
-    bool kingsideCastle = (kingFile >= 6) && !(rookBitBoard & kingsideRookMask);
-    bool queensideCastle = (kingFile <= 2) && !(rookBitBoard & queensideRookMask);
-
-    if (!(kingsideCastle || queensideCastle)) {
-        return 0;
-    }
+	if (side == 1) {
+		kingsideRookMask = (1ULL << 7);
+		queensideRookMask = (1ULL << 0);
+	} else {
+		kingsideRookMask = (1ULL << 63);   // h1/h8
+		queensideRookMask = (1ULL << 56);
+	}
 
 
-    // Check shelter on files around the king
-    for (int fileOffset = -1; fileOffset <= 1; fileOffset++) {
-        int file = kingFile + fileOffset;
+	bool kingsideCastle = (kingFile >= 6) && !(rookBitBoard & kingsideRookMask);
+	bool queensideCastle = (kingFile <= 2) && !(rookBitBoard & queensideRookMask);
 
-        // ... What is this???
+	if (!(kingsideCastle || queensideCastle)) {
+		return 0;
+	}
+
+
+	// Check shelter on files around the king
+	for (int fileOffset = -1; fileOffset <= 1; fileOffset++) {
+		int file = kingFile + fileOffset;
+
+		// ... What is this???
 //        if (file < 0 || file > 7) {
 //            score -= 40;
 //            continue;
 //        }
 
-        uint64_t fileMask = FILE_MASK << file;
-        uint64_t myPawnsOnFile = myPawns & fileMask;
-        uint64_t theirPawnsOnFile = theirPawns & fileMask;
+		uint64_t fileMask = FILE_MASK << file;
+		uint64_t myPawnsOnFile = myPawns & fileMask;
+		uint64_t theirPawnsOnFile = theirPawns & fileMask;
 
-        // === My Pawn Shelter ===
-        if (myPawnsOnFile == 0) {
-            score -= 35;
-            if (fileOffset == 0) {
-                score -= 20;
-            }
-        } else {
-            int closestPawnSquare = -1;
-            int closestDistance = 999;
+		// === My Pawn Shelter ===
+		if (myPawnsOnFile == 0) {
+			score -= 35;
+			if (fileOffset == 0) {
+				score -= 20;
+			}
+		} else {
+			int closestPawnSquare = -1;
+			int closestDistance = 999;
 
-            uint64_t filePawnsCopy = myPawnsOnFile;
-            while (filePawnsCopy) {
-                int pawnSquare = std::countr_zero(filePawnsCopy);
-                filePawnsCopy &= filePawnsCopy - 1;
-                int pawnRank = pawnSquare >> 3;
-                int distance = abs(pawnRank - kingRank);
+			uint64_t filePawnsCopy = myPawnsOnFile;
+			while (filePawnsCopy) {
+				int pawnSquare = std::countr_zero(filePawnsCopy);
+				filePawnsCopy &= filePawnsCopy - 1;
+				int pawnRank = pawnSquare >> 3;
+				int distance = abs(pawnRank - kingRank);
 
-                bool correctSide = (side == 1 && pawnRank >= kingRank) ||
-                                   (side == -1 && pawnRank <= kingRank);
+				bool correctSide = (side == 1 && pawnRank >= kingRank) ||
+								   (side == -1 && pawnRank <= kingRank);
 
-                if (correctSide && distance < closestDistance) {
-                    closestDistance = distance;
-                    closestPawnSquare = pawnSquare;
-                }
-            }
+				if (correctSide && distance < closestDistance) {
+					closestDistance = distance;
+					closestPawnSquare = pawnSquare;
+				}
+			}
 
-            if (closestPawnSquare != -1) {
-                int pawnRank = closestPawnSquare >> 3;
-                int startRank = (side == 1) ? 1 : 6;
-                int distanceFromStart = abs(pawnRank - startRank);
+			if (closestPawnSquare != -1) {
+				int pawnRank = closestPawnSquare >> 3;
+				int startRank = (side == 1) ? 1 : 6;
+				int distanceFromStart = abs(pawnRank - startRank);
 
-                if (distanceFromStart < 4) {
-                    score += SHELTER_BONUS[distanceFromStart];
-                } else {
-                    score -= 15;
-                }
+				if (distanceFromStart < 4) {
+					score += SHELTER_BONUS[distanceFromStart];
+				} else {
+					score -= 15;
+				}
 
-                if (fileOffset == 0 && closestDistance == 1) {
-                    score += 10;
-                }
-            }
-        }
+				if (fileOffset == 0 && closestDistance == 1) {
+					score += 10;
+				}
+			}
+		}
 
 
-        // After minor tuning, doesn't add anything to it
-        // === Enemy Pawn Storm ===
+		// After minor tuning, doesn't add anything to it
+		// === Enemy Pawn Storm ===
 //        if (theirPawnsOnFile != 0) {
 //            uint64_t stormPawns = theirPawnsOnFile;
 //            while (stormPawns) {
@@ -132,9 +132,9 @@ int evaluatePawnShelter(Board &board, int side, int kingSquare, int kingFile, in
 //                }
 //            }
 //        }
-    }
+	}
 
-    // === Fianchetto Bonus ===
+	// === Fianchetto Bonus ===
 //    if (kingsideCastle || queensideCastle) {
 //        uint64_t myBishops = (side == 1) ? board.whiteBishops : board.blackBishops;
 //
@@ -155,182 +155,182 @@ int evaluatePawnShelter(Board &board, int side, int kingSquare, int kingFile, in
 //        }
 //    }
 
-    return score;
+	return score;
 }
 
 int evaluatePawns(Board &board, int side) {
-    int score = 0;
-    // ==== Doubled Pawns ====
-    // White pawns, subtract from total score (penalty)
-    // Loop for each file
-    uint64_t myPawns, theirPawns;
-    int kingSquare, kingFile, kingRank;
-    if (side == 1) {
-        myPawns = board.whitePawns;
-        theirPawns = board.blackPawns;
+	int score = 0;
+	// ==== Doubled Pawns ====
+	// White pawns, subtract from total score (penalty)
+	// Loop for each file
+	uint64_t myPawns, theirPawns;
+	int kingSquare, kingFile, kingRank;
+	if (side == 1) {
+		myPawns = board.whitePawns;
+		theirPawns = board.blackPawns;
 
-        kingSquare = std::countr_zero(board.whiteKing);
-    } else {
-        myPawns = board.blackPawns;
-        theirPawns = board.whitePawns;
+		kingSquare = std::countr_zero(board.whiteKing);
+	} else {
+		myPawns = board.blackPawns;
+		theirPawns = board.whitePawns;
 
-        kingSquare = std::countr_zero(board.blackKing);
-    }
-    kingFile = kingSquare & 0x7;
-    kingRank = kingSquare >> 3;
+		kingSquare = std::countr_zero(board.blackKing);
+	}
+	kingFile = kingSquare & 0x7;
+	kingRank = kingSquare >> 3;
 
-    // TODO:
-    //  Backwards Pawns
-    //  Incorporate doubled pawn checks into the below loop
+	// TODO:
+	//  Backwards Pawns
+	//  Incorporate doubled pawn checks into the below loop
 
-    uint64_t bitBoard = myPawns;
-    while (bitBoard) {
-        int pawnSquare = std::countr_zero(bitBoard);
-        bitBoard &= bitBoard - 1;
+	uint64_t bitBoard = myPawns;
+	while (bitBoard) {
+		int pawnSquare = std::countr_zero(bitBoard);
+		bitBoard &= bitBoard - 1;
 
-        int pawnFile = pawnSquare & 0x7;
-        int pawnRank = pawnSquare >> 3;
+		int pawnFile = pawnSquare & 0x7;
+		int pawnRank = pawnSquare >> 3;
 
-        uint64_t centerMask = FILE_MASK << pawnFile;
-        // Doubled pawns
+		uint64_t centerMask = FILE_MASK << pawnFile;
+		// Doubled pawns
 
-        int extraPawnsInFile = __builtin_popcount(myPawns & centerMask) - 1;
-        if (extraPawnsInFile > 0) {
-            // Real value = [x 12]; but for 2 pawns doubled, they are counted twice; so it becomes exponential
-            //  for 3+ pawns stacked
-            score -= extraPawnsInFile * extraPawnsInFile * 6; // TODO: Test this value
-        }
+		int extraPawnsInFile = __builtin_popcount(myPawns & centerMask) - 1;
+		if (extraPawnsInFile > 0) {
+			// Real value = [x 12]; but for 2 pawns doubled, they are counted twice; so it becomes exponential
+			//  for 3+ pawns stacked
+			score -= extraPawnsInFile * extraPawnsInFile * 6; // TODO: Test this value
+		}
 
-        uint64_t mask = (pawnFile - 1 >= 0 ? FILE_MASK << (pawnFile - 1) : 0) |
-                        (pawnFile + 1 < 8 ? FILE_MASK << (pawnFile + 1) : 0);
+		uint64_t mask = (pawnFile - 1 >= 0 ? FILE_MASK << (pawnFile - 1) : 0) |
+						(pawnFile + 1 < 8 ? FILE_MASK << (pawnFile + 1) : 0);
 
-        // Isolated pawn
-        // [myPawns] & [mask] -> get pawns on adjacent files
-        if ((myPawns & mask) == 0) {
-            // There are no pawns on adjacent files; apply penalty
-            score -= 50; // TODO: Test this value
-        }
+		// Isolated pawn
+		// [myPawns] & [mask] -> get pawns on adjacent files
+		if ((myPawns & mask) == 0) {
+			// There are no pawns on adjacent files; apply penalty
+			score -= 50; // TODO: Test this value
+		}
 
-        // Add in the center file to check for a passed pawn
-        mask |= centerMask;
+		// Add in the center file to check for a passed pawn
+		mask |= centerMask;
 
-        // Move mask to in front of the pawn
-        if (side == 1) {
-            mask <<= (pawnRank + 1) << 3; // ([Pawn rank] + 1) * 8
-        } else {
-            mask >>= (8 - pawnRank) << 3; // ([Pawn rank] - 1) * 8
-        }
+		// Move mask to in front of the pawn
+		if (side == 1) {
+			mask <<= (pawnRank + 1) << 3; // ([Pawn rank] + 1) * 8
+		} else {
+			mask >>= (8 - pawnRank) << 3; // ([Pawn rank] - 1) * 8
+		}
 
-        if ((mask & theirPawns) == 0) {
-            // There are no enemy pawns in front of our pawn, give bonus based on rank
-            if (side == 1) {
-                score += PASSED_PAWN_BONUS[pawnRank]; // 10x the rank, make sure to keep it under the value of a pawn on the 6th rank
-            } else {
-                // Still add the score for black, because it is still a good thing (from black POV)
-                // 7 - pawnRank -> flip the rank so it is still based on how close it is to promoting
-                score += PASSED_PAWN_BONUS[7 - pawnRank];
-            }
-        }
+		if ((mask & theirPawns) == 0) {
+			// There are no enemy pawns in front of our pawn, give bonus based on rank
+			if (side == 1) {
+				score += PASSED_PAWN_BONUS[pawnRank]; // 10x the rank, make sure to keep it under the value of a pawn on the 6th rank
+			} else {
+				// Still add the score for black, because it is still a good thing (from black POV)
+				// 7 - pawnRank -> flip the rank so it is still based on how close it is to promoting
+				score += PASSED_PAWN_BONUS[7 - pawnRank];
+			}
+		}
 
-        // Pawn chains / Supported pawns
-        uint64_t supportMask = 0;
-        if (side == 1) {
-            if (pawnFile > 0) supportMask |= 1ULL << (pawnSquare - 9);
-            if (pawnFile < 7) supportMask |= 1ULL << (pawnSquare - 7);
-        } else {
-            if (pawnFile > 0) supportMask |= 1ULL << (pawnSquare + 7);
-            if (pawnFile < 7) supportMask |= 1ULL << (pawnSquare + 9);
-        }
+		// Pawn chains / Supported pawns
+		uint64_t supportMask = 0;
+		if (side == 1) {
+			if (pawnFile > 0) supportMask |= 1ULL << (pawnSquare - 9);
+			if (pawnFile < 7) supportMask |= 1ULL << (pawnSquare - 7);
+		} else {
+			if (pawnFile > 0) supportMask |= 1ULL << (pawnSquare + 7);
+			if (pawnFile < 7) supportMask |= 1ULL << (pawnSquare + 9);
+		}
 
-        if (myPawns & supportMask) {
-            score += 10;  // Bonus for supported pawn
-        }
-    }
+		if (myPawns & supportMask) {
+			score += 10;  // Bonus for supported pawn
+		}
+	}
 
 
-    // ==== Pawns around the king, push the pawns on the other side ====
-    // also known as pawn shelter
-    score += evaluatePawnShelter(board, side, kingSquare, kingFile, kingRank, myPawns, theirPawns);
+	// ==== Pawns around the king, push the pawns on the other side ====
+	// also known as pawn shelter
+	score += evaluatePawnShelter(board, side, kingSquare, kingFile, kingRank, myPawns, theirPawns);
 
-    return score;
+	return score;
 }
 
 int kingBetweenRooksScore(Board &board, int side) {
-    int score = 0;
+	int score = 0;
 
-    uint64_t rookBitboard, kingBitboard;
-    int backRank, castlingRights;
-    if (side == 1) {
-        rookBitboard = board.whiteRooks;
-        kingBitboard = board.whiteKing;
-        backRank = 0;
-        castlingRights = board.castling & 0b1100;
-    } else {
-        rookBitboard = board.blackRooks;
-        kingBitboard = board.blackKing;
-        backRank = 7;
-        castlingRights = board.castling & 0b0011;
-    }
+	uint64_t rookBitboard, kingBitboard;
+	int backRank, castlingRights;
+	if (side == 1) {
+		rookBitboard = board.whiteRooks;
+		kingBitboard = board.whiteKing;
+		backRank = 0;
+		castlingRights = board.castling & 0b1100;
+	} else {
+		rookBitboard = board.blackRooks;
+		kingBitboard = board.blackKing;
+		backRank = 7;
+		castlingRights = board.castling & 0b0011;
+	}
 
-    // Check if the king is trapping the rook
+	// Check if the king is trapping the rook
 
-    // If it can castle, not trapped
-    if (castlingRights) {
-        return 0;
-    }
+	// If it can castle, not trapped
+	if (castlingRights) {
+		return 0;
+	}
 
-    int kingSquare = std::countr_zero(kingBitboard);
-    int kingFile = kingSquare & 0x7;
-    int kingRank = kingSquare >> 3;
+	int kingSquare = std::countr_zero(kingBitboard);
+	int kingFile = kingSquare & 0x7;
+	int kingRank = kingSquare >> 3;
 
-    // If king not on back rank, doesn't matter
-    if (kingRank != backRank) {
-        return 0;
-    }
+	// If king not on back rank, doesn't matter
+	if (kingRank != backRank) {
+		return 0;
+	}
 
-    // There is a rook trapped on the king side \\ queen side
-    if ((kingFile > 4 && (0xC0 << (backRank << 3)) & rookBitboard)
-        || (kingFile <= 4 && (0x03 << (backRank << 3)) & rookBitboard)) {
-        score -= 40;
-    }
+	// There is a rook trapped on the king side \\ queen side
+	if ((kingFile > 4 && (0xC0 << (backRank << 3)) & rookBitboard)
+		|| (kingFile <= 4 && (0x03 << (backRank << 3)) & rookBitboard)) {
+		score -= 40;
+	}
 
-    return score;
+	return score;
 }
 
 int evaluateBoard(Board &board) {
-    int score = 0;
+	int score = 0;
 
-    for (Piece piece: ALL_PIECES) {
-        uint64_t bitboard = board.getBitboard(piece);
-        // Sum piece values
-        score += std::popcount(bitboard) * getPieceValue(piece);
+	for (Piece piece: ALL_PIECES) {
+		uint64_t bitboard = board.getBitboard(piece);
+		// Sum piece values
+		score += std::popcount(bitboard) * getPieceValue(piece);
 
-        // Piece square table values
-        bool isWhite = isupper(piece);
-        while (bitboard) {
-            int sq = std::countr_zero(bitboard);
-            bitboard &= bitboard - 1;
+		// Piece square table values
+		bool white = isWhite(piece);
+		while (bitboard) {
+			int sq = std::countr_zero(bitboard);
+			bitboard &= bitboard - 1;
 
-            if (isWhite) { // Add white score
-                score += getPieceSquareValue(piece, sq);
-            } else { // Subtract black score
-                score -= getPieceSquareValue(piece, sq);
-            }
-        }
-    }
+			if (white) { // Add white score
+				score += getPieceSquareValue(piece, sq);
+			} else { // Subtract black score
+				score -= getPieceSquareValue(piece, sq);
+			}
+		}
+	}
 
-    score += evaluatePawns(board, 1); // Add the score for white; when score is negative, bad for white
-    score -= evaluatePawns(board, -1); // Subtract the score for black; when score is negative, good for white
+	score += evaluatePawns(board, 1); // Add the score for white; when score is negative, bad for white
+	score -= evaluatePawns(board, -1); // Subtract the score for black; when score is negative, good for white
 
-    // ==== Mobility ====
-    // TODO
-    // Should just be [mobility_bonus * (#whitemoves - #blackmoves)] and it should be good enough (for now)
+	// ==== Mobility ====
+	// TODO
+	// Should just be [mobility_bonus * (#whitemoves - #blackmoves)] and it should be good enough (for now)
 
-    // Doesn't help, bot now does ~3 ELO worse than V10.2
+	// Doesn't help, bot now does ~3 ELO worse than V10.2
 //    score += kingBetweenRooksScore(board, 1);
 //    score -= kingBetweenRooksScore(board, -1);
 
-    // Doesn't seem to help ~30 ELO worse than V10.2
+	// Doesn't seem to help ~30 ELO worse than V10.2
 //    std::vector<Move> moves;
 //    moves.reserve(50);
 //
@@ -348,34 +348,33 @@ int evaluateBoard(Board &board) {
 
 
 
-    // TODO:
-    //  Open files near king
-    //  Game phase
-    //  Hanging pieces
+	// TODO:
+	//  Open files near king
+	//  Game phase
+	//  Hanging pieces
 
-    // Return from current player's perspective; black does need to be negative
-    return board.turn == 1 ? score : -score;
+	// Return from current player's perspective; black does need to be negative
+	return board.turn == 1 ? score : -score;
 }
 
-int getPieceSquareValue(char piece, int square) {
-    /* For black pieces, flip the square vertically */
-    bool isWhite = isupper(piece);
-    int sq = isWhite ? flipIndex(square) : square; // Seems backwards, but is fine
+int getPieceSquareValue(Piece piece, int square) {
+	/* For black pieces, flip the square vertically */
+	int sq = isWhite(piece) ? flipIndex(square) : square; // Seems backwards, but is fine
 
-    switch (tolower(piece)) {
-        case 'p':
-            return pawnTable[sq];
-        case 'n':
-            return knightTable[sq];
-        case 'b':
-            return bishopTable[sq];
-        case 'r':
-            return rookTable[sq];
-        case 'q':
-            return queenTable[sq];
-        case 'k':
-            return kingMiddleGameTable[sq];
-        default:
-            return 0;
-    }
+	switch (getPieceType(piece)) {
+		case TYPE_PAWN:
+			return pawnTable[sq];
+		case TYPE_KNIGHT:
+			return knightTable[sq];
+		case TYPE_BISHOP:
+			return bishopTable[sq];
+		case TYPE_ROOK:
+			return rookTable[sq];
+		case TYPE_QUEEN:
+			return queenTable[sq];
+		case TYPE_KING:
+			return kingMiddleGameTable[sq];
+		default:
+			return 0;
+	}
 }

@@ -553,14 +553,14 @@ void generatePawnMoves(const Board &board, std::vector<Move> &moveList) {
 		int pawnSquare = std::countr_zero(pawnBitboard);
 		pawnBitboard &= pawnBitboard - 1;
 
-		int pawnRank = pawnSquare / 8;
-		int pawnFile = pawnSquare % 8;
+		int pawnRank = pawnSquare >> 3;
+		int pawnFile = pawnSquare & 0x7;
 
 		// === 1. Moving Forward ===
 		int oneForward = pawnSquare + direction;
 
 		if (isValidSquare(oneForward) && !(occupied & (1ULL << oneForward))) {
-			if (pawnRank + (direction / 8) == promotionRank) {
+			if (pawnRank + (direction >> 3) == promotionRank) {
 				// Add promotion moves
 				moveList.push_back(encodeMove(pawnSquare, oneForward, MOVE_FLAG_PROMOTION | PROMOTE_TO_QUEEN));
 				moveList.push_back(encodeMove(pawnSquare, oneForward, MOVE_FLAG_PROMOTION | PROMOTE_TO_ROOK));
