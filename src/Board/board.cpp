@@ -19,6 +19,7 @@ Board::Board()
           enPassantSquare(-1), turn(0), castling(0), halfMoveClock(0), fullMove(1), zobristHash(0) {
     loadStartPosition();
     zobristHash = computeZobristHash();
+    initCastlingTable();
 }
 
 Board::Board(std::string &fen) : Board() {
@@ -68,7 +69,7 @@ static const Piece PROMO_PIECES[2][4] = {
 
 // Castling rights removal: [piece type][square] -> rights to remove
 // Initialize this in your Board constructor or init function
-static uint8_t CASTLING_REMOVE[24][64];
+static uint8_t CASTLING_REMOVE[4][64];
 
 // Call this once at program startup
 void Board::initCastlingTable() {
@@ -76,21 +77,21 @@ void Board::initCastlingTable() {
 
     // White king removes white castling rights from any square
     for (int sq = 0; sq < 64; sq++) {
-        CASTLING_REMOVE[WHITE_KING][sq] = 0b1100;
+        CASTLING_REMOVE[0][sq] = 0b1100;
     }
 
     // Black king removes black castling rights from any square
     for (int sq = 0; sq < 64; sq++) {
-        CASTLING_REMOVE[BLACK_KING][sq] = 0b0011;
+        CASTLING_REMOVE[1][sq] = 0b0011;
     }
 
     // White rooks
-    CASTLING_REMOVE[WHITE_ROOK][0] = 0b0100;  // Queen side
-    CASTLING_REMOVE[WHITE_ROOK][7] = 0b1000;  // King side
+    CASTLING_REMOVE[2][0] = 0b0100;  // Queen side
+    CASTLING_REMOVE[2][7] = 0b1000;  // King side
 
     // Black rooks
-    CASTLING_REMOVE[BLACK_ROOK][56] = 0b0001; // Queen side
-    CASTLING_REMOVE[BLACK_ROOK][63] = 0b0010; // King side
+    CASTLING_REMOVE[3][56] = 0b0001; // Queen side
+    CASTLING_REMOVE[3][63] = 0b0010; // King side
 }
 
 inline Piece getPromotedPiece(int flags, int turn) {
@@ -587,12 +588,15 @@ UndoInfo Board::makeMove(Move m) {
     }
 
     // ========== UPDATE CASTLING RIGHTS ==========
-
-    // Remove rights based on moving piece and captured piece (using lookup table)
-    castling &= ~CASTLING_REMOVE[thisPiece][fromLocation];
+    int castlingRemoveIndex = castlingPieceIndex(thisPiece);
+    if (castlingRemoveIndex >= 0) {
+        // Remove rights based on moving piece and captured piece (using lookup table)
+        castling &= ~CASTLING_REMOVE[castlingRemoveIndex][fromLocation];
+    }
     // Remove rights from captured piece (only if there was a capture)
-    if (isPiece(capturedPiece)) {
-        castling &= ~CASTLING_REMOVE[capturedPiece][toLocation];
+    castlingRemoveIndex = castlingPieceIndex(capturedPiece);
+    if (castlingRemoveIndex >= 0) {
+        castling &= ~CASTLING_REMOVE[castlingRemoveIndex][toLocation];
     }
 
     // ========== UPDATE EN PASSANT SQUARE ==========

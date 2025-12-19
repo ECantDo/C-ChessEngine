@@ -16,133 +16,133 @@
 
 class Board {
 public:
-    // Constructor
-    Board();
+	// Constructor
+	Board();
 
-    explicit Board(std::string &fen);
+	explicit Board(std::string &fen);
 
-    // Load starting position
-    void loadStartPosition();
+	// Load starting position
+	void loadStartPosition();
 
-    bool loadFenPosition(std::string &fen);
+	bool loadFenPosition(std::string &fen);
 
-    [[nodiscard]] std::string generateFen() const;
+	[[nodiscard]] std::string generateFen() const;
 
-    // Print Board
-    void printBoard() const;
+	// Print Board
+	void printBoard() const;
 
-    [[nodiscard]] uint64_t getBitboard(Piece piece) const;
+	[[nodiscard]] uint64_t getBitboard(Piece piece) const;
 
-    [[nodiscard]] uint64_t getWhiteBitboard() const;
+	[[nodiscard]] uint64_t getWhiteBitboard() const;
 
-    [[nodiscard]] uint64_t getBlackBitboard() const;
+	[[nodiscard]] uint64_t getBlackBitboard() const;
 
-    // Move making
-    /**
-     * Make a move, assumes that the move is a legal move.
-     * @param m The move to make
-     * @return
-     */
-    UndoInfo makeMove(Move m);
+	// Move making
+	/**
+	 * Make a move, assumes that the move is a legal move.
+	 * @param m The move to make
+	 * @return
+	 */
+	UndoInfo makeMove(Move m);
 
-    void unmakeMove(Move m, const UndoInfo &undoInfo);
+	void unmakeMove(Move m, const UndoInfo &undoInfo);
 
-    static void initCastlingTable();
-
-
-    [[nodiscard]] Piece pieceAtSquare(int square) const;
-
-    [[nodiscard]] uint64_t *getBitboardPointer(Piece piece);
-
-    void setPieceAtSquare(int square, Piece piece);
+	static void initCastlingTable();
 
 
-    // Bitboards
-    uint64_t whitePawns;
-    uint64_t whiteKnights;
-    uint64_t whiteBishops;
-    uint64_t whiteRooks;
-    uint64_t whiteQueens;
-    uint64_t whiteKing;
+	[[nodiscard]] Piece pieceAtSquare(int square) const;
 
-    uint64_t blackPawns;
-    uint64_t blackKnights;
-    uint64_t blackBishops;
-    uint64_t blackRooks;
-    uint64_t blackQueens;
-    uint64_t blackKing;
+	[[nodiscard]] uint64_t *getBitboardPointer(Piece piece);
 
-    /**
-     * -1 for none
-     * 0 < n < 64 for the board index -> C or F rank
-     */
-    int enPassantSquare;
+	void setPieceAtSquare(int square, Piece piece);
 
-    /**
-     * 1 for white
-     * -1 for black
-     */
-    int8_t turn;
 
-    /**
-     * Castling rights:
-     * 0b0000 -> no one has rights
-     * 0b1000 -> White king-side
-     * 0b0100 -> White queen-side
-     * 0b0010 -> Black king-side
-     * 0b0001 -> Black queen-side
-     *
-     * Example:
-     * 0b1010 -> Both white and black of king-side rights
-     */
-    uint8_t castling;
+	// Bitboards
+	uint64_t whitePawns;
+	uint64_t whiteKnights;
+	uint64_t whiteBishops;
+	uint64_t whiteRooks;
+	uint64_t whiteQueens;
+	uint64_t whiteKing;
 
-    /**
-     * For 50-move rule
-     */
-    int halfMoveClock;
+	uint64_t blackPawns;
+	uint64_t blackKnights;
+	uint64_t blackBishops;
+	uint64_t blackRooks;
+	uint64_t blackQueens;
+	uint64_t blackKing;
 
-    /**
-     * Counts from 1, increments after Black's move
-     */
-    int fullMove;
+	/**
+	 * -1 for none
+	 * 0 < n < 64 for the board index -> C or F rank
+	 */
+	int enPassantSquare;
 
-    uint64_t zobristHash;
+	/**
+	 * 1 for white
+	 * -1 for black
+	 */
+	int8_t turn;
 
-    [[nodiscard]] uint64_t computeZobristHash() const;
+	/**
+	 * Castling rights:
+	 * 0b0000 -> no one has rights
+	 * 0b1000 -> White king-side
+	 * 0b0100 -> White queen-side
+	 * 0b0010 -> Black king-side
+	 * 0b0001 -> Black queen-side
+	 *
+	 * Example:
+	 * 0b1010 -> Both white and black of king-side rights
+	 */
+	uint8_t castling;
 
-    std::vector<uint64_t> gameHistory; // Positions from actual game, update from setting up board position
+	/**
+	 * For 50-move rule
+	 */
+	int halfMoveClock;
 
-    [[nodiscard]] bool isRepetitionInSearch(const std::vector<uint64_t> &searchPath) const {
-        // Start from the most recent board position, and go back until the half move clock is 0
-        // -- as that is where repetitions can start from
-        int startIdx = (int) (searchPath.size() + gameHistory.size() - halfMoveClock);
+	/**
+	 * Counts from 1, increments after Black's move
+	 */
+	int fullMove;
 
-        // Count the number of times this board position has been reached
-        int reps = 0;
-        for (int i = startIdx; i < gameHistory.size(); i++) {
-            if (gameHistory[i] == zobristHash) {
-                reps++;
-            }
-            if (reps >= 2) {
-                return true;
-            }
-        }
+	uint64_t zobristHash;
 
-        //
-        startIdx = std::max((int) (searchPath.size() - halfMoveClock), 0);
-        for (int i = startIdx; i < searchPath.size(); i++) {
-            if (searchPath[i] == zobristHash) {
-                reps++;
-            }
+	[[nodiscard]] uint64_t computeZobristHash() const;
 
-            if (reps >= 2) {
-                return true;
-            }
-        }
+	std::vector<uint64_t> gameHistory; // Positions from actual game, update from setting up board position
 
-        return false;
-    }
+	[[nodiscard]] bool isRepetitionInSearch(const std::vector<uint64_t> &searchPath) const {
+		// Start from the most recent board position, and go back until the half move clock is 0
+		// -- as that is where repetitions can start from
+		int startIdx = (int) (searchPath.size() + gameHistory.size() - halfMoveClock);
+
+		// Count the number of times this board position has been reached
+		int reps = 0;
+		for (int i = startIdx; i < gameHistory.size(); i++) {
+			if (gameHistory[i] == zobristHash) {
+				reps++;
+			}
+			if (reps >= 2) {
+				return true;
+			}
+		}
+
+		//
+		startIdx = std::max((int) (searchPath.size() - halfMoveClock), 0);
+		for (int i = startIdx; i < searchPath.size(); i++) {
+			if (searchPath[i] == zobristHash) {
+				reps++;
+			}
+
+			if (reps >= 2) {
+				return true;
+			}
+		}
+
+		return false;
+	}
 };
 
 /**
@@ -170,5 +170,20 @@ int getBoardIndex(char file, char rank);
  * @return String of the index
  */
 std::string getBoardPosition(int index);
+
+inline int castlingPieceIndex(Piece p) {
+	switch (p) {
+		case WHITE_KING:
+			return 0;
+		case BLACK_KING:
+			return 1;
+		case WHITE_ROOK:
+			return 2;
+		case BLACK_ROOK:
+			return 3;
+		default:
+			return -1;
+	}
+}
 
 #endif //CHESSENGINE_BOARD_H

@@ -30,7 +30,7 @@ struct UndoInfo {
     Piece capturedPiece;
     int enPassantSquare;
     uint8_t castlingRights;
-    int halfMoveClock;
+    uint8_t halfMoveClock;
     uint64_t zobristHash;
 };
 
