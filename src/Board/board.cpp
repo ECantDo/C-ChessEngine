@@ -6,6 +6,7 @@
 // Todos
 // =====================================================================================================================
 
+#include <cstring>
 #include "board.h"
 
 // =====================================================================================================================
@@ -58,7 +59,47 @@ void Board::loadStartPosition() {
 // =====================================================================================================================
 // Class based helper functions
 // =====================================================================================================================
-char Board::pieceAtSquare(int square) const {
+
+// Promotion piece lookup: [isWhite][promoType] -> piece
+static const Piece PROMO_PIECES[2][4] = {
+        {BLACK_KNIGHT, BLACK_BISHOP, BLACK_ROOK, BLACK_QUEEN}, // Black (turn = -1)
+        {WHITE_KNIGHT, WHITE_BISHOP, WHITE_ROOK, WHITE_QUEEN}  // White (turn = 1)
+};
+
+// Castling rights removal: [piece type][square] -> rights to remove
+// Initialize this in your Board constructor or init function
+static uint8_t CASTLING_REMOVE[24][64];
+
+// Call this once at program startup
+void Board::initCastlingTable() {
+    memset(CASTLING_REMOVE, 0, sizeof(CASTLING_REMOVE));
+
+    // White king removes white castling rights from any square
+    for (int sq = 0; sq < 64; sq++) {
+        CASTLING_REMOVE[WHITE_KING][sq] = 0b1100;
+    }
+
+    // Black king removes black castling rights from any square
+    for (int sq = 0; sq < 64; sq++) {
+        CASTLING_REMOVE[BLACK_KING][sq] = 0b0011;
+    }
+
+    // White rooks
+    CASTLING_REMOVE[WHITE_ROOK][0] = 0b0100;  // Queen side
+    CASTLING_REMOVE[WHITE_ROOK][7] = 0b1000;  // King side
+
+    // Black rooks
+    CASTLING_REMOVE[BLACK_ROOK][56] = 0b0001; // Queen side
+    CASTLING_REMOVE[BLACK_ROOK][63] = 0b0010; // King side
+}
+
+inline Piece getPromotedPiece(int flags, int turn) {
+    int promoType = flags & 0x3;
+    return PROMO_PIECES[turn == 1 ? 1 : 0][promoType];
+}
+
+
+Piece Board::pieceAtSquare(int square) const {
     uint64_t mask = 1ULL << square;
 
     if (whitePawns & mask) return WHITE_PAWN;
@@ -77,10 +118,10 @@ char Board::pieceAtSquare(int square) const {
     if (whiteKing & mask) return WHITE_KING;
     if (blackKing & mask) return BLACK_KING;
 
-    return NONE_PIECE;
+    return NONE;
 }
 
-void Board::setPieceAtSquare(int square, char piece) {
+void Board::setPieceAtSquare(int square, Piece piece) {
     if (square < 0 || square >= 64) {
         return;
     }
@@ -126,7 +167,7 @@ void Board::printBoard() const {
     }
 }
 
-uint64_t Board::getBitboard(char piece) const {
+uint64_t Board::getBitboard(Piece piece) const {
     switch (piece) {
         case WHITE_PAWN:
             return whitePawns;
@@ -157,7 +198,7 @@ uint64_t Board::getBitboard(char piece) const {
     }
 }
 
-uint64_t *Board::getBitboardPointer(char piece) {
+uint64_t *Board::getBitboardPointer(Piece piece) {
     switch (piece) {
         case WHITE_PAWN:
             return &whitePawns;
@@ -251,7 +292,8 @@ bool Board::loadFenPosition(std::string &fen) {
         if (file >= 8) return false;  /* Too many pieces in rank */
 
         int square = rank * 8 + file;
-        newBoard.setPieceAtSquare(square, ch);
+        Piece p = charToPiece(ch);
+        newBoard.setPieceAtSquare(square, p);
         file++;
     }
 
@@ -374,15 +416,15 @@ std::string Board::generateFen() const {
         int empty = 0;
         for (int file = 0; file < 8; ++file) {
             int idx = file + rank * 8;
-            char pieceChar = pieceAtSquare(idx);
-            if (pieceChar == NONE_PIECE) {
+            Piece piece = pieceAtSquare(idx);
+            if (piece == NONE) {
                 ++empty;
             } else {
                 if (empty > 0) {
                     fen << empty;
                     empty = 0;
                 }
-                fen << pieceChar;
+                fen << pieceToChar(piece);
             }
         }
         if (empty > 0) fen << empty;
@@ -462,205 +504,141 @@ std::string getBoardPosition(int index) {
 // Move making
 // =====================================================================================================================
 UndoInfo Board::makeMove(Move m) {
-    UndoInfo undoInfo = {0, 0, 0, 0};
+    const int fromLocation = getMoveFrom(m);
+    const int toLocation = getMoveTo(m);
+    const int flags = getMoveFlags(m);
 
-    int fromLocation = getMoveFrom(m);
-    int toLocation = getMoveTo(m);
-    int flags = getMoveFlags(m);
-
-    char thisPiece = pieceAtSquare(fromLocation);
-    char capturedPiece = pieceAtSquare(toLocation);
+    // CACHE ALL LOOKUPS UP FRONT
+    const Piece thisPiece = pieceAtSquare(fromLocation);
+    const Piece capturedPiece = pieceAtSquare(toLocation);
+    const bool isCapture = (flags & MOVE_FLAG_CAPTURE) != 0;
+    const bool isPromotion = (flags & MOVE_FLAG_PROMOTION) != 0;
+    const bool isCastling = (flags & MOVE_FLAG_CASTLING) != 0;
+    const bool isEnPassant = (flags & MOVE_FLAG_EN_PASSANT) != 0;
 
     // Save undo info
-    undoInfo.halfMoveClock = halfMoveClock;
-    undoInfo.enPassantSquare = enPassantSquare;
-    undoInfo.castlingRights = castling;
-    undoInfo.zobristHash = zobristHash;
+    UndoInfo undoInfo = {
+            .capturedPiece = isEnPassant
+                             ? (turn == 1 ? BLACK_PAWN : WHITE_PAWN)
+                             : capturedPiece,
+            .enPassantSquare = (int8_t) enPassantSquare,
+            .castlingRights = castling,
+            .halfMoveClock = (uint8_t) halfMoveClock,
+            .zobristHash = zobristHash,
+    };
 
-    // Move the piece
-    setPieceAtSquare(toLocation, thisPiece);
-    setPieceAtSquare(fromLocation, NONE_PIECE);
+    // ========== UPDATE ZOBRIST HASH (Part 1: Removals) ==========
 
-    // Handle Captures
-    if (flags & MOVE_FLAG_EN_PASSANT) {
-        int capturedPawnSquare = toLocation + (turn == 1 ? -8 : 8);
-        undoInfo.capturedPiece = (turn == 1 ? BLACK_PAWN : WHITE_PAWN);
-        setPieceAtSquare(capturedPawnSquare, NONE_PIECE);
-    } else {
-        undoInfo.capturedPiece = capturedPiece;  /* Regular capture */
-    }
-    // Other captures should already be natively handled.
-
-    // Handle Castling
-    if (flags & MOVE_FLAG_CASTLING && thisPiece == WHITE_KING) {
-        if (toLocation == 6) { // King side
-            setPieceAtSquare(5, WHITE_ROOK);
-            setPieceAtSquare(7, NONE_PIECE);
-        } else if (toLocation == 2) { // Queen side
-            setPieceAtSquare(3, WHITE_ROOK);
-            setPieceAtSquare(0, NONE_PIECE);
-        }
-        castling &= 0b0011; // Remove white right to castle
-    } else if (flags & MOVE_FLAG_CASTLING && thisPiece == BLACK_KING) {
-        if (toLocation == 62) {
-            setPieceAtSquare(61, BLACK_ROOK);
-            setPieceAtSquare(63, NONE_PIECE);
-        } else if (toLocation == 58) {
-            setPieceAtSquare(59, BLACK_ROOK);
-            setPieceAtSquare(56, NONE_PIECE);
-        }
-        castling &= 0b1100; // Remove black right to castle
-    }
-
-    // Handle Promotion
-    char newPiece;
-    if (flags & MOVE_FLAG_PROMOTION) {
-        int promotionPiece = flags & 0x3;
-        if (turn == 1) {
-            switch (promotionPiece) {
-                case PROMOTE_TO_KNIGHT:
-                    newPiece = WHITE_KNIGHT;
-                    break;
-                case PROMOTE_TO_BISHOP:
-                    newPiece = WHITE_BISHOP;
-                    break;
-                case PROMOTE_TO_QUEEN:
-                    newPiece = WHITE_QUEEN;
-                    break;
-                case PROMOTE_TO_ROOK:
-                    newPiece = WHITE_ROOK;
-                    break;
-                default:
-                    newPiece = NONE_PIECE;
-            }
-        } else {
-            switch (promotionPiece) {
-                case PROMOTE_TO_KNIGHT:
-                    newPiece = BLACK_KNIGHT;
-                    break;
-                case PROMOTE_TO_BISHOP:
-                    newPiece = BLACK_BISHOP;
-                    break;
-                case PROMOTE_TO_QUEEN:
-                    newPiece = BLACK_QUEEN;
-                    break;
-                case PROMOTE_TO_ROOK:
-                    newPiece = BLACK_ROOK;
-                    break;
-                default:
-                    newPiece = NONE_PIECE;
-            }
-        }
-        setPieceAtSquare(toLocation, newPiece);
-    }
-
-    // Update Castling Rights
-    if (thisPiece == WHITE_ROOK) {
-        if (fromLocation == 0) {
-            castling &= ~0b0100;    // Remove queen side rights
-        } else if (fromLocation == 7) {
-            castling &= ~0b1000;    // Remove king side rights
-        }
-    } else if (thisPiece == BLACK_ROOK) {
-        if (fromLocation == 56) {
-            castling &= ~0b0001; // Queen side
-        } else if (fromLocation == 63) {
-            castling &= ~0b0010; // King side
-        }
-    } else if (thisPiece == WHITE_KING) {
-        castling &= ~0b1100; // Remove white rights on king move
-    } else if (thisPiece == BLACK_KING) {
-        castling &= ~0b0011; // Remove black rights on king move
-    }
-
-    if (capturedPiece == WHITE_ROOK) {
-        if (toLocation == 0) {
-            castling &= ~0b0100; // Remove white rights on queen side
-        }
-        if (toLocation == 7) {
-            castling &= ~0b1000; // Remove white rights on king side
-        }
-    } else if (capturedPiece == BLACK_ROOK) {
-        if (toLocation == 56) {
-            castling &= ~0b0001; // Remove black rights on queen side
-        }
-        if (toLocation == 63) {
-            castling &= ~0b0010; // Remove black rights on king side
-        }
-    }
-
-    // Update en passant square
-    enPassantSquare = -1;
-    if ((thisPiece == WHITE_PAWN && fromLocation / 8 == 1 && toLocation / 8 == 3) ||
-        (thisPiece == BLACK_PAWN && fromLocation / 8 == 6 && toLocation / 8 == 4)) {
-        enPassantSquare = (fromLocation + toLocation) / 2; // Square the pawn passed over
-    }
-
-    // Update half-move clock
-    if (thisPiece == WHITE_PAWN || thisPiece == BLACK_PAWN || capturedPiece != NONE_PIECE) {
-        halfMoveClock = 0;
-    } else {
-        halfMoveClock += 1;
-    }
-
-    // Update Turn
-    turn = (int8_t) -turn;
-
-    // Update full-move number
-    if (turn == 1) { // Just switched to white, black just moved, therefore full move
-        fullMove += 1;
-    }
-
-    // ==========================================
-    // UPDATE ZOBRIST
-    // TODO: Integrate with the above code; make it a few fewer CPU cycles to do everything
-    // ==========================================
-    /* Remove piece from source square */
+    // Remove piece from source square
     zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(thisPiece)][fromLocation];
 
-    /* If capture, remove captured piece */
-    if (capturedPiece != NONE_PIECE && !(flags & MOVE_FLAG_EN_PASSANT)) {
+    // Remove old castling rights
+    zobristHash ^= Zobrist::castlingRights[castling];
+
+    // Remove old en passant
+    if (enPassantSquare >= 0) {
+        zobristHash ^= Zobrist::enPassantFile[enPassantSquare & 0x7];
+    }
+
+    // Remove captured piece
+    if (isEnPassant) {
+        int capturedPawnSquare = toLocation + (turn == 1 ? -8 : 8);
+        zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(undoInfo.capturedPiece)][capturedPawnSquare];
+        setPieceAtSquare(capturedPawnSquare, NONE);
+    } else if (isPiece(capturedPiece)) {
         zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(capturedPiece)][toLocation];
     }
 
-    /* Add piece to destination square */
-    char movingPiece = thisPiece;
-    if (flags & MOVE_FLAG_PROMOTION) {
-        /* Promoted piece, not original pawn */
-        movingPiece = newPiece;  /* The piece after promotion */
-    }
-    zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(movingPiece)][toLocation];
+    // ========== MOVE THE PIECE ==========
 
-    /* En passant capture */
-    if (flags & MOVE_FLAG_EN_PASSANT) {
-        int capturedPawnSquare = toLocation + (turn == 1 ? -8 : 8);
-        zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(undoInfo.capturedPiece)][capturedPawnSquare];
+    Piece finalPiece = thisPiece;
+    if (isPromotion) {
+        finalPiece = getPromotedPiece(flags, turn);
     }
 
-    /* Castling - move rook */
-    if (flags & MOVE_FLAG_CASTLING) {
-        /* Remove rook from old square, add to new square */
-        if (toLocation == 6) {  /* White kingside */
+    setPieceAtSquare(fromLocation, NONE);
+    setPieceAtSquare(toLocation, finalPiece);
+
+    // ========== HANDLE CASTLING ==========
+
+    if (isCastling) {
+        // Move rook based on king's destination
+        if (toLocation == 6) {  // White kingside
+            setPieceAtSquare(5, WHITE_ROOK);
+            setPieceAtSquare(7, NONE);
             zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(WHITE_ROOK)][7];
             zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(WHITE_ROOK)][5];
+        } else if (toLocation == 2) {  // White queenside
+            setPieceAtSquare(3, WHITE_ROOK);
+            setPieceAtSquare(0, NONE);
+            zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(WHITE_ROOK)][0];
+            zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(WHITE_ROOK)][3];
+        } else if (toLocation == 62) {  // Black kingside
+            setPieceAtSquare(61, BLACK_ROOK);
+            setPieceAtSquare(63, NONE);
+            zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(BLACK_ROOK)][63];
+            zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(BLACK_ROOK)][61];
+        } else if (toLocation == 58) {  // Black queenside
+            setPieceAtSquare(59, BLACK_ROOK);
+            setPieceAtSquare(56, NONE);
+            zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(BLACK_ROOK)][56];
+            zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(BLACK_ROOK)][59];
         }
-        /* ... handle other castling cases ... */
     }
 
-    /* Update castling rights */
-    zobristHash ^= Zobrist::castlingRights[undoInfo.castlingRights];  /* Remove old */
-    zobristHash ^= Zobrist::castlingRights[castling];  /* Add new */
+    // ========== UPDATE CASTLING RIGHTS ==========
 
-    /* Update en passant */
-    if (undoInfo.enPassantSquare >= 0) {
-        zobristHash ^= Zobrist::enPassantFile[undoInfo.enPassantSquare % 8];  /* Remove old */
+    // Remove rights based on moving piece and captured piece (using lookup table)
+    castling &= ~CASTLING_REMOVE[thisPiece][fromLocation];
+    // Remove rights from captured piece (only if there was a capture)
+    if (isPiece(capturedPiece)) {
+        castling &= ~CASTLING_REMOVE[capturedPiece][toLocation];
     }
+
+    // ========== UPDATE EN PASSANT SQUARE ==========
+
+    enPassantSquare = -1;
+    // Check for double pawn push
+    if (thisPiece == WHITE_PAWN || thisPiece == BLACK_PAWN) {
+        int rankFrom = fromLocation >> 3;
+        int rankTo = toLocation >> 3;
+        if (abs(rankFrom - rankTo) == 2) {
+            enPassantSquare = (fromLocation + toLocation) >> 1;
+        }
+    }
+
+    // ========== UPDATE HALF-MOVE CLOCK ==========
+
+    if (thisPiece == WHITE_PAWN || thisPiece == BLACK_PAWN || isCapture) {
+        halfMoveClock = 0;
+    } else {
+        halfMoveClock++;
+    }
+
+    // ========== ZOBRIST HASH (Part 2: Additions) ==========
+
+    // Add piece to destination square
+    zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(finalPiece)][toLocation];
+
+    // Add new castling rights
+    zobristHash ^= Zobrist::castlingRights[castling];
+
+    // Add new en passant
     if (enPassantSquare >= 0) {
-        zobristHash ^= Zobrist::enPassantFile[enPassantSquare % 8];  /* Add new */
+        zobristHash ^= Zobrist::enPassantFile[enPassantSquare & 0x7];
     }
 
-    /* Flip side to move */
+    // ========== UPDATE TURN AND MOVE COUNTER ==========
+
+    turn = (int8_t) -turn;
+
+    // Flip side to move in zobrist
     zobristHash ^= Zobrist::sideToMove;
+
+    // Update full move number
+    if (turn == 1) {
+        fullMove++;
+    }
 
     return undoInfo;
 }
@@ -679,7 +657,7 @@ void Board::unmakeMove(Move m, const UndoInfo &undoInfo) {
     }
 
     /* Get the piece at destination (might be promoted piece) */
-    char piece = pieceAtSquare(toLocation);
+    Piece piece = pieceAtSquare(toLocation);
 
     /* If it was a promotion, restore the pawn */
     if (flags & MOVE_FLAG_PROMOTION) {
@@ -694,23 +672,23 @@ void Board::unmakeMove(Move m, const UndoInfo &undoInfo) {
     if (flags & MOVE_FLAG_EN_PASSANT) {
         int capturedPawnSquare = toLocation + (turn == 1 ? -8 : 8);
         setPieceAtSquare(capturedPawnSquare, undoInfo.capturedPiece);
-        setPieceAtSquare(toLocation, NONE_PIECE);
+        setPieceAtSquare(toLocation, NONE);
     }
 
     /* Undo castling */
     if (flags & MOVE_FLAG_CASTLING) {
         if (toLocation == 6) {  /* White kingside */
             setPieceAtSquare(7, WHITE_ROOK);
-            setPieceAtSquare(5, NONE_PIECE);
+            setPieceAtSquare(5, NONE);
         } else if (toLocation == 2) {  /* White queenside */
             setPieceAtSquare(0, WHITE_ROOK);
-            setPieceAtSquare(3, NONE_PIECE);
+            setPieceAtSquare(3, NONE);
         } else if (toLocation == 62) {  /* Black kingside */
             setPieceAtSquare(63, BLACK_ROOK);
-            setPieceAtSquare(61, NONE_PIECE);
+            setPieceAtSquare(61, NONE);
         } else if (toLocation == 58) {  /* Black queenside */
             setPieceAtSquare(56, BLACK_ROOK);
-            setPieceAtSquare(59, NONE_PIECE);
+            setPieceAtSquare(59, NONE);
         }
     }
 
@@ -726,8 +704,8 @@ uint64_t Board::computeZobristHash() const {
 
     // Hash board position
     for (int square = 0; square < 64; square++) {
-        char piece = pieceAtSquare(square);
-        if (piece != NONE_PIECE) {
+        Piece piece = pieceAtSquare(square);
+        if (isPiece(piece)) {
             int pIdx = Zobrist::getZobristIndex(piece);
             hash ^= Zobrist::pieceSquare[pIdx][square];
         }
@@ -741,7 +719,7 @@ uint64_t Board::computeZobristHash() const {
     // Hash castling rights
     hash ^= Zobrist::castlingRights[castling];
 
-    if (enPassantSquare >= 0 && enPassantSquare < 64){
+    if (enPassantSquare >= 0 && enPassantSquare < 64) {
         int file = enPassantSquare & 0x7; // Same as % 8, but faster
         hash ^= Zobrist::enPassantFile[file];
     }

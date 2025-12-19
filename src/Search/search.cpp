@@ -20,8 +20,8 @@ int scoreMoveForOrdering(Move m, const Board &board, int ply,
     // 1. CAPTURES (highest priority)
     if (flags & MOVE_FLAG_CAPTURE) {
 
-        char victim = board.pieceAtSquare(to);
-        char attacker = board.pieceAtSquare(from);
+        Piece victim = board.pieceAtSquare(to);
+        Piece attacker = board.pieceAtSquare(from);
         return 1000000 + getPieceValue(victim) * 10 - getPieceValue(attacker);
     }
 

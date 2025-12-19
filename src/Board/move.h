@@ -27,7 +27,7 @@ typedef uint32_t Move;
 #define PROMOTE_TO_QUEEN  3
 
 struct UndoInfo {
-    char capturedPiece;
+    Piece capturedPiece;
     int enPassantSquare;
     uint8_t castlingRights;
     int halfMoveClock;

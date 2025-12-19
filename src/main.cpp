@@ -218,6 +218,8 @@ int main() {
 //    std::string openingBookLocation = "./openingBook.bin";
 //    loadBookToHashMap(openingBookLocation);
 
+    currentBoard.initCastlingTable();
+
     std::ios::sync_with_stdio(false);
     std::cin.tie(nullptr);
 

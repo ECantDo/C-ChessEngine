@@ -300,7 +300,7 @@ int kingBetweenRooksScore(Board &board, int side) {
 int evaluateBoard(Board &board) {
     int score = 0;
 
-    for (char piece: ALL_PIECES) {
+    for (Piece piece: ALL_PIECES) {
         uint64_t bitboard = board.getBitboard(piece);
         // Sum piece values
         score += std::popcount(bitboard) * getPieceValue(piece);

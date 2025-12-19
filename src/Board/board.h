@@ -31,7 +31,7 @@ public:
     // Print Board
     void printBoard() const;
 
-    [[nodiscard]] uint64_t getBitboard(char piece) const;
+    [[nodiscard]] uint64_t getBitboard(Piece piece) const;
 
     [[nodiscard]] uint64_t getWhiteBitboard() const;
 
@@ -47,12 +47,14 @@ public:
 
     void unmakeMove(Move m, const UndoInfo &undoInfo);
 
+    static void initCastlingTable();
 
-    [[nodiscard]] char pieceAtSquare(int square) const;
 
-    [[nodiscard]] uint64_t *getBitboardPointer(char piece);
+    [[nodiscard]] Piece pieceAtSquare(int square) const;
 
-    void setPieceAtSquare(int square, char piece);
+    [[nodiscard]] uint64_t *getBitboardPointer(Piece piece);
+
+    void setPieceAtSquare(int square, Piece piece);
 
 
     // Bitboards
@@ -110,26 +112,6 @@ public:
     [[nodiscard]] uint64_t computeZobristHash() const;
 
     std::vector<uint64_t> gameHistory; // Positions from actual game, update from setting up board position
-
-    [[nodiscard]] bool isDraw() const {
-        // Fifty move rule
-        if (halfMoveClock >= 100) {
-            return true;
-        }
-
-        // Count board repetitions
-        int reps = 0;
-        int startIdx = std::max(0, (int) gameHistory.size() - halfMoveClock);
-        for (int i = startIdx; i < gameHistory.size(); i++) {
-            if (gameHistory[i] == zobristHash) {
-                reps++;
-                if (reps >= 2) {
-                    return true; // 3rd occurrence
-                }
-            }
-        }
-        return false;
-    }
 
     [[nodiscard]] bool isRepetitionInSearch(const std::vector<uint64_t> &searchPath) const {
         // Start from the most recent board position, and go back until the half move clock is 0

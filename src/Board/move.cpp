@@ -44,7 +44,7 @@ Move stringToMove(std::string &str, const Board &board) {
 
     int8_t side = board.turn;
 
-    if (target != NONE_PIECE) {
+    if (target != NONE) {
         flags |= MOVE_FLAG_CAPTURE;
     }
 

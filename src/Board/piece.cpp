@@ -4,7 +4,7 @@
 
 #include "piece.h"
 
-int getPieceValue(char piece) {
+int getPieceValue(Piece piece) {
     // NONE_PIECE, <BLACK/WHITE>_KING; all worth 0, caught by the default case
     switch (piece) {
         case WHITE_PAWN:
