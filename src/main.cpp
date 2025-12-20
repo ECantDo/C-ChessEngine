@@ -10,7 +10,7 @@
 #include <sstream>
 #include <chrono>
 
-#define VERSION "V17.6_generalTuning"
+#define VERSION "V17.7_endGamePieceSquare"
 
 bool debug = false;
 Board currentBoard;   // Global board state stored between commands

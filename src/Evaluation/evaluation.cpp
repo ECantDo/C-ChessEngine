@@ -255,55 +255,22 @@ int evaluatePawns(Board &board, int side) {
 	return score;
 }
 
-int kingBetweenRooksScore(Board &board, int side) {
-	int score = 0;
-
-	uint64_t rookBitboard, kingBitboard;
-	int backRank, castlingRights;
-	if (side == 1) {
-		rookBitboard = board.whiteRooks;
-		kingBitboard = board.whiteKing;
-		backRank = 0;
-		castlingRights = board.castling & 0b1100;
-	} else {
-		rookBitboard = board.blackRooks;
-		kingBitboard = board.blackKing;
-		backRank = 7;
-		castlingRights = board.castling & 0b0011;
-	}
-
-	// Check if the king is trapping the rook
-
-	// If it can castle, not trapped
-	if (castlingRights) {
-		return 0;
-	}
-
-	int kingSquare = std::countr_zero(kingBitboard);
-	int kingFile = kingSquare & 0x7;
-	int kingRank = kingSquare >> 3;
-
-	// If king not on back rank, doesn't matter
-	if (kingRank != backRank) {
-		return 0;
-	}
-
-	// There is a rook trapped on the king side \\ queen side
-	if ((kingFile > 4 && (0xC0 << (backRank << 3)) & rookBitboard)
-		|| (kingFile <= 4 && (0x03 << (backRank << 3)) & rookBitboard)) {
-		score -= 40;
-	}
-
-	return score;
-}
-
 int evaluateBoard(Board &board) {
 	int score = 0;
+
+	int mgScore = 0;
+	int egScore = 0;
+
+	int phase = 0;
 
 	for (Piece piece: ALL_PIECES) {
 		uint64_t bitboard = board.getBitboard(piece);
 		// Sum piece values
-		score += std::popcount(bitboard) * getPieceValue(piece);
+		int pieceCount = std::popcount(bitboard);
+		if (getPieceType(piece) != TYPE_PAWN) {
+			phase += pieceCount;
+		}
+		score += pieceCount * getPieceValue(piece);
 
 		// Piece square table values
 		bool white = isWhite(piece);
@@ -312,41 +279,26 @@ int evaluateBoard(Board &board) {
 			bitboard &= bitboard - 1;
 
 			if (white) { // Add white score
-				score += getPieceSquareValue(piece, sq);
+				mgScore += getPieceSquareValue(piece, sq);
+				egScore += getEndGamePieceSquareValue(piece, sq);
 			} else { // Subtract black score
-				score -= getPieceSquareValue(piece, sq);
+				mgScore -= getPieceSquareValue(piece, sq);
+				egScore -= getEndGamePieceSquareValue(piece, sq);
 			}
 		}
 	}
+
+	// Phase = sum of piece values (max 24 for opening position)
+	// Knight/Bishop = 1, Rook = 2, Queen = 4
+	phase = std::min(phase, 24);
+
+	score += ((mgScore * phase) + (egScore * (24 - phase))) / 24;
 
 	score += evaluatePawns(board, 1); // Add the score for white; when score is negative, bad for white
 	score -= evaluatePawns(board, -1); // Subtract the score for black; when score is negative, good for white
 
 	// ==== Mobility ====
 	// TODO
-	// Should just be [mobility_bonus * (#whitemoves - #blackmoves)] and it should be good enough (for now)
-
-	// Doesn't help, bot now does ~3 ELO worse than V10.2
-//    score += kingBetweenRooksScore(board, 1);
-//    score -= kingBetweenRooksScore(board, -1);
-
-	// Doesn't seem to help ~30 ELO worse than V10.2
-//    std::vector<Move> moves;
-//    moves.reserve(50);
-//
-//    generateRookMoves(board, moves);
-//    size_t numMyMoves = moves.size();
-//    board.turn *= -1;
-//
-//    moves.clear();
-//    generateRookMoves(board, moves);
-//    board.turn *= -1;
-//
-//    score += (int) (numMyMoves - moves.size()) * 4;
-
-
-
-
 
 	// TODO:
 	//  Open files near king
@@ -374,6 +326,28 @@ int getPieceSquareValue(Piece piece, int square) {
 			return queenTable[sq];
 		case TYPE_KING:
 			return kingMiddleGameTable[sq];
+		default:
+			return 0;
+	}
+}
+
+int getEndGamePieceSquareValue(Piece piece, int square) {
+	/* For black pieces, flip the square vertically */
+	int sq = isWhite(piece) ? flipIndex(square) : square; // Seems backwards, but is fine
+
+	switch (getPieceType(piece)) {
+		case TYPE_PAWN:
+			return pawnEndGameTable[sq];
+		case TYPE_KNIGHT:
+			return knightTable[sq];
+		case TYPE_BISHOP:
+			return bishopTable[sq];
+		case TYPE_ROOK:
+			return rookTable[sq];
+		case TYPE_QUEEN:
+			return queenTable[sq];
+		case TYPE_KING:
+			return kingEndGameTable[sq];
 		default:
 			return 0;
 	}
