@@ -128,33 +128,10 @@ void Board::setPieceAtSquare(int square, Piece piece) {
 	}
 
 	uint64_t mask = 1ULL << square;
-	uint64_t invertedMask = ~mask;
 
-	uint64_t *bitboard;
-
-//	Piece existing = pieceAtSquare(square);
-//	if (existing != NONE) {
-//		bitboard = getBitboardPointer(existing);
-//		if (bitboard) *bitboard &= invertedMask;
-//	}
-
-	// Clear this square from all bitboards
-	whitePawns &= invertedMask;
-	whiteKnights &= invertedMask;
-	whiteBishops &= invertedMask;
-	whiteRooks &= invertedMask;
-	whiteQueens &= invertedMask;
-	whiteKing &= invertedMask;
-
-	blackPawns &= invertedMask;
-	blackKnights &= invertedMask;
-	blackBishops &= invertedMask;
-	blackRooks &= invertedMask;
-	blackQueens &= invertedMask;
-	blackKing &= invertedMask;
 
 	// Get the right bitboard
-	bitboard = getBitboardPointer(piece);
+	uint64_t *bitboard = getBitboardPointer(piece);
 
 	// If bitboard is null; stop
 	if (!bitboard) {
@@ -163,6 +140,22 @@ void Board::setPieceAtSquare(int square, Piece piece) {
 
 	// Set the value in the right bitboard
 	*bitboard |= mask;
+}
+
+void Board::removePieceAtSquare(int square, Piece removePiece) {
+	if (square < 0 || square >= 64) {
+		return;
+	}
+	uint64_t *bitboard;
+
+	uint64_t setMask = 1ULL << square;
+	uint64_t clearMask = ~setMask;
+
+	// Remove the existingPiece (if it exists)
+	if (removePiece != NONE) {
+		bitboard = getBitboardPointer(removePiece);
+		*bitboard &= clearMask;
+	}
 }
 
 // Print Board
@@ -551,11 +544,22 @@ UndoInfo Board::makeMove(Move m) {
 
 	// Remove captured piece
 	if (isEnPassant) {
-		int capturedPawnSquare = toLocation + (turn == 1 ? -8 : 8);
+		int offset;
+		Piece remove;
+		if (turn == 1) {
+			offset = -8;
+			remove = BLACK_PAWN;
+		} else {
+			offset = 8;
+			remove = WHITE_PAWN;
+		}
+
+		int capturedPawnSquare = toLocation + offset;
 		zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(undoInfo.capturedPiece)][capturedPawnSquare];
-		setPieceAtSquare(capturedPawnSquare, NONE);
+		removePieceAtSquare(capturedPawnSquare, remove);
 	} else if (isPiece(capturedPiece)) {
 		zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(capturedPiece)][toLocation];
+		removePieceAtSquare(toLocation, capturedPiece);
 	}
 
 	// ========== MOVE THE PIECE ==========
@@ -565,7 +569,7 @@ UndoInfo Board::makeMove(Move m) {
 		finalPiece = getPromotedPiece(flags, turn);
 	}
 
-	setPieceAtSquare(fromLocation, NONE);
+	removePieceAtSquare(fromLocation, thisPiece);
 	setPieceAtSquare(toLocation, finalPiece);
 
 	// ========== HANDLE CASTLING ==========
@@ -574,22 +578,22 @@ UndoInfo Board::makeMove(Move m) {
 		// Move rook based on king's destination
 		if (toLocation == 6) {  // White kingside
 			setPieceAtSquare(5, WHITE_ROOK);
-			setPieceAtSquare(7, NONE);
+			removePieceAtSquare(7, WHITE_ROOK);
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(WHITE_ROOK)][7];
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(WHITE_ROOK)][5];
 		} else if (toLocation == 2) {  // White queenside
 			setPieceAtSquare(3, WHITE_ROOK);
-			setPieceAtSquare(0, NONE);
+			removePieceAtSquare(0, WHITE_ROOK);
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(WHITE_ROOK)][0];
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(WHITE_ROOK)][3];
 		} else if (toLocation == 62) {  // Black kingside
 			setPieceAtSquare(61, BLACK_ROOK);
-			setPieceAtSquare(63, NONE);
+			removePieceAtSquare(63, BLACK_ROOK);
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(BLACK_ROOK)][63];
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(BLACK_ROOK)][61];
 		} else if (toLocation == 58) {  // Black queenside
 			setPieceAtSquare(59, BLACK_ROOK);
-			setPieceAtSquare(56, NONE);
+			removePieceAtSquare(56, BLACK_ROOK);
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(BLACK_ROOK)][56];
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(BLACK_ROOK)][59];
 		}
@@ -671,6 +675,8 @@ void Board::unmakeMove(Move m, const UndoInfo &undoInfo) {
 	/* Get the piece at destination (might be promoted piece) */
 	Piece piece = pieceAtSquare(toLocation);
 
+	removePieceAtSquare(toLocation, piece);
+
 	/* If it was a promotion, restore the pawn */
 	if (flags & MOVE_FLAG_PROMOTION) {
 		piece = (turn == 1) ? WHITE_PAWN : BLACK_PAWN;
@@ -678,29 +684,32 @@ void Board::unmakeMove(Move m, const UndoInfo &undoInfo) {
 
 	/* Move piece back */
 	setPieceAtSquare(fromLocation, piece);
-	setPieceAtSquare(toLocation, undoInfo.capturedPiece);
+
+	/* Restore captured piece (if not en passant) */
+	if (undoInfo.capturedPiece != NONE && !(flags & MOVE_FLAG_EN_PASSANT)) {
+		setPieceAtSquare(toLocation, undoInfo.capturedPiece);
+	}
 
 	/* Undo en passant capture */
 	if (flags & MOVE_FLAG_EN_PASSANT) {
 		int capturedPawnSquare = toLocation + (turn == 1 ? -8 : 8);
 		setPieceAtSquare(capturedPawnSquare, undoInfo.capturedPiece);
-		setPieceAtSquare(toLocation, NONE);
 	}
 
 	/* Undo castling */
 	if (flags & MOVE_FLAG_CASTLING) {
 		if (toLocation == 6) {  /* White kingside */
 			setPieceAtSquare(7, WHITE_ROOK);
-			setPieceAtSquare(5, NONE);
+			removePieceAtSquare(5, WHITE_ROOK);
 		} else if (toLocation == 2) {  /* White queenside */
 			setPieceAtSquare(0, WHITE_ROOK);
-			setPieceAtSquare(3, NONE);
+			removePieceAtSquare(3, WHITE_ROOK);
 		} else if (toLocation == 62) {  /* Black kingside */
 			setPieceAtSquare(63, BLACK_ROOK);
-			setPieceAtSquare(61, NONE);
+			removePieceAtSquare(61, BLACK_ROOK);
 		} else if (toLocation == 58) {  /* Black queenside */
 			setPieceAtSquare(56, BLACK_ROOK);
-			setPieceAtSquare(59, NONE);
+			removePieceAtSquare(59, BLACK_ROOK);
 		}
 	}
 

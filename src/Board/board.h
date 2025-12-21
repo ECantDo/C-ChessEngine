@@ -56,6 +56,8 @@ public:
 
 	void setPieceAtSquare(int square, Piece piece);
 
+	void removePieceAtSquare(int square, Piece removePiece);
+
 
 	// Bitboards
 	uint64_t whitePawns;
