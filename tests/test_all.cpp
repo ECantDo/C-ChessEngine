@@ -12,18 +12,20 @@
 #include <chrono>
 
 int main() {
-    testBoard();
-    testMoveMaking();
+	testBoard();
+	testMoveMaking();
 
-    testZobrist();
+	testZobrist();
 
-    std::cout << "\nTESTING MOVE GENERATION\n";
-    initMagicBitboards();
-    auto start = std::chrono::high_resolution_clock::now();
-    testMoveGeneration(5);
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-    std::cout << "Took " << duration.count() << " ms\n";
+	Board::initCastlingTable();
 
-    return 0;
+	std::cout << "\nTESTING MOVE GENERATION\n";
+	initMagicBitboards();
+	auto start = std::chrono::high_resolution_clock::now();
+	testMoveGeneration(5);
+	auto end = std::chrono::high_resolution_clock::now();
+	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+	std::cout << "Took " << duration.count() << " ms\n";
+
+	return 0;
 }

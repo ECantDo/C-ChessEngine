@@ -8,6 +8,7 @@
 
 #include <cstring>
 #include "board.h"
+#include "Search/generate_moves.h"
 
 // =====================================================================================================================
 // Constructors
@@ -19,7 +20,8 @@ Board::Board()
 		  enPassantSquare(-1), turn(0), castling(0), halfMoveClock(0), fullMove(1), zobristHash(0) {
 	loadStartPosition();
 	zobristHash = computeZobristHash();
-	initCastlingTable();
+
+	Board::initCastlingTable();
 }
 
 Board::Board(std::string &fen) : Board() {

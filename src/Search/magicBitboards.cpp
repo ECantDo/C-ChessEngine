@@ -254,13 +254,13 @@ void initMagicBitboards() {
 
 uint64_t getRookAttacks(int square, uint64_t occupancy) {
     occupancy &= getRookMask(square);
-    int index = (occupancy * ROOK_MAGICS[square]) >> ROOK_SHIFTS[square];
+    int index = (int)((occupancy * ROOK_MAGICS[square]) >> ROOK_SHIFTS[square]);
     return rook_attacks[square][index];
 }
 
 uint64_t getBishopAttacks(int square, uint64_t occupancy) {
     occupancy &= getBishopMask(square);
-    int index = (occupancy * BISHOP_MAGICS[square]) >> BISHOP_SHIFTS[square];
+    int index = (int)((occupancy * BISHOP_MAGICS[square]) >> BISHOP_SHIFTS[square]);
     return bishop_attacks[square][index];
 }
 

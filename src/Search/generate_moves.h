@@ -19,10 +19,7 @@ constexpr size_t MAX_MOVES = 256;
  * No return; pass in the array by reference to avoid copying the array
  * @param board The board position to generate moves for
  * @param moveList The array to output the moves into
- * @param moveCount The number of moves found.
  */
-void generatePseudoLegalMoves(const Board &board, std::vector<Move> &moveList, bool capturesOnly);
-
 void generateLegalMoves(Board &board, std::vector<Move> &moveList, bool capturesOnly = false);
 
 // HELPER
