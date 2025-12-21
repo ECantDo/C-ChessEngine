@@ -15,6 +15,9 @@
 #include <string>
 
 class Board {
+private:
+	Piece pieceAtSquareArray[64];
+
 public:
 	// Constructor
 	Board();
@@ -23,6 +26,8 @@ public:
 
 	// Load starting position
 	void loadStartPosition();
+
+	void initPieceArrayFromBitboards();
 
 	bool loadFenPosition(std::string &fen);
 
@@ -54,7 +59,7 @@ public:
 
 	[[nodiscard]] uint64_t *getBitboardPointer(Piece piece);
 
-	void setPieceAtSquare(int square, Piece piece);
+	void addPieceAtSquare(int square, Piece piece);
 
 	void removePieceAtSquare(int square, Piece removePiece);
 

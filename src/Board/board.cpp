@@ -10,6 +10,7 @@
 #include "board.h"
 #include "Search/generate_moves.h"
 
+
 // =====================================================================================================================
 // Constructors
 // =====================================================================================================================
@@ -17,11 +18,11 @@
 Board::Board()
 		: whitePawns(0), whiteBishops(0), whiteKing(0), whiteKnights(0), whiteQueens(0), whiteRooks(0),
 		  blackPawns(0), blackBishops(0), blackKing(0), blackKnights(0), blackQueens(0), blackRooks(0),
-		  enPassantSquare(-1), turn(0), castling(0), halfMoveClock(0), fullMove(1), zobristHash(0) {
+		  enPassantSquare(-1), turn(0), castling(0), halfMoveClock(0), fullMove(1), zobristHash(0),
+		  pieceAtSquareArray() {
 	loadStartPosition();
-	zobristHash = computeZobristHash();
-
 	Board::initCastlingTable();
+	zobristHash = computeZobristHash();
 }
 
 Board::Board(std::string &fen) : Board() {
@@ -57,6 +58,44 @@ void Board::loadStartPosition() {
 	halfMoveClock = 0;
 	castling = 0b1111;
 	turn = 1;
+
+	initPieceArrayFromBitboards();
+}
+
+void Board::initPieceArrayFromBitboards() {
+	// Clear the array first
+	memset(pieceAtSquareArray, NONE, sizeof(pieceAtSquareArray));
+
+	// Set pieces based on bitboards
+	for (int sq = 0; sq < 64; ++sq) {
+		uint64_t mask = 1ULL << sq;
+
+		if (whitePawns & mask) {
+			pieceAtSquareArray[sq] = WHITE_PAWN;
+		} else if (blackPawns & mask) {
+			pieceAtSquareArray[sq] = BLACK_PAWN;
+		} else if (whiteKnights & mask) {
+			pieceAtSquareArray[sq] = WHITE_KNIGHT;
+		} else if (blackKnights & mask) {
+			pieceAtSquareArray[sq] = BLACK_KNIGHT;
+		} else if (whiteBishops & mask) {
+			pieceAtSquareArray[sq] = WHITE_BISHOP;
+		} else if (blackBishops & mask) {
+			pieceAtSquareArray[sq] = BLACK_BISHOP;
+		} else if (whiteRooks & mask) {
+			pieceAtSquareArray[sq] = WHITE_ROOK;
+		} else if (blackRooks & mask) {
+			pieceAtSquareArray[sq] = BLACK_ROOK;
+		} else if (whiteQueens & mask) {
+			pieceAtSquareArray[sq] = WHITE_QUEEN;
+		} else if (blackQueens & mask) {
+			pieceAtSquareArray[sq] = BLACK_QUEEN;
+		} else if (whiteKing & mask) {
+			pieceAtSquareArray[sq] = WHITE_KING;
+		} else if (blackKing & mask) {
+			pieceAtSquareArray[sq] = BLACK_KING;
+		}
+	}
 }
 
 // =====================================================================================================================
@@ -103,28 +142,11 @@ inline Piece getPromotedPiece(int flags, int turn) {
 
 
 Piece Board::pieceAtSquare(int square) const {
-	uint64_t mask = 1ULL << square;
-
-	if (whitePawns & mask) return WHITE_PAWN;
-	if (blackPawns & mask) return BLACK_PAWN;
-
-	if (whiteKnights & mask) return WHITE_KNIGHT;
-	if (whiteBishops & mask) return WHITE_BISHOP;
-	if (whiteRooks & mask) return WHITE_ROOK;
-	if (whiteQueens & mask) return WHITE_QUEEN;
-
-	if (blackKnights & mask) return BLACK_KNIGHT;
-	if (blackBishops & mask) return BLACK_BISHOP;
-	if (blackRooks & mask) return BLACK_ROOK;
-	if (blackQueens & mask) return BLACK_QUEEN;
-
-	if (whiteKing & mask) return WHITE_KING;
-	if (blackKing & mask) return BLACK_KING;
-
-	return NONE;
+	if (square < 0 || square >= 64) return NONE;
+	return pieceAtSquareArray[square];
 }
 
-void Board::setPieceAtSquare(int square, Piece piece) {
+void Board::addPieceAtSquare(int square, Piece piece) {
 	if (square < 0 || square >= 64) {
 		return;
 	}
@@ -142,6 +164,8 @@ void Board::setPieceAtSquare(int square, Piece piece) {
 
 	// Set the value in the right bitboard
 	*bitboard |= mask;
+
+	pieceAtSquareArray[square] = piece;
 }
 
 void Board::removePieceAtSquare(int square, Piece removePiece) {
@@ -157,6 +181,7 @@ void Board::removePieceAtSquare(int square, Piece removePiece) {
 	if (removePiece != NONE) {
 		bitboard = getBitboardPointer(removePiece);
 		*bitboard &= clearMask;
+		pieceAtSquareArray[square] = NONE;
 	}
 }
 
@@ -267,6 +292,7 @@ bool Board::loadFenPosition(std::string &fen) {
 	newBoard.turn = 1;
 	newBoard.enPassantSquare = -1;
 	newBoard.zobristHash = 0;
+	memset(newBoard.pieceAtSquareArray, NONE, sizeof(newBoard.pieceAtSquareArray));
 
 
 	/* ===== PART 1: Piece Placement ===== */
@@ -297,7 +323,7 @@ bool Board::loadFenPosition(std::string &fen) {
 
 		int square = rank * 8 + file;
 		Piece p = charToPiece(ch);
-		newBoard.setPieceAtSquare(square, p);
+		newBoard.addPieceAtSquare(square, p);
 		file++;
 	}
 
@@ -572,29 +598,29 @@ UndoInfo Board::makeMove(Move m) {
 	}
 
 	removePieceAtSquare(fromLocation, thisPiece);
-	setPieceAtSquare(toLocation, finalPiece);
+	addPieceAtSquare(toLocation, finalPiece);
 
 	// ========== HANDLE CASTLING ==========
 
 	if (isCastling) {
 		// Move rook based on king's destination
 		if (toLocation == 6) {  // White kingside
-			setPieceAtSquare(5, WHITE_ROOK);
+			addPieceAtSquare(5, WHITE_ROOK);
 			removePieceAtSquare(7, WHITE_ROOK);
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(WHITE_ROOK)][7];
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(WHITE_ROOK)][5];
 		} else if (toLocation == 2) {  // White queenside
-			setPieceAtSquare(3, WHITE_ROOK);
+			addPieceAtSquare(3, WHITE_ROOK);
 			removePieceAtSquare(0, WHITE_ROOK);
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(WHITE_ROOK)][0];
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(WHITE_ROOK)][3];
 		} else if (toLocation == 62) {  // Black kingside
-			setPieceAtSquare(61, BLACK_ROOK);
+			addPieceAtSquare(61, BLACK_ROOK);
 			removePieceAtSquare(63, BLACK_ROOK);
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(BLACK_ROOK)][63];
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(BLACK_ROOK)][61];
 		} else if (toLocation == 58) {  // Black queenside
-			setPieceAtSquare(59, BLACK_ROOK);
+			addPieceAtSquare(59, BLACK_ROOK);
 			removePieceAtSquare(56, BLACK_ROOK);
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(BLACK_ROOK)][56];
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(BLACK_ROOK)][59];
@@ -685,32 +711,32 @@ void Board::unmakeMove(Move m, const UndoInfo &undoInfo) {
 	}
 
 	/* Move piece back */
-	setPieceAtSquare(fromLocation, piece);
+	addPieceAtSquare(fromLocation, piece);
 
 	/* Restore captured piece (if not en passant) */
 	if (undoInfo.capturedPiece != NONE && !(flags & MOVE_FLAG_EN_PASSANT)) {
-		setPieceAtSquare(toLocation, undoInfo.capturedPiece);
+		addPieceAtSquare(toLocation, undoInfo.capturedPiece);
 	}
 
 	/* Undo en passant capture */
 	if (flags & MOVE_FLAG_EN_PASSANT) {
 		int capturedPawnSquare = toLocation + (turn == 1 ? -8 : 8);
-		setPieceAtSquare(capturedPawnSquare, undoInfo.capturedPiece);
+		addPieceAtSquare(capturedPawnSquare, undoInfo.capturedPiece);
 	}
 
 	/* Undo castling */
 	if (flags & MOVE_FLAG_CASTLING) {
 		if (toLocation == 6) {  /* White kingside */
-			setPieceAtSquare(7, WHITE_ROOK);
+			addPieceAtSquare(7, WHITE_ROOK);
 			removePieceAtSquare(5, WHITE_ROOK);
 		} else if (toLocation == 2) {  /* White queenside */
-			setPieceAtSquare(0, WHITE_ROOK);
+			addPieceAtSquare(0, WHITE_ROOK);
 			removePieceAtSquare(3, WHITE_ROOK);
 		} else if (toLocation == 62) {  /* Black kingside */
-			setPieceAtSquare(63, BLACK_ROOK);
+			addPieceAtSquare(63, BLACK_ROOK);
 			removePieceAtSquare(61, BLACK_ROOK);
 		} else if (toLocation == 58) {  /* Black queenside */
-			setPieceAtSquare(56, BLACK_ROOK);
+			addPieceAtSquare(56, BLACK_ROOK);
 			removePieceAtSquare(59, BLACK_ROOK);
 		}
 	}
