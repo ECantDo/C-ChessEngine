@@ -397,7 +397,6 @@ void generateLegalMoves(Board &board, std::vector<Move> &moveList, bool captures
 	int moveCount = 0;
 	generatePseudoLegalMoves(board, pseudoLegal, moveCount, capturesOnly);
 
-
 	moveList.clear();
 	moveList.reserve(moveCount);
 
@@ -416,5 +415,4 @@ void generateLegalMoves(Board &board, std::vector<Move> &moveList, bool captures
 			moveList.push_back(m);
 		}
 	}
-
 }

@@ -104,7 +104,10 @@ inline const int BISHOP_SHIFTS[64] = {
 
 extern uint64_t KNIGHT_ATTACKS[64];
 extern uint64_t KING_ATTACKS[64];
+
+extern uint64_t PAWN_PUSHES[2][64];
 extern uint64_t PAWN_ATTACKS[2][64];  // [color][square]
+extern uint64_t PAWN_DOUBLE[64];
 
 inline uint64_t getKnightAttacks(int square) {
 	return KNIGHT_ATTACKS[square];

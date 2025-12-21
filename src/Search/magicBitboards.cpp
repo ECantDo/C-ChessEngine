@@ -17,7 +17,10 @@ uint64_t bishop_attacks[64][512];  // Max table size
 
 uint64_t KNIGHT_ATTACKS[64];
 uint64_t KING_ATTACKS[64];
-uint64_t PAWN_ATTACKS[2][64];
+
+uint64_t PAWN_PUSHES[2][64];
+uint64_t PAWN_ATTACKS[2][64];  // [color][square]
+uint64_t PAWN_DOUBLE[64];
 
 uint64_t BISHOP_ATTACK_MASKS[64];
 uint64_t ROOK_ATTACK_MASKS[64];
@@ -210,21 +213,28 @@ void initAttackTables() {
 	}
 }
 
-void initPawnAttackTables() {
+void initPawnMoveTables() {
 	for (int sq = 0; sq < 64; ++sq) {
-		int file = sq & 7;
 		int rank = sq >> 3;
+		int file = sq & 7;
 
-		// White pawn attacks (from black perspective)
+		// White pawn pushes
+		if (rank < 7) PAWN_PUSHES[WHITE][sq] = 1ULL << (sq + 8);
+		if (rank == 1) PAWN_DOUBLE[sq] = 1ULL << (sq + 16);
+
+		// Black pawn pushes
+		if (rank > 0) PAWN_PUSHES[BLACK][sq] = 1ULL << (sq - 8);
+		if (rank == 6) PAWN_DOUBLE[sq] = 1ULL << (sq - 16);
+
+		// Attacks (same as before for isSquareAttacked)
 		PAWN_ATTACKS[WHITE][sq] = 0;
-		if (rank < 7) {  // Can't attack from rank 8
+		if (rank < 7) {
 			if (file > 0) PAWN_ATTACKS[WHITE][sq] |= 1ULL << (sq + 7);
 			if (file < 7) PAWN_ATTACKS[WHITE][sq] |= 1ULL << (sq + 9);
 		}
 
-		// Black pawn attacks (from white perspective)
 		PAWN_ATTACKS[BLACK][sq] = 0;
-		if (rank > 0) {  // Can't attack from rank 1
+		if (rank > 0) {
 			if (file > 0) PAWN_ATTACKS[BLACK][sq] |= 1ULL << (sq - 9);
 			if (file < 7) PAWN_ATTACKS[BLACK][sq] |= 1ULL << (sq - 7);
 		}
@@ -235,7 +245,7 @@ void initMagicBitboards() {
 	initAttackTables();
 	initRookMasks();
 	initBishopMasks();
-	initPawnAttackTables();
+	initPawnMoveTables();
 
 	// Initialize rook attack tables
 	for (int square = 0; square < 64; square++) {
