@@ -10,52 +10,6 @@ std::atomic<bool> stopSearch{false};
 static long g_timeLimitMS = 0;
 static std::chrono::steady_clock::time_point g_searchStart;
 
-int scoreMoveForOrdering(Move m, const Board &board, int ply,
-						 Move killers[MAX_PLY][2], unsigned long long history[2][64][64]) {
-	int flags = getMoveFlags(m);
-
-	int to = getMoveTo(m);
-	int from = getMoveFrom(m);
-
-	// 1. CAPTURES (highest priority)
-	if (flags & MOVE_FLAG_CAPTURE) {
-
-		Piece victim = board.pieceAtSquare(to);
-		Piece attacker = board.pieceAtSquare(from);
-		return 1000000 + getPieceValue(victim) * 10 - getPieceValue(attacker);
-	}
-
-	// 2. PROMOTIONS
-	if (flags & MOVE_FLAG_PROMOTION) {
-		int promoType = flags & 0x3;
-		switch (promoType) {
-			case PROMOTE_TO_QUEEN:
-				return 900000;
-			case PROMOTE_TO_ROOK:
-				return 500000;
-			case PROMOTE_TO_BISHOP:
-				return 330000;
-			case PROMOTE_TO_KNIGHT:
-				return 300000;
-			default:
-				break;
-		}
-	}
-
-	// 3. KILLER MOVES (non-captures that caused cutoffs at this plys)
-	if (ply < MAX_PLY) {
-		if (m == killers[ply][0]) return 90000;
-		if (m == killers[ply][1]) return 80000;
-	}
-
-	// 4. CASTLING
-	if (flags & MOVE_FLAG_CASTLING) return 10000;
-
-	// 5. HISTORY (statistical goodness)
-	int color = (board.turn == 1) ? 0 : 1;
-	return history[color][from][to];
-}
-
 void orderMoves(std::vector<Move> &moves, const Board &board, Move previousBest, int ply,
 				Move killers[MAX_PLY][2], unsigned long long history[2][64][64]) {
 	std::sort(moves.begin(), moves.end(), [&board, previousBest, ply, killers, history](Move a, Move b) {
@@ -290,9 +244,12 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 			result = alphaBeta(board, depth - 1, plys + 1, -beta, -alpha,
 							   0, searchPath, killerMoves, historyTable,
 							   extensionsUsed + extension, nullMoveAllowed);
+			nodes += result.nodes;
+			tbHits += result.tbHits;
+
 		} else {
 			// Later moves: try null window search first
-			if (movesSearched >= 4 && plys >= 3 &&
+			if (movesSearched >= 4 && plys >= 1 &&
 				!(m & MOVE_FLAG_CAPTURE) &&
 				!isKingInCheck(board, -board.turn) &&
 				!isKingInCheck(board, board.turn)) {
@@ -306,21 +263,27 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 								   0, searchPath, killerMoves, historyTable,
 								   extensionsUsed + extension);
 
+				nodes += result.nodes;
+				tbHits += result.tbHits;
+
 				// If it beat alpha, re-search at full depth
 				if (-result.score > alpha && reduction > 0) {
 					result = alphaBeta(board, depth - 1, plys + 1,
-									   -alpha - 1, -alpha,  // Still null window
+									   -beta, -alpha,  // Still null window <<< FULL WINDOW, null might be slowing
 									   0, searchPath, killerMoves, historyTable,
 									   extensionsUsed + extension);
+
+					nodes += result.nodes;
+					tbHits += result.tbHits;
 				}
 
 				// If STILL beat alpha, do full window search
-				if (-result.score > alpha) {
-					result = alphaBeta(board, depth - 1, plys + 1,
-									   -beta, -alpha,  // FULL WINDOW
-									   0, searchPath, killerMoves, historyTable,
-									   extensionsUsed + extension);
-				}
+//				if (-result.score > alpha) {
+//					result = alphaBeta(board, depth - 1, plys + 1,
+//									   -beta, -alpha,  // FULL WINDOW
+//									   0, searchPath, killerMoves, historyTable,
+//									   extensionsUsed + extension);
+//				}
 			} else {
 				// Non-LMR moves: null window then full if needed
 				result = alphaBeta(board, depth - 1, plys + 1,
@@ -328,19 +291,24 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 								   0, searchPath, killerMoves, historyTable,
 								   extensionsUsed + extension);
 
+				nodes += result.nodes;
+				tbHits += result.tbHits;
+
 				// Beat alpha? Re-search with full window
 				if (-result.score > alpha /*&& -result.score < beta*/) {
 					result = alphaBeta(board, depth - 1, plys + 1,
 									   -beta, -alpha,  // FULL WINDOW
 									   0, searchPath, killerMoves, historyTable,
 									   extensionsUsed + extension);
+
+					nodes += result.nodes;
+					tbHits += result.tbHits;
 				}
 			}
 		}
 
 		int score = -result.score;
-		nodes += result.nodes;
-		tbHits += result.tbHits;
+
 
 		board.unmakeMove(m, undo);
 		movesSearched++;
