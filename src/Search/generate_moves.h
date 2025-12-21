@@ -30,6 +30,11 @@ bool isEmpty(const Board &board, int square);
 bool isValidSquare(int square);
 
 inline bool isSquareAttacked(const Board &board, int square, int attackingColor) {
+	if (square < 0 || square > 63){
+		std::cerr << "Trying to check if square " << square << " is attacked" << std::endl << std::flush;
+		return false;
+	}
+
 	// Pre-calculate once
 	uint64_t blockers = board.getBlackBitboard() | board.getWhiteBitboard();
 
