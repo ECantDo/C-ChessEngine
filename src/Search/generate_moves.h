@@ -29,7 +29,48 @@ bool isEmpty(const Board &board, int square);
 
 bool isValidSquare(int square);
 
-bool isSquareAttacked(const Board &board, int square, int attackingColor);
+inline bool isSquareAttacked(const Board &board, int square, int attackingColor) {
+	// Pre-calculate once
+	uint64_t blockers = board.getBlackBitboard() | board.getWhiteBitboard();
+
+	uint64_t enemyRooks, enemyBishops, enemyQueens, enemyKnights, enemyKing, enemyPawns;
+
+	if (attackingColor == 1) {
+		enemyRooks = board.whiteRooks;
+		enemyBishops = board.whiteBishops;
+		enemyQueens = board.whiteQueens;
+		enemyKnights = board.whiteKnights;
+		enemyKing = board.whiteKing;
+		enemyPawns = board.whitePawns;
+	} else {
+		enemyRooks = board.blackRooks;
+		enemyBishops = board.blackBishops;
+		enemyQueens = board.blackQueens;
+		enemyKnights = board.blackKnights;
+		enemyKing = board.blackKing;
+		enemyPawns = board.blackPawns;
+	}
+
+	// 1. Pawn attacks (using precomputed table)
+	if (enemyPawns & PAWN_ATTACKS[attackingColor == 1 ? BLACK : WHITE][square]) {
+		return true;
+	}
+
+	// 2. Knight attacks
+	if (enemyKnights & KNIGHT_ATTACKS[square]) return true;
+
+	// 3. King attacks
+	if (enemyKing & KING_ATTACKS[square]) return true;
+
+	// 4. Sliding pieces
+	uint64_t rookAttacks = getRookAttacks(square, blockers);
+	if (rookAttacks & (enemyRooks | enemyQueens)) return true;
+
+	uint64_t bishopAttacks = getBishopAttacks(square, blockers);
+	if (bishopAttacks & (enemyBishops | enemyQueens)) return true;
+
+	return false;
+}
 
 // OFFSETS
 const int kingOffsets[8] = {-9, -8, -7, -1, 1, 7, 8, 9};

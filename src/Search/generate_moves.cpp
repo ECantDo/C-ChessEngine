@@ -379,65 +379,6 @@ bool isValidSquare(int square) {
 	return square < 64 && square >= 0;
 }
 
-bool isSquareAttacked(const Board &board, int square, int attackingColor) {
-	// Pre-calculate once
-	uint64_t blockers = board.getBlackBitboard() | board.getWhiteBitboard();
-
-	uint64_t enemyRooks, enemyBishops, enemyQueens, enemyKnights, enemyKing, enemyPawns;
-
-	if (attackingColor == 1) {
-		enemyRooks = board.whiteRooks;
-		enemyBishops = board.whiteBishops;
-		enemyQueens = board.whiteQueens;
-		enemyKnights = board.whiteKnights;
-		enemyKing = board.whiteKing;
-		enemyPawns = board.whitePawns;
-	} else {
-		enemyRooks = board.blackRooks;
-		enemyBishops = board.blackBishops;
-		enemyQueens = board.blackQueens;
-		enemyKnights = board.blackKnights;
-		enemyKing = board.blackKing;
-		enemyPawns = board.blackPawns;
-	}
-
-	// === FASTEST CHECKS FIRST ===
-
-	// 1. Pawn attacks (most common, cheapest)
-	int pawnDir = (attackingColor == 1) ? -8 : 8;
-	int file = square & 0x7;
-
-	if (file > 0) {
-		int leftAttack = square + pawnDir - 1;
-		if ((leftAttack >= 0 && leftAttack < 64) && (enemyPawns & (1ULL << leftAttack))) {
-			return true;
-		}
-	}
-	if (file < 7) {
-		int rightAttack = square + pawnDir + 1;
-		if ((rightAttack >= 0 && rightAttack < 64) && (enemyPawns & (1ULL << rightAttack))) {
-			return true;
-		}
-	}
-
-	// 2. Knight attacks (common in middle game, no loops)
-	uint64_t knightAttacks = getKnightAttacks(square);  // Pre-computed lookup
-	if (knightAttacks & enemyKnights) return true;
-
-	// 3. Sliding pieces (rook/bishop/queen)
-	uint64_t rookAttacks = getRookAttacks(square, blockers);
-	if (rookAttacks & (enemyRooks | enemyQueens)) return true;
-
-	uint64_t bishopAttacks = getBishopAttacks(square, blockers);
-	if (bishopAttacks & (enemyBishops | enemyQueens)) return true;
-
-	// 4. King attacks (least common, check last)
-	uint64_t kingAttacks = getKingAttacks(square);  // Pre-computed lookup
-	if (kingAttacks & enemyKing) return true;
-
-	return false;
-}
-
 // =====================================================================================================================
 // Generate moves
 // =====================================================================================================================
@@ -460,12 +401,13 @@ void generateLegalMoves(Board &board, std::vector<Move> &moveList, bool captures
 	moveList.clear();
 	moveList.reserve(moveCount);
 
-	for (Move m: pseudoLegal) {
+	for (int i = 0; i < moveCount; ++i) {  // Use index, not range-for
+		Move m = pseudoLegal[i];  // Single copy per move
+
 		UndoInfo undoInfo = board.makeMove(m);
 
 		uint64_t ourKing = (board.turn == -1) ? board.whiteKing : board.blackKing;
 		int kingSquare = std::countr_zero(ourKing);
-
 		bool inCheck = isSquareAttacked(board, kingSquare, board.turn);
 
 		board.unmakeMove(m, undoInfo);
