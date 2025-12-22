@@ -10,7 +10,7 @@
 #include <sstream>
 #include <chrono>
 
-#define VERSION "V17.10_moreOptimizations"
+#define VERSION "V17.11_timeControl"
 
 bool debug = false;
 Board currentBoard;   // Global board state stored between commands
@@ -130,7 +130,7 @@ void startSearch(const std::string &goCmd) {
     }
 
     if (timeLimit > 100) {
-        timeLimit -= 80; // Allow for 20ms of outputting time
+        timeLimit -= 80; // Allow for 80ms of outputting time
     }
 
     //---------------------------------------------------------

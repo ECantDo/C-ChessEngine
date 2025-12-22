@@ -17,7 +17,7 @@ void orderMoves(std::vector<Move> &moves, const Board &board, Move previousBest,
 	std::vector<std::pair<Move, int>> scoredMoves;
 	scoredMoves.reserve(moves.size());
 
-	for (Move m : moves) {
+	for (Move m: moves) {
 		if (m == previousBest) {
 			scoredMoves.emplace_back(m, 10000000); // Guarantee first
 		} else {
@@ -28,12 +28,12 @@ void orderMoves(std::vector<Move> &moves, const Board &board, Move previousBest,
 
 	// Use partial_sort - only sort the top moves fully
 	// Most beta cutoffs happen in the first few moves
-	int numToSort = std::min((int)moves.size(), 8); // Only fully sort top 8
+	int numToSort = std::min((int) moves.size(), 8); // Only fully sort top 8
 	std::partial_sort(
 			scoredMoves.begin(),
 			scoredMoves.begin() + numToSort,
 			scoredMoves.end(),
-			[](const auto& a, const auto& b) { return a.second > b.second; }
+			[](const auto &a, const auto &b) { return a.second > b.second; }
 	);
 
 	// Extract sorted moves
@@ -472,6 +472,8 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 	unsigned long long totalNodes = 0, totalTbHits = 0;
 	int completedDepth = 0;
 
+	int earlyExits = 0;
+
 	int startDepth = 1;// 1 + (threadId % std::min(8, totalThreads));
 	auto startTime = std::chrono::steady_clock::now();
 
@@ -479,12 +481,29 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 	Move killerMoves[MAX_PLY][2] = {0};
 	unsigned long long historyTable[2][64][64] = {0};
 
+	// Early exit tracking
+	Move lastBestMove = 0;
+	int lastScore = 0;
+	int stableMoveCount = 0;
+
+	std::vector<uint64_t> searchPath;
+	searchPath.reserve(64);
+
 	for (int depth = startDepth; depth <= maxDepth; depth++) {
 		if (stopSearch) break;
 
-		std::vector<uint64_t> searchPath;
-		searchPath.reserve(64);
+		if (g_timeLimitMS > 0) {
+			auto now = std::chrono::steady_clock::now();
+			auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - g_searchStart).count();
 
+			// If we have used 60% of our time, don't start a new search
+			if (elapsed > (long long) round(g_timeLimitMS * 0.6)) {
+				earlyExits++;
+				break;
+			}
+		}
+
+		searchPath.clear();
 		BestMove result;
 
 		// ==== Aspiration Windows ====
@@ -571,7 +590,31 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 			}
 			std::cout << std::endl << std::flush;
 		}
+
+		if (g_timeLimitMS > 0 && depth >= 5) {
+			if (bestMove == lastBestMove
+				&& abs(bestScore - lastScore) < 80
+				&& abs(bestScore) < MATE_SCORE - 100) {
+
+				stableMoveCount++;  // Increment here
+
+				// Exit if stable for 3 iterations and used >30% time
+				if (stableMoveCount >= 3 && elapsed > (long long) round(g_timeLimitMS * 0.3)) {
+					earlyExits++;
+					break;
+				}
+			} else {
+				stableMoveCount = 0;  // Reset only when NOT stable
+			}
+		}
+		lastScore = bestScore;
+		lastBestMove = bestMove;
 	}
+
+//	if (earlyExits > 0) {
+//	std::cerr << "Early exits: " << earlyExits << " at depth " << completedDepth << std::endl << std::flush;
+//	}
+	stopSearch = true;
 
 	return {bestMove, bestScore, completedDepth, pv, totalNodes, totalTbHits};
 }
