@@ -200,10 +200,12 @@ void startSearch(const std::string &goCmd) {
         std::cout << "bestmove " << moveToString(bm.bestMove) << '\n' << std::flush;
     } else {
         auto start = std::chrono::high_resolution_clock::now();
-        perftDivide(currentBoard, depth);
+        uint64_t totalNodes = perftDivide(currentBoard, depth);
         auto end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-        std::cout << "Took " << duration.count() << " ms\n" << std::flush;
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+        std::cout << "Took " << duration << " ms"
+		<< " nps " << (duration > 0 ? (totalNodes * 1000 / duration) : 0)
+		<< std::endl << std::flush;
     }
 }
 

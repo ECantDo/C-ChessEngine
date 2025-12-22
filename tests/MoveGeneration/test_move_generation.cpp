@@ -74,7 +74,7 @@ void testMoveGeneration(int depth) {
     }
 }
 
-void perftDivide(Board &board, int depth) {
+uint64_t perftDivide(Board &board, int depth) {
     std::vector<Move> moves;
     generateLegalMoves(board, moves);
 
@@ -90,6 +90,7 @@ void perftDivide(Board &board, int depth) {
     }
 
     std::cout << "\n\nNodes searched: " << totalNodes << "\n\n" << std::flush;
+    return totalNodes;
 }
 
 uint64_t perft(int depth, Board &board) {
