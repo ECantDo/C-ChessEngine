@@ -12,15 +12,34 @@ static std::chrono::steady_clock::time_point g_searchStart;
 
 void orderMoves(std::vector<Move> &moves, const Board &board, Move previousBest, int ply,
 				Move killers[MAX_PLY][2], unsigned long long history[2][64][64]) {
-	std::sort(moves.begin(), moves.end(), [&board, previousBest, ply, killers, history](Move a, Move b) {
-		/* Previous best move searched first */
-		if (a == previousBest) return true;
-		if (b == previousBest) return false;
 
-		/* Then order by capture/promotion value */
-		return scoreMoveForOrdering(a, board, ply, killers, history) >
-			   scoreMoveForOrdering(b, board, ply, killers, history);
-	});
+	// Score all moves once
+	std::vector<std::pair<Move, int>> scoredMoves;
+	scoredMoves.reserve(moves.size());
+
+	for (Move m : moves) {
+		if (m == previousBest) {
+			scoredMoves.emplace_back(m, 10000000); // Guarantee first
+		} else {
+			int score = scoreMoveForOrdering(m, board, ply, killers, history);
+			scoredMoves.emplace_back(m, score);
+		}
+	}
+
+	// Use partial_sort - only sort the top moves fully
+	// Most beta cutoffs happen in the first few moves
+	int numToSort = std::min((int)moves.size(), 8); // Only fully sort top 8
+	std::partial_sort(
+			scoredMoves.begin(),
+			scoredMoves.begin() + numToSort,
+			scoredMoves.end(),
+			[](const auto& a, const auto& b) { return a.second > b.second; }
+	);
+
+	// Extract sorted moves
+	for (size_t i = 0; i < moves.size(); i++) {
+		moves[i] = scoredMoves[i].first;
+	}
 }
 
 int calculateExtension(Board &board, int extensionsUsed) {
