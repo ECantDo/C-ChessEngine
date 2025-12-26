@@ -10,7 +10,7 @@
 #include <sstream>
 #include <chrono>
 
-#define VERSION "V17.11_timeControl"
+#define VERSION "V17.12_christmasFixes"
 
 bool debug = false;
 Board currentBoard;   // Global board state stored between commands

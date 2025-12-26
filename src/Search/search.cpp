@@ -149,13 +149,13 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 	// Setup scored moves
 	for (Move m : moveList){
-		scoredMoves.emplaceBack(m, 0);
+		scoredMoves.emplace_back(m, 0);
 	}
 	// Score each move
 	valueMoves(scoredMoves, board, ttEntry.bestMove, plys, killerMoves, historyTable);
 	
 	orderMoves(scoredMoves);
-	Move bestMove = moveList[0].first;
+	Move bestMove = scoredMoves[0].first;
 
 	// ============ Exceeded parameters ============
 	if (depth <= 0) {
