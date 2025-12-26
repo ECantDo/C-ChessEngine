@@ -162,10 +162,6 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 // Order the moves
 		orderMoves(scoredMoves);
 	}
-
-	if (plys == 0 && rootMoves == nullptr){
-	    *rootMoves = scoredMoves;
-	}
 	Move bestMove = scoredMoves[0].first;
 
 	// ============ Exceeded parameters ============
@@ -390,6 +386,11 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 	}
 
 	searchPath.pop_back();
+
+	if (plys == 0 && rootMoves != nullptr){
+		*rootMoves = scoredMoves;
+	}
+
 	if (completed) {
 		// ==== STORE TT MOVE ====
 		TTFlag flag;
