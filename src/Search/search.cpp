@@ -10,36 +10,29 @@ std::atomic<bool> stopSearch{false};
 static long g_timeLimitMS = 0;
 static std::chrono::steady_clock::time_point g_searchStart;
 
-void orderMoves(std::vector<Move> &moves, const Board &board, Move previousBest, int ply,
-				Move killers[MAX_PLY][2], unsigned long long history[2][64][64]) {
-
-	// Score all moves once
-	std::vector<std::pair<Move, int>> scoredMoves;
-	scoredMoves.reserve(moves.size());
-
-	for (Move m: moves) {
-		if (m == previousBest) {
-			scoredMoves.emplace_back(m, 10000000); // Guarantee first
+void valueMoves(std::vector<std::pair<Move, int>> &moves, const Board &board, Move &previousBest, int ply,
+	Move killers[MAX_PLY][2], unsigned long long history[2][64][64]){
+	for (std::pair<Move, int> &pair : moves){
+		if (pair.first == previousBest){
+			pair.second = 100000000;
 		} else {
-			int score = scoreMoveForOrdering(m, board, ply, killers, history);
-			scoredMoves.emplace_back(m, score);
+			pair.second = scoreMoveForOrdering(pair.first, board, ply, killers, history);
 		}
 	}
+}
+
+// Assume that orderMoves comes with the scored value
+void orderMoves(std::vector<std::pair<Move, int>> &moves) {
 
 	// Use partial_sort - only sort the top moves fully
 	// Most beta cutoffs happen in the first few moves
 	int numToSort = std::min((int) moves.size(), 8); // Only fully sort top 8
 	std::partial_sort(
-			scoredMoves.begin(),
-			scoredMoves.begin() + numToSort,
-			scoredMoves.end(),
+			moves.begin(),
+			moves.begin() + numToSort,
+			moves.end(),
 			[](const auto &a, const auto &b) { return a.second > b.second; }
 	);
-
-	// Extract sorted moves
-	for (size_t i = 0; i < moves.size(); i++) {
-		moves[i] = scoredMoves[i].first;
-	}
 }
 
 int calculateExtension(Board &board, int extensionsUsed) {
@@ -151,8 +144,18 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 	// ============ Order Moves ============
 	// Depth also happens to be the ply
-	orderMoves(moveList, board, ttEntry.bestMove, plys, killerMoves, historyTable);
-	Move bestMove = moveList[0];
+	std::vector<std::pair<Move, int>> scoredMoves;
+	scoredMoves.reserve(moveList.size());
+
+	// Setup scored moves
+	for (Move m : moveList){
+		scoredMoves.emplaceBack(m, 0);
+	}
+	// Score each move
+	valueMoves(scoredMoves, board, ttEntry.bestMove, plys, killerMoves, historyTable);
+	
+	orderMoves(scoredMoves);
+	Move bestMove = moveList[0].first;
 
 	// ============ Exceeded parameters ============
 	if (depth <= 0) {
@@ -242,7 +245,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 	bool completed = true;
 	int movesSearched = 0;
 
-	for (Move m: moveList) {
+	for (auto &[m, moveScore] : scoredMoves) {
 		UndoInfo undo = board.makeMove(m);
 
 		// Since using genPseudoLegal(), only actually checking when it's for a move I have made
@@ -557,6 +560,7 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 		auto now = std::chrono::steady_clock::now();
 		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
 
+		// Print out best move found
 		{
 			std::lock_guard<std::mutex> lock(g_outputMutex);
 
