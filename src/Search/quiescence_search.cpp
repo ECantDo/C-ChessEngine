@@ -46,7 +46,7 @@ BestMove quiescenceSearch(Board &board, int alpha, int beta, int qDepth) {
 
         UndoInfo ui = board.makeMove(move);
 
-        BestMove result = quiescenceSearch(board, -beta, -alpha);
+        BestMove result = quiescenceSearch(board, -beta, -alpha, qDepth +1);
         int score = -result.score;
         nodes += result.nodes;
 
