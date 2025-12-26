@@ -77,11 +77,6 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 				   unsigned long long historyTable[2][64][64],
 				   int extensionsUsed = 0, bool nullMoveAllowed = true) {
 
-	if (plys == 0) {
-		alpha = -INF_SCORE;
-		beta = INF_SCORE;
-	}
-
 	bool inCheck = isKingInCheck(board, board.turn);
 
 
