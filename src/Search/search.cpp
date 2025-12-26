@@ -68,7 +68,8 @@ bool hasNonPawnMaterial(Board &board) {
 BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move previousBest,
 				   std::vector<uint64_t> &searchPath, Move killerMoves[MAX_PLY][2],
 				   unsigned long long historyTable[2][64][64],
-				   int extensionsUsed = 0, bool nullMoveAllowed = true) {
+				   int extensionsUsed = 0, bool nullMoveAllowed = true,
+				   std::vector<std::pair<Move, int>> *rootMoves = nullptr) {
 
 	bool inCheck = isKingInCheck(board, board.turn);
 
@@ -145,16 +146,26 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 	// ============ Order Moves ============
 	// Depth also happens to be the ply
 	std::vector<std::pair<Move, int>> scoredMoves;
-	scoredMoves.reserve(moveList.size());
 
-	// Setup scored moves
-	for (Move m : moveList){
-		scoredMoves.emplace_back(m, 0);
+	if (plys == 0 && rootMoves != nullptr && !rootMoves->empty()) {
+	 scoredMoves = *rootMoves;
+	 orderMoves(scoredMoves);
+	} else {
+		scoredMoves.reserve(moveList.size());
+
+		// Setup scored moves
+		for (Move m: moveList) {
+			scoredMoves.emplace_back(m, 0);
+		}
+		// Score each move
+		valueMoves(scoredMoves, board, ttEntry.bestMove, plys, killerMoves, historyTable);
+// Order the moves
+		orderMoves(scoredMoves);
 	}
-	// Score each move
-	valueMoves(scoredMoves, board, ttEntry.bestMove, plys, killerMoves, historyTable);
-	
-	orderMoves(scoredMoves);
+
+	if (plys == 0 && rootMoves == nullptr){
+	    *rootMoves = scoredMoves;
+	}
 	Move bestMove = scoredMoves[0].first;
 
 	// ============ Exceeded parameters ============
@@ -325,6 +336,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		}
 
 		int score = -result.score;
+		moveScore = score;
 
 
 		board.unmakeMove(m, undo);
@@ -484,6 +496,8 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 	int lastScore = 0;
 	int stableMoveCount = 0;
 
+    std::vector<std::pair<Move, int>> rootMoves;
+
 	std::vector<uint64_t> searchPath;
 	searchPath.reserve(64);
 
@@ -512,7 +526,7 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 
 			while (true) {
 				result = alphaBeta(board, depth, 0, alpha, beta, bestMove, searchPath,
-								   killerMoves, historyTable, 0);
+								   killerMoves, historyTable, 0, true, &rootMoves);
 				if (stopSearch || !result.completed) break;
 
 				// Is score within the window?
