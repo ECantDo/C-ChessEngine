@@ -163,18 +163,19 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 	// ============ Reverse Futility Pruning ============
 	// How good is my static eval? Is it so far above beta that even if I make a bad move, I will still beat beta
-	if (depth <= 3 &&
+	if (depth <= 2 &&
 		!inCheck &&
 		abs(beta) < MATE_SCORE - 100) {
 
 		int staticEval = evaluateBoard(board);
 		int margin;
+		// TODO: tune
 		switch (depth) {
 			case 1:
-				margin = 200;
+				margin = 100;
 				break;
 			case 2:
-				margin = 400;
+				margin = 300;
 				break;
 			case 3:
 				margin = 600;
@@ -187,6 +188,14 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 			searchPath.pop_back();
 			return {0, staticEval - margin, 1, 0, plys, true, {}};
 		}
+
+/*
+		if (staticEval + margin <= alpha){
+		    searchPath.pop_back();
+		    return {0, staticEval + margin, 1, 0, plys,
+		    true, {}};
+		}
+		*/
 	}
 
 	// ============ Null Move Pruning ============
@@ -244,6 +253,26 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 	for (Move m: moveList) {
 		UndoInfo undo = board.makeMove(m);
+		/*
+		if (movesSearched > 0 &&
+			depth <= 2 &&
+			!inCheck &&
+			!(m & MOVE_FLAG_CAPTURE) &&
+			!isKingInCheck(board, board.turn) &&  // Not in check after move
+			alpha < MATE_SCORE - 100) {
+
+			int staticEval = evaluateBoard(board);  // From opponent's perspective
+			int futilityMargin = (depth == 1) ? 150 : 300;
+
+			// If opponent's position + margin is still worse than our alpha
+			if (-staticEval + futilityMargin <= alpha) {
+				board.unmakeMove(m, undo);
+				movesSearched++;
+				continue; // Skip searching this move
+			}
+		}
+		 */
+
 
 		// Since using genPseudoLegal(), only actually checking when it's for a move I have made
 //        if (isKingInCheck(board, -board.turn)) {
@@ -270,7 +299,8 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 				// LMR with null window
 				int halfSize = moveList.size() >> 1;
 				int reduction = 1 + (movesSearched > halfSize) /*+ (movesSearched > (halfSize >> 1) + halfSize)*/;
-
+                //int reduction = 1 + (depth > 6 && movesSearched >= 16) + (movesSearched >= 6)
+                //+ (movesSearched >=8) + (movesSearched >= 12);
 				// Try reduced null window search
 				result = alphaBeta(board, depth - 1 - reduction, plys + 1,
 								   -alpha - 1, -alpha,  // NULL WINDOW
