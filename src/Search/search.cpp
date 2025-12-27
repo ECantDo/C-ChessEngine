@@ -148,7 +148,9 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 	std::vector<std::pair<Move, int>> scoredMoves;
 
 	if (plys == 0 && rootMoves != nullptr && !rootMoves->empty()) {
+	//std::cout << "USING OLD VALUES" <<std::endl << std::flush;
 	 scoredMoves = *rootMoves;
+	 // DO NOT VALUE HERE; sort only
 	 orderMoves(scoredMoves);
 	} else {
 		scoredMoves.reserve(moveList.size());
@@ -159,7 +161,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		}
 		// Score each move
 		valueMoves(scoredMoves, board, ttEntry.bestMove, plys, killerMoves, historyTable);
-// Order the moves
+        // Order the moves
 		orderMoves(scoredMoves);
 	}
 	Move bestMove = scoredMoves[0].first;
@@ -252,7 +254,8 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 	bool completed = true;
 	int movesSearched = 0;
 
-	for (auto &[m, moveScore] : scoredMoves) {
+	for (auto &pair : scoredMoves) {
+	    Move m = pair.first;
 		UndoInfo undo = board.makeMove(m);
 
 		// Since using genPseudoLegal(), only actually checking when it's for a move I have made
@@ -278,7 +281,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 				!isKingInCheck(board, -board.turn) &&
 				!isKingInCheck(board, board.turn)) {
 				// LMR with null window
-				int halfSize = moveList.size() >> 1;
+				int halfSize = scoredMoves.size() >> 1;
 				int reduction = 1 + (movesSearched > halfSize) /*+ (movesSearched > (halfSize >> 1) + halfSize)*/;
 
 				// Try reduced null window search
@@ -332,7 +335,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		}
 
 		int score = -result.score;
-		moveScore = score;
+		pair.second = score;
 
 
 		board.unmakeMove(m, undo);
@@ -387,11 +390,15 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 	searchPath.pop_back();
 
-	if (plys == 0 && rootMoves != nullptr){
-		*rootMoves = scoredMoves;
-	}
-
 	if (completed) {
+	    for (int i = movesSearched; i < scoredMoves.size(); i++){
+	        scoredMoves[i].second = betaOrig;
+	    }
+
+		if (plys == 0 && rootMoves != nullptr){
+			*rootMoves = scoredMoves;
+		}
+
 		// ==== STORE TT MOVE ====
 		TTFlag flag;
 		if (bestScore <= alphaOrig) {
@@ -559,7 +566,8 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 		} else {
 			// Depth < 4, or mate score, use full window.
 			result = alphaBeta(board, depth, 0, -INF_SCORE, INF_SCORE,
-							   bestMove, searchPath, killerMoves, historyTable, 0);
+							   bestMove, searchPath, killerMoves, historyTable,
+							   0, true, &rootMoves);
 		}
 
 		if (!result.completed || stopSearch) break;
@@ -623,6 +631,11 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 		}
 		lastScore = bestScore;
 		lastBestMove = bestMove;
+		std::cout << "Move value pairs: " << std::endl;
+		for (std::pair<Move, int> &pair : rootMoves) {
+		std::cout << "(" << moveToString(pair.first) << ", " << pair.second << ") ";
+		}
+		std::cout << std::endl << std::flush;
 	}
 
 //	if (earlyExits > 0) {
