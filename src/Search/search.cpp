@@ -113,7 +113,6 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 	// ============ TT Probe ============
 	TTEntry ttEntry;
-    /*
 	// The plys is how many nodes from here it has been searched
 	if (globalTT.probe(board.zobristHash, depth, alpha, beta, ttEntry)) {
 		int score = ttEntry.score;
@@ -130,7 +129,6 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		searchPath.pop_back();
 		return {ttEntry.bestMove, score, 0, 1, plys, true, {ttEntry.bestMove}};
 	}
-*/
 
 	// ============ Generate Moves ============
 	std::vector<Move> moveList;
