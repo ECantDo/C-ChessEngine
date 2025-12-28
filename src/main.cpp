@@ -10,7 +10,7 @@
 #include <sstream>
 #include <chrono>
 
-#define VERSION "V17.13_searchTuning"
+#define VERSION "V18.0_betterTestingRegression"
 
 bool debug = false;
 Board currentBoard;   // Global board state stored between commands

@@ -84,15 +84,17 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 	// ============ Check for Draw ============
 	// 50 move, and repetition
 	// Add current board early to check for repetition
-	searchPath.push_back(board.zobristHash);
 
+
+	searchPath.push_back(board.zobristHash);
+/*
 	if (board.halfMoveClock >= 100) {
 		searchPath.pop_back();
 		return {0, 0, 1, 0, plys, true, {}};
 	}
 	if (board.isRepetitionInSearch(searchPath)) {
 		searchPath.pop_back();
-		return {0, 0, 1, 0, plys, true, {}};  /* Draw score = 0 */
+		return {0, 0, 1, 0, plys, true, {}};  // Draw score = 0
 	}
 
 	// Draw on insufficient material (one of the)
@@ -100,9 +102,9 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		 board.whiteBishops | board.blackBishops | board.whiteKnights | board.blackKnights |
 		 board.whiteQueens | board.blackQueens) == 0) {
 		searchPath.pop_back();
-		return {0, 0, 1, 0, plys, true, {}};  /* Draw score = 0 */
-
+		return {0, 0, 1, 0, plys, true, {}};
 	}
+	 */
 
 	// ============ TT Storage consts ============
 
@@ -111,6 +113,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 	// ============ TT Probe ============
 	TTEntry ttEntry;
+	/*
 	// The plys is how many nodes from here it has been searched
 	if (globalTT.probe(board.zobristHash, depth, alpha, beta, ttEntry)) {
 		int score = ttEntry.score;
@@ -127,6 +130,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		searchPath.pop_back();
 		return {ttEntry.bestMove, score, 0, 1, plys, true, {ttEntry.bestMove}};
 	}
+	 */
 
 	// ============ Generate Moves ============
 	std::vector<Move> moveList;
@@ -141,19 +145,21 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 			int mateScore = -MATE_SCORE + plys;
 			// Only seeing this move, or a from-here plys of 1
 
-			globalTT.store(board.zobristHash, 0, depth, -MATE_SCORE, TT_EXACT);
+			//globalTT.store(board.zobristHash, 0, depth, -MATE_SCORE, TT_EXACT);
 			return {0, mateScore, 1, 0, plys, true, {}};
 		}
 		// King not in check -> Draw
 		// Only seeing this move, or plys of 1
-		globalTT.store(board.zobristHash, 0, depth, 0, TT_EXACT);
+		//globalTT.store(board.zobristHash, 0, depth, 0, TT_EXACT);
 		return {0, 0, 1, 0, plys, true, {}};
 	}
 
 	// ============ Order Moves ============
 	// Depth also happens to be the ply
+	/*
 	orderMoves(moveList, board, ttEntry.bestMove, plys, killerMoves, historyTable);
 	Move bestMove = moveList[0];
+	 */
 
 	// ============ Exceeded parameters ============
 	if (depth <= 0) {
@@ -164,6 +170,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 	// ============ Reverse Futility Pruning ============
 	// How good is my static eval? Is it so far above beta that even if I make a bad move, I will still beat beta
+	/*
 	if (depth <= 2 &&
 		!inCheck &&
 		abs(beta) < MATE_SCORE - 100) {
@@ -189,17 +196,11 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 			searchPath.pop_back();
 			return {0, staticEval - margin, 1, 0, plys, true, {}};
 		}
-
-/*
-		if (staticEval + margin <= alpha){
-		    searchPath.pop_back();
-		    return {0, staticEval + margin, 1, 0, plys,
-		    true, {}};
-		}
-		*/
 	}
+	 */
 
 	// ============ Null Move Pruning ============
+	/*
 	if (nullMoveAllowed && !inCheck && depth >= 3 && hasNonPawnMaterial(board)) {
 		// Save values
 		int8_t oldTurn = board.turn;
@@ -236,14 +237,15 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 			}
 		}
 	}
+	 */
 
-	int extension = calculateExtension(board, extensionsUsed);
+	int extension = 0;// calculateExtension(board, extensionsUsed);
 
 
 //    if (stopSearch) {
 //        return {0, 0, 1, plys, false, {bestMove}};
 //    }
-
+    Move bestMove = 0;
 	int bestScore = -INF_SCORE;
 	std::vector<Move> pv;
 
@@ -284,6 +286,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		BestMove result;
 
 		// Get PV node
+		/*
 		if (movesSearched == 0) {
 			result = alphaBeta(board, depth - 1, plys + 1, -beta, -alpha,
 							   0, searchPath, killerMoves, historyTable,
@@ -299,7 +302,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 				!isKingInCheck(board, board.turn)) {
 				// LMR with null window
 				int halfSize = moveList.size() >> 1;
-				int reduction = 1 ;//+ (movesSearched > halfSize) /*+ (movesSearched > (halfSize >> 1) + halfSize)*/;
+				int reduction = 1 ;//+ (movesSearched > halfSize) /*+ (movesSearched > (halfSize >> 1) + halfSize);
                 //int reduction = 1 + (depth > 6 && movesSearched >= 16) + (movesSearched >= 6)
                 //+ (movesSearched >=8) + (movesSearched >= 12);
 				// Try reduced null window search
@@ -340,7 +343,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 				tbHits += result.tbHits;
 
 				// Beat alpha? Re-search with full window
-				if (-result.score > alpha /*&& -result.score < beta*/) {
+				if (-result.score > alpha ) {
 					result = alphaBeta(board, depth - 1, plys + 1,
 									   -beta, -alpha,  // FULL WINDOW
 									   0, searchPath, killerMoves, historyTable,
@@ -351,6 +354,13 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 				}
 			}
 		}
+		 */
+		 result = alphaBeta(board, depth - 1, plys + 1,
+		 -beta, -alpha,
+		 0, searchPath, killerMoves, historyTable,
+		 extensionsUsed + extension);
+		 nodes += result.nodes;
+		 tbHits += result.tbHits;
 
 		int score = -result.score;
 
@@ -376,6 +386,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 		if (alpha >= beta) {
 			// If quiet move (i.e. not a capture)
+			/*
 			if (!(m & MOVE_FLAG_CAPTURE)) {
 				// Shift old killer to slot 1, new to slot 0
 				killerMoves[plys][1] = killerMoves[plys][0];
@@ -396,6 +407,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 					}
 				}
 			}
+			 */
 			break;
 		}
 
@@ -408,6 +420,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 	searchPath.pop_back();
 	if (completed) {
 		// ==== STORE TT MOVE ====
+		/*
 		TTFlag flag;
 		if (bestScore <= alphaOrig) {
 			flag = TT_ALPHA;
@@ -425,7 +438,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		}
 
 		globalTT.store(board.zobristHash, bestMove, depth, ttScore, flag);
-
+*/
 		return {bestMove, bestScore, nodes, tbHits, plys, true, pv};
 	} else {
 		return {bestMove, bestScore, nodes, tbHits, plys, false, {}};
