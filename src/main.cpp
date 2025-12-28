@@ -10,7 +10,7 @@
 #include <sstream>
 #include <chrono>
 
-#define VERSION "V17.11_timeControl"
+#define VERSION "V17.13_searchTuning"
 
 bool debug = false;
 Board currentBoard;   // Global board state stored between commands
@@ -200,12 +200,14 @@ void startSearch(const std::string &goCmd) {
         std::cout << "bestmove " << moveToString(bm.bestMove) << '\n' << std::flush;
     } else {
         auto start = std::chrono::high_resolution_clock::now();
-        uint64_t totalNodes = perftDivide(currentBoard, depth);
+
+        uint64_t totalNodes = perft(depth, currentBoard);
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-        std::cout << "Took " << duration << " ms"
-		<< " nps " << (duration > 0 ? (totalNodes * 1000 / duration) : 0)
-		<< std::endl << std::flush;
+        std::cout << totalNodes << std::endl << std::flush;
+        //std::cout << "Took " << duration << " ms"
+		//<< " nps " << (duration > 0 ? (totalNodes * 1000 / duration) : 0)
+		//<< std::endl << std::flush;
     }
 }
 

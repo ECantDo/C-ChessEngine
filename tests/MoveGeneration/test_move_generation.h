@@ -21,4 +21,6 @@ void perftDivideTesting();
 
 uint64_t perftDivide(Board &board, int depth);
 
+
+
 #endif //CHESSENGINE_TEST_MOVE_GENERATION_H

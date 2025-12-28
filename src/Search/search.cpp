@@ -28,7 +28,8 @@ void orderMoves(std::vector<Move> &moves, const Board &board, Move previousBest,
 
 	// Use partial_sort - only sort the top moves fully
 	// Most beta cutoffs happen in the first few moves
-	int numToSort = std::min((int) moves.size(), 8); // Only fully sort top 8
+	int len = (int)moves.size();
+	int numToSort = std::min(len, std::min(len >> 1, 8)); // Only fully sort top 8
 	std::partial_sort(
 			scoredMoves.begin(),
 			scoredMoves.begin() + numToSort,
@@ -214,7 +215,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 			board.zobristHash ^= Zobrist::enPassantFile[oldEnPass];
 		}
 
-		int R = (depth >= 8 ? 3 : 2); // Reduction -- Basically skipping my move
+		int R = (depth >= 6 ? 3 : 2); // Reduction -- Basically skipping my move
 		BestMove nullResult = alphaBeta(board, depth - 1 - R, plys + 1, -beta, -beta + 1,
 										0, searchPath, killerMoves, historyTable,
 										extensionsUsed, false);
@@ -298,7 +299,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 				!isKingInCheck(board, board.turn)) {
 				// LMR with null window
 				int halfSize = moveList.size() >> 1;
-				int reduction = 1 + (movesSearched > halfSize) /*+ (movesSearched > (halfSize >> 1) + halfSize)*/;
+				int reduction = 1 ;//+ (movesSearched > halfSize) /*+ (movesSearched > (halfSize >> 1) + halfSize)*/;
                 //int reduction = 1 + (depth > 6 && movesSearched >= 16) + (movesSearched >= 6)
                 //+ (movesSearched >=8) + (movesSearched >= 12);
 				// Try reduced null window search

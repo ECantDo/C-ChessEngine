@@ -64,49 +64,55 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 
 
 inline int scoreMoveForOrdering(Move m, const Board &board, int ply,
-								Move killers[MAX_PLY][2], unsigned long long history[2][64][64]) {
-	int flags = getMoveFlags(m);
+								Move killers[MAX_PLY][2],
+								unsigned long long history[2][64][64]) {
 
+	int flags = getMoveFlags(m);
 	int to = getMoveTo(m);
 	int from = getMoveFrom(m);
 
-	// 1. CAPTURES (highest priority)
-	if (flags & MOVE_FLAG_CAPTURE) {
-
-		Piece victim = board.pieceAtSquare(to);
-		Piece attacker = board.pieceAtSquare(from);
-		return 1000000 + getPieceValue(victim) * 10 - getPieceValue(attacker);
-	}
-
-	// 2. PROMOTIONS
+	// 1. PROMOTIONS (especially capturing promotions)
 	if (flags & MOVE_FLAG_PROMOTION) {
 		int promoType = flags & 0x3;
+		int baseScore = 0;
 		switch (promoType) {
-			case PROMOTE_TO_QUEEN:
-				return 900000;
-			case PROMOTE_TO_ROOK:
-				return 500000;
-			case PROMOTE_TO_BISHOP:
-				return 330000;
-			case PROMOTE_TO_KNIGHT:
-				return 300000;
-			default:
-				break;
+			case PROMOTE_TO_QUEEN:  baseScore = 9000000; break;
+			case PROMOTE_TO_ROOK:   baseScore = 5000000; break;
+			case PROMOTE_TO_BISHOP: baseScore = 3300000; break;
+			case PROMOTE_TO_KNIGHT: baseScore = 3000000; break;
+			default: baseScore = 3000000; break;
 		}
+
+		// Bonus for capturing promotions
+		if (flags & MOVE_FLAG_CAPTURE) {
+			Piece victim = board.pieceAtSquare(to);
+			baseScore += getPieceValue(victim) * 10;
+		}
+
+		return baseScore;
 	}
 
-	// 3. KILLER MOVES (non-captures that caused cutoffs at this plys)
+	// 2. CAPTURES (MVV-LVA)
+	if (flags & MOVE_FLAG_CAPTURE) {
+		Piece victim = board.pieceAtSquare(to);
+		Piece attacker = board.pieceAtSquare(from);
+		int mvvLva = getPieceValue(victim) * 10 - getPieceValue(attacker);
+		return 1000000 + mvvLva;
+	}
+
+	// 3. KILLER MOVES (non-captures that caused cutoffs at this ply)
 	if (ply < MAX_PLY) {
 		if (m == killers[ply][0]) return 90000;
 		if (m == killers[ply][1]) return 80000;
 	}
 
 	// 4. CASTLING
-	if (flags & MOVE_FLAG_CASTLING) return 10000;
+	if (flags & MOVE_FLAG_CASTLING) return 50000;
 
-	// 5. HISTORY (statistical goodness)
+	// 5. HISTORY (statistical goodness - capped below killers)
 	int color = (board.turn == 1) ? 0 : 1;
-	return history[color][from][to];
+	int historyScore = history[color][from][to];
+	return std::min((int)historyScore, 70000);  // Cap to stay below killers
 }
 
 
