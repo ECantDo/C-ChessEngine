@@ -160,7 +160,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 
 	// ============ Exceeded parameters ============
-	if (depth <= 0) {
+	if (depth <= 0 || extensionsUsed >= MAX_EXTENSIONS) {
 		searchPath.pop_back();
 
 		return quiescenceSearch(board, alpha, beta);
@@ -168,8 +168,8 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 	// ============ Reverse Futility Pruning ============
 	// How good is my static eval? Is it so far above beta that even if I make a bad move, I will still beat beta
-	/*
-	if (depth <= 2 &&
+/*
+	if (depth <= 3 &&
 		!inCheck &&
 		abs(beta) < MATE_SCORE - 100) {
 
@@ -195,10 +195,10 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 			return {0, staticEval - margin, 1, 0, plys, true, {}};
 		}
 	}
-	 */
+*/
 
 	// ============ Null Move Pruning ============
-	/*
+
 	if (nullMoveAllowed && !inCheck && depth >= 3 && hasNonPawnMaterial(board)) {
 		// Save values
 		int8_t oldTurn = board.turn;
@@ -235,9 +235,9 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 			}
 		}
 	}
-	 */
 
-	int extension = 0;// calculateExtension(board, extensionsUsed);
+
+	int extension = calculateExtension(board, extensionsUsed);
 
 
 //    if (stopSearch) {
@@ -254,9 +254,10 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 	for (Move m: moveList) {
 		UndoInfo undo = board.makeMove(m);
-		/*
+
+/*
 		if (movesSearched > 0 &&
-			depth <= 2 &&
+			plys >= 3 &&
 			!inCheck &&
 			!(m & MOVE_FLAG_CAPTURE) &&
 			!isKingInCheck(board, board.turn) &&  // Not in check after move
@@ -271,22 +272,15 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 				movesSearched++;
 				continue; // Skip searching this move
 			}
-		}
-		 */
+		}*/
 
-
-		// Since using genPseudoLegal(), only actually checking when it's for a move I have made
-//        if (isKingInCheck(board, -board.turn)) {
-//            board.unmakeMove(m, undo);
-//            continue;
-//        }
 
 		BestMove result;
 
 		// Get PV node
-		/*
-		if (movesSearched == 0) {
-			result = alphaBeta(board, depth - 1, plys + 1, -beta, -alpha,
+
+		if (true || movesSearched == 0) {
+			result = alphaBeta(board, depth - 1 + extension, plys + 1, -beta, -alpha,
 							   0, searchPath, killerMoves, historyTable,
 							   extensionsUsed + extension, nullMoveAllowed);
 			nodes += result.nodes;
@@ -294,34 +288,35 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 		} else {
 			// Later moves: try null window search first
-			if (movesSearched >= 4 && plys >= 1 &&
+			if (movesSearched >= 8 && plys >= 4 &&
 				!(m & MOVE_FLAG_CAPTURE) &&
 				!isKingInCheck(board, -board.turn) &&
 				!isKingInCheck(board, board.turn)) {
 				// LMR with null window
 				int halfSize = moveList.size() >> 1;
-				int reduction = 1 ;//+ (movesSearched > halfSize) /*+ (movesSearched > (halfSize >> 1) + halfSize);
+				int reduction = 1;//+ (movesSearched > halfSize) /*+ (movesSearched > (halfSize >> 1) + halfSize);
                 //int reduction = 1 + (depth > 6 && movesSearched >= 16) + (movesSearched >= 6)
                 //+ (movesSearched >=8) + (movesSearched >= 12);
 				// Try reduced null window search
-				result = alphaBeta(board, depth - 1 - reduction, plys + 1,
+				/*result = alphaBeta(board, depth - 1 - reduction, plys + 1,
 								   -alpha - 1, -alpha,  // NULL WINDOW
 								   0, searchPath, killerMoves, historyTable,
 								   extensionsUsed + extension);
 
 				nodes += result.nodes;
 				tbHits += result.tbHits;
+				 */
 
 				// If it beat alpha, re-search at full depth
-				if (-result.score > alpha && reduction > 0) {
-					result = alphaBeta(board, depth - 1, plys + 1,
+				//if (-result.score > alpha && reduction > 0) {
+					result = alphaBeta(board, depth - 1 - reduction, plys + 1,
 									   -beta, -alpha,  // Still null window <<< FULL WINDOW, null might be slowing
 									   0, searchPath, killerMoves, historyTable,
 									   extensionsUsed + extension);
 
 					nodes += result.nodes;
 					tbHits += result.tbHits;
-				}
+				//}
 
 				// If STILL beat alpha, do full window search
 //				if (-result.score > alpha) {
@@ -332,33 +327,33 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 //				}
 			} else {
 				// Non-LMR moves: null window then full if needed
-				result = alphaBeta(board, depth - 1, plys + 1,
+				/*result = alphaBeta(board, depth - 1 + extension, plys + 1,
 								   -alpha - 1, -alpha,  // NULL WINDOW
 								   0, searchPath, killerMoves, historyTable,
 								   extensionsUsed + extension);
 
 				nodes += result.nodes;
 				tbHits += result.tbHits;
-
+*/
 				// Beat alpha? Re-search with full window
-				if (-result.score > alpha ) {
-					result = alphaBeta(board, depth - 1, plys + 1,
+				//if (-result.score > alpha ) {
+					result = alphaBeta(board, depth - 1 + extension, plys + 1,
 									   -beta, -alpha,  // FULL WINDOW
 									   0, searchPath, killerMoves, historyTable,
 									   extensionsUsed + extension);
 
 					nodes += result.nodes;
 					tbHits += result.tbHits;
-				}
+				//}
 			}
 		}
-		 */
-		 result = alphaBeta(board, depth - 1, plys + 1,
+
+		 /*result = alphaBeta(board, depth - 1 + extension, plys + 1,
 		 -beta, -alpha,
 		 0, searchPath, killerMoves, historyTable,
 		 extensionsUsed + extension);
 		 nodes += result.nodes;
-		 tbHits += result.tbHits;
+		 tbHits += result.tbHits;*/
 
 		int score = -result.score;
 
