@@ -544,7 +544,7 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 		BestMove result;
 
 		// ==== Aspiration Windows ====
-		if (depth >= 5 && abs(bestScore) < MATE_SCORE - 100) {
+		if ( depth >= 3 && abs(bestScore) < MATE_SCORE - 100) {
 			int delta = 100; // Window size; typical is 50, but I am going with 100 for now, to make sure it works
 			int alpha = bestScore - delta;
 			int beta = bestScore + delta;
