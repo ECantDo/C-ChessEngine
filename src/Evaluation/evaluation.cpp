@@ -294,8 +294,8 @@ int evaluateBoard(Board &board) {
 
 	score += ((mgScore * phase) + (egScore * (24 - phase))) / 24;
 
-	score += evaluatePawns(board, 1); // Add the score for white; when score is negative, bad for white
-	score -= evaluatePawns(board, -1); // Subtract the score for black; when score is negative, good for white
+	//score += evaluatePawns(board, 1); // Add the score for white; when score is negative, bad for white
+	//score -= evaluatePawns(board, -1); // Subtract the score for black; when score is negative, good for white
 
 	// ==== Mobility ====
 	// TODO
