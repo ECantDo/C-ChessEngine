@@ -162,11 +162,11 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 	// ============ Exceeded parameters ============
 	if (depth <= 0 || extensionsUsed >= MAX_EXTENSIONS) {
 		searchPath.pop_back();
-
 		return quiescenceSearch(board, alpha, beta);
 	}
 
 	// ============ Reverse Futility Pruning ============
+	// Seems to make it worse -- at the very least not better
 	// How good is my static eval? Is it so far above beta that even if I make a bad move, I will still beat beta
 /*
 	if (depth <= 3 &&
@@ -287,6 +287,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 			tbHits += result.tbHits;
 
 		} else {
+		// LMR Seems to make it worse
 			// Later moves: try null window search first
 			if (movesSearched >= 8 && plys >= 4 &&
 				!(m & MOVE_FLAG_CAPTURE) &&
@@ -348,15 +349,8 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 			}
 		}
 
-		 /*result = alphaBeta(board, depth - 1 + extension, plys + 1,
-		 -beta, -alpha,
-		 0, searchPath, killerMoves, historyTable,
-		 extensionsUsed + extension);
-		 nodes += result.nodes;
-		 tbHits += result.tbHits;*/
 
 		int score = -result.score;
-
 
 		board.unmakeMove(m, undo);
 		movesSearched++;
@@ -379,12 +373,13 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 		if (alpha >= beta) {
 			// If quiet move (i.e. not a capture)
-			/*
+
 			if (!(m & MOVE_FLAG_CAPTURE)) {
 				// Shift old killer to slot 1, new to slot 0
 				killerMoves[plys][1] = killerMoves[plys][0];
 				killerMoves[plys][0] = m;
 
+			 /*
 				int color = board.turn == 1 ? 0 : 1;
 				int from = getMoveFrom(m);
 				int to = getMoveTo(m);
@@ -398,9 +393,8 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 							}
 						}
 					}
-				}
+				} */
 			}
-			 */
 			break;
 		}
 
