@@ -286,46 +286,64 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 			tbHits += result.tbHits;
 
 		} else {
-		// LMR Seems to make it worse
-			// Later moves: try null window search first
-			if (movesSearched >= 8  && depth >= 3 &&
+			// Check if we should do LMR
+			if (movesSearched >= 8 && depth >= 3 &&
 				!(m & MOVE_FLAG_CAPTURE) &&
-				!isKingInCheck(board, -board.turn) &&
 				!isKingInCheck(board, board.turn)) {
+
+				int reduction = 1;
+				reduction = std::min(reduction, depth - 2);
+
 				// LMR with null window
-				int halfSize = moveList.size() >> 1;
-				int reduction = 1;//+ (movesSearched > halfSize) /*+ (movesSearched > (halfSize >> 1) + halfSize);
-                //int reduction = 1 + (depth > 6 && movesSearched >= 16) + (movesSearched >= 6)
-                //+ (movesSearched >=8) + (movesSearched >= 12);
-				// Try reduced null window search
 				result = alphaBeta(board, depth - 1 - reduction, plys + 1,
-								   -beta, -alpha,  // NULL WINDOW
+								   -alpha - 1, -alpha,  // NULL WINDOW
 								   0, searchPath, killerMoves, historyTable,
-								   extensionsUsed + extension);
+								   extensionsUsed);
 
 				nodes += result.nodes;
 				tbHits += result.tbHits;
 
-
-				// If it beat alpha, re-search at full depth
-				if (-result.score > alpha && reduction > 0) {
+				// If LMR search beat alpha, re-search at full depth with null window
+				if (-result.score > alpha) {
 					result = alphaBeta(board, depth - 1, plys + 1,
-									   -beta, -alpha,  // Still null window <<< FULL WINDOW, null might be slowing
+									   -alpha - 1, -alpha,  // Still null window
 									   0, searchPath, killerMoves, historyTable,
-									   extensionsUsed + extension);
+									   extensionsUsed);
 
 					nodes += result.nodes;
 					tbHits += result.tbHits;
 				}
+
+				// If STILL beat alpha, do full window search
+				if (-result.score > alpha) {
+					result = alphaBeta(board, depth - 1, plys + 1,
+									   -beta, -alpha,  // FULL WINDOW
+									   0, searchPath, killerMoves, historyTable,
+									   extensionsUsed);
+
+					nodes += result.nodes;
+					tbHits += result.tbHits;
+				}
+
 			} else {
-				// Non-LMR moves: should use same depth as first move
-				result = alphaBeta(board, depth - 1 + extension, plys + 1,
-								   -beta, -alpha,
+				// Non-LMR: just null window then full if needed
+				result = alphaBeta(board, depth - 1, plys + 1,
+								   -alpha - 1, -alpha,  // NULL WINDOW
 								   0, searchPath, killerMoves, historyTable,
-								   extensionsUsed + extension);
+								   extensionsUsed);
 
 				nodes += result.nodes;
 				tbHits += result.tbHits;
+
+				if (-result.score > alpha) {
+					result = alphaBeta(board, depth - 1, plys + 1,
+									   -beta, -alpha,  // FULL WINDOW
+									   0, searchPath, killerMoves, historyTable,
+									   extensionsUsed);
+
+					nodes += result.nodes;
+					tbHits += result.tbHits;
+				}
 			}
 		}
 
@@ -359,7 +377,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 				killerMoves[plys][1] = killerMoves[plys][0];
 				killerMoves[plys][0] = m;
 
-			 /*
+
 				int color = board.turn == 1 ? 0 : 1;
 				int from = getMoveFrom(m);
 				int to = getMoveTo(m);
@@ -373,7 +391,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 							}
 						}
 					}
-				} */
+				}
 			}
 			break;
 		}
