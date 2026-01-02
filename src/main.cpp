@@ -10,7 +10,7 @@
 #include <sstream>
 #include <chrono>
 
-#define VERSION "V17.13_searchTuning"
+#define VERSION "V19.0_TTCluster(Re-do)"
 
 bool debug = false;
 Board currentBoard;   // Global board state stored between commands

@@ -12,8 +12,7 @@
 #include "Board/move.h"
 
 #define LOCK_SIZE_FACTOR 512
-
-// TODO : Implement buckets, but that is not a current issue. Don't waste time on that right now.
+#define CLUSTER_SIZE 3
 
 enum TTFlag : uint8_t {
     TT_EXACT = 0,
@@ -31,11 +30,20 @@ struct TTEntry {
     TTEntry() : zobristKey(0), bestMove(0), score(0), depth(0), flag(0) {}
 };
 
+struct TTCluster {
+    TTEntry entry[CLUSTER_SIZE];
+    TTCluster() : entry() {
+        for (auto & e : entry){
+            e = TTEntry();
+        }
+    }
+};
+
 class TranspositionTable {
 private:
     size_t size;
     size_t numLocks;
-    TTEntry *table;
+    TTCluster *table;
     std::vector<std::mutex> locks;
 
 
@@ -45,8 +53,8 @@ public:
     std::atomic<unsigned long long> stored{0};
 
     explicit TranspositionTable(size_t sizeMB)
-            : size((sizeMB * 1024 * 1024) / sizeof(TTEntry)),
-              table(new TTEntry[size]),
+            : size((sizeMB * 1024 * 1024) / sizeof(TTCluster)),
+              table(new TTCluster[size]),
               numLocks((size / LOCK_SIZE_FACTOR) + 1),
               locks(numLocks),  // Construct vector with numLocks default-constructed mutexes
               overwrites(0),
@@ -67,25 +75,58 @@ public:
 
         // Lock this section of the table - other threads must wait
         std::lock_guard<std::mutex> lock(locks[lockIndex]);
+        TTCluster &cluster = table[index];
+        int8_t writeIndex = -1;
 
-        // We now have exclusive access - safe to read/write
-        if (table[index].depth > depth) {
-            return; // The new search plys is smaller, don't overwrite.
+        // Find matching zobrist
+        int8_t blankIdx = -1;
+        int8_t matchingIdx = -1;
+        for (int8_t i = 0; i < CLUSTER_SIZE; i++){
+            if (cluster.entry[i].zobristKey == 0 && blankIdx == -1) {
+                blankIdx = i;
+                continue;
+            }
+            if (cluster.entry[i].zobristKey == key) {
+                matchingIdx = i;
+                break;
+            }
         }
 
-        if (table[index].zobristKey == key) {
-            overwriteSameKey += 1;
-        } else if (table[index].zobristKey != 0) {
-            overwrites += 1;
-        } else {
-            stored += 1;
+        // Same position? Depth priority
+        if (matchingIdx != -1){
+            // Always prefer deeper searches, regardless of flag
+            if (cluster.entry[matchingIdx].depth > depth) {
+                return;  // Don't overwrite deeper with shallower
+            }
+            // If same depth, prefer exact scores
+            if (cluster.entry[matchingIdx].depth == depth
+                && cluster.entry[matchingIdx].flag == TT_EXACT
+                && flag != TT_EXACT) {
+                return;  // Don't overwrite exact with bound
+            }
+            writeIndex = matchingIdx;
+            goto writeToTable;
         }
 
-        table[index].zobristKey = key;
-        table[index].bestMove = bestMove;
-        table[index].depth = depth;
-        table[index].score = score;
-        table[index].flag = flag;
+        // Not same position, and there is blank, just write to blank
+        if (blankIdx != -1){
+            writeIndex = blankIdx;
+            goto writeToTable;
+        }
+        // Otherwise, shift values to the left; sudo-aging
+        // and write to the right-most position, or the youngest spot
+        writeIndex = CLUSTER_SIZE - 1;
+        for (int8_t i = 0; i < writeIndex; i++){
+            cluster.entry[i] = cluster.entry[i + 1];
+        }
+
+        writeToTable:
+        if (writeIndex < 0) return;
+        table[index].entry[writeIndex].zobristKey = key;
+        table[index].entry[writeIndex].bestMove = bestMove;
+        table[index].entry[writeIndex].depth = depth;
+        table[index].entry[writeIndex].score = score;
+        table[index].entry[writeIndex].flag = flag;
 
         // Lock automatically releases here when the guard goes out of scope
     }
@@ -112,22 +153,24 @@ public:
         // Lock on read - prevent writing from another thread
         std::lock_guard<std::mutex> lock(locks[lockIndex]);
 
-        TTEntry &e = table[index];
-
-
-        if (e.zobristKey != key) {
-            return false; // Miss; position not in table
+        TTCluster &cluster = table[index];
+        // Find position
+        int8_t eIdx = 0;
+        for (eIdx; eIdx < CLUSTER_SIZE; eIdx++){
+            if (cluster.entry[eIdx].zobristKey == key) break;
         }
+        // Miss
+        if (eIdx == CLUSTER_SIZE) return false;
 
-        // able to use the score, but we can use the best move
+        TTEntry &e = cluster.entry[eIdx];
+
+        // From this point forwards, we can always use what is stored in the table; Might not be
+        entry = e;
 
         // If the stored entry is from a shallower search, we cannot trust the bounds
         if (e.depth < depth) {
             return false;
         }
-
-        // From this point forwards, we can always use what is stored in the table; Might not be
-        entry = e;
 
         // Exact score; fully evaluated at this node. Always usable.
         if (e.flag == TT_EXACT) {
