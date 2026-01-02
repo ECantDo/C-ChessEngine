@@ -26,7 +26,6 @@
 
 #include "Evaluation/opening_book.h"
 
-#define MAX_EXTENSIONS 10
 #define MAX_PLY 128
 
 extern bool useOpeningBook;
@@ -35,11 +34,14 @@ extern std::atomic<bool> stopSearch;
 struct BestMove {
 	Move bestMove;
 	int score;
-	unsigned long long nodes;
-	unsigned long long tbHits;
 	int plys;
 	bool completed;
 	std::vector<Move> pv;
+};
+
+struct SearchValues {
+    uint64_t nodes;
+    uint64_t tbHits;
 };
 
 struct ThreadResult {
@@ -52,13 +54,9 @@ struct ThreadResult {
 };
 
 
-BestMove selectMove(Board &board, int maxDepth, long timeLimitMS, int numThreads = 1);
-
-BestMove iterativeDeepening(Board &board, int maxDepth);
+BestMove selectMove(Board &board, int maxDepth, long timeLimitMS, SearchValues &searchValues, int numThreads = 1);
 
 bool isKingInCheck(const Board &board, int color);
-
-void rootDebugAlphaBeta(const Board &board, int maxDepth);
 
 ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThreads);
 

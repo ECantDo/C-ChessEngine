@@ -3,6 +3,7 @@
 //
 
 #include "search.h"
+#include "Moves/move_list.h"
 
 bool useOpeningBook = true;
 std::atomic<bool> stopSearch{false};
@@ -10,14 +11,15 @@ std::atomic<bool> stopSearch{false};
 static long g_timeLimitMS = 0;
 static std::chrono::steady_clock::time_point g_searchStart;
 
-void orderMoves(std::vector<Move> &moves, const Board &board, Move previousBest, int ply,
+void orderMoves(MoveList &moves, const Board &board, Move previousBest, int ply,
 				Move killers[MAX_PLY][2], unsigned long long history[2][64][64]) {
 
 	// Score all moves once
 	std::vector<std::pair<Move, int>> scoredMoves;
-	scoredMoves.reserve(moves.size());
+	scoredMoves.reserve(moves.length());
 
-	for (Move m: moves) {
+	for (int i = 0; i < moves.length(); i++) {
+	    Move m = moves.get(i);
 		if (m == previousBest) {
 			scoredMoves.emplace_back(m, 10000000); // Guarantee first
 		} else {
@@ -28,25 +30,21 @@ void orderMoves(std::vector<Move> &moves, const Board &board, Move previousBest,
 
 	// Use partial_sort - only sort the top moves fully
 	// Most beta cutoffs happen in the first few moves
-	int len = (int)moves.size();
-	int numToSort = std::min(len, std::min(len >> 1, 8)); // Only fully sort top 8
-	std::partial_sort(
+	int len = (int)moves.length();
+	int numToSort = len;// std::min(len, std::min(len >> 1, 8)); // Only fully sort top 8
+	std::sort(
 			scoredMoves.begin(),
-			scoredMoves.begin() + numToSort,
 			scoredMoves.end(),
 			[](const auto &a, const auto &b) { return a.second > b.second; }
 	);
 
 	// Extract sorted moves
-	for (size_t i = 0; i < moves.size(); i++) {
-		moves[i] = scoredMoves[i].first;
+	for (size_t i = 0; i < moves.length(); i++) {
+		moves.set(i, scoredMoves[i].first);
 	}
 }
 
-int calculateExtension(Board &board, int extensionsUsed) {
-	if (extensionsUsed >= MAX_EXTENSIONS) {
-		return 0;
-	}
+int calculateExtension(Board &board) {
 	int extension = 0;
 	bool inCheck = isKingInCheck(board, board.turn);
 	if (inCheck) {
@@ -76,7 +74,7 @@ bool hasNonPawnMaterial(Board &board) {
 BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move previousBest,
 				   std::vector<uint64_t> &searchPath, Move killerMoves[MAX_PLY][2],
 				   unsigned long long historyTable[2][64][64],
-				   int extensionsUsed = 0, bool nullMoveAllowed = true) {
+				   SearchValues &searchValues, bool nullMoveAllowed = true) {
 
 	bool inCheck = isKingInCheck(board, board.turn);
 
@@ -88,11 +86,13 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 	if (board.halfMoveClock >= 100) {
 		searchPath.pop_back();
-		return {0, 0, 1, 0, plys, true, {}};
+		searchValues.nodes++;
+		return {0, 0, plys, true, {}};
 	}
 	if (board.isRepetitionInSearch(searchPath)) {
 		searchPath.pop_back();
-		return {0, 0, 1, 0, plys, true, {}};  /* Draw score = 0 */
+		searchValues.nodes++;
+		return {0, 0, plys, true, {}};  /* Draw score = 0 */
 	}
 
 	// Draw on insufficient material (one of the)
@@ -100,7 +100,8 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		 board.whiteBishops | board.blackBishops | board.whiteKnights | board.blackKnights |
 		 board.whiteQueens | board.blackQueens) == 0) {
 		searchPath.pop_back();
-		return {0, 0, 1, 0, plys, true, {}};  /* Draw score = 0 */
+		searchValues.nodes++;
+		return {0, 0, plys, true, {}};  /* Draw score = 0 */
 
 	}
 
@@ -125,11 +126,12 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		}
 
 		searchPath.pop_back();
-		return {ttEntry.bestMove, score, 0, 1, plys, true, {ttEntry.bestMove}};
+		searchValues.tbHits++;
+		return {ttEntry.bestMove, score, plys, true, {ttEntry.bestMove}};
 	}
 
 	// ============ Generate Moves ============
-	std::vector<Move> moveList;
+	MoveList moveList;
 	generateLegalMoves(board, moveList, false);
 
 	// ============ Legal moves is empty; check/draw ============
@@ -142,18 +144,20 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 			// Only seeing this move, or a from-here plys of 1
 
 			globalTT.store(board.zobristHash, 0, depth, -MATE_SCORE, TT_EXACT);
-			return {0, mateScore, 1, 0, plys, true, {}};
+			searchValues.nodes++;
+			return {0, mateScore, plys, true, {}};
 		}
 		// King not in check -> Draw
 		// Only seeing this move, or plys of 1
 		globalTT.store(board.zobristHash, 0, depth, 0, TT_EXACT);
-		return {0, 0, 1, 0, plys, true, {}};
+		searchValues.nodes++;
+		return {0, 0, plys, true, {}};
 	}
 
 	// ============ Order Moves ============
 	// Depth also happens to be the ply
 	orderMoves(moveList, board, ttEntry.bestMove, plys, killerMoves, historyTable);
-	Move bestMove = moveList[0];
+	Move bestMove = moveList.get(0);
 
 	// ============ Exceeded parameters ============
 	if (depth <= 0) {
@@ -170,7 +174,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 		int staticEval = evaluateBoard(board);
 		int margin;
-		// TODO: tune
+		// TODO: Replace with function
 		switch (depth) {
 			case 1:
 				margin = 100;
@@ -187,16 +191,9 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 		if (staticEval - margin >= beta) {
 			searchPath.pop_back();
-			return {0, staticEval - margin, 1, 0, plys, true, {}};
+			searchValues.nodes++;
+			return {0, staticEval - margin, plys, true, {}};
 		}
-
-/*
-		if (staticEval + margin <= alpha){
-		    searchPath.pop_back();
-		    return {0, staticEval + margin, 1, 0, plys,
-		    true, {}};
-		}
-		*/
 	}
 
 	// ============ Null Move Pruning ============
@@ -218,7 +215,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		int R = (depth >= 6 ? 3 : 2); // Reduction -- Basically skipping my move
 		BestMove nullResult = alphaBeta(board, depth - 1 - R, plys + 1, -beta, -beta + 1,
 										0, searchPath, killerMoves, historyTable,
-										extensionsUsed, false);
+										searchValues, false);
 		// Restore values
 		board.turn = oldTurn;
 		board.halfMoveClock--;
@@ -228,16 +225,16 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		if (-nullResult.score >= beta) {
 			BestMove verify = alphaBeta(board, depth - 1, plys + 1, beta - 1, beta,
 										0, searchPath, killerMoves, historyTable,
-										extensionsUsed, false);
+										searchValues, false);
 
 			if (verify.score >= beta) {
 				searchPath.pop_back();
-				return {0, beta, verify.nodes, verify.tbHits, plys, true, {}};
+				return {0, beta, plys, true, {}};
 			}
 		}
 	}
 
-	int extension = calculateExtension(board, extensionsUsed);
+	int extension = calculateExtension(board);
 
 
 //    if (stopSearch) {
@@ -247,12 +244,12 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 	int bestScore = -INF_SCORE;
 	std::vector<Move> pv;
 
-	unsigned long long nodes = 1;
-	unsigned long long tbHits = 0;
+    searchValues.nodes++;
 	bool completed = true;
 	int movesSearched = 0;
 
-	for (Move m: moveList) {
+	for (int i = 0; i < moveList.length(); i++) {
+	    Move m = moveList.get(i);
 		UndoInfo undo = board.makeMove(m);
 		/*
 		if (movesSearched > 0 &&
@@ -287,9 +284,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		if (movesSearched == 0) {
 			result = alphaBeta(board, depth - 1, plys + 1, -beta, -alpha,
 							   0, searchPath, killerMoves, historyTable,
-							   extensionsUsed + extension, nullMoveAllowed);
-			nodes += result.nodes;
-			tbHits += result.tbHits;
+							   searchValues, nullMoveAllowed);
 
 		} else {
 			// Later moves: try null window search first
@@ -298,28 +293,22 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 				!isKingInCheck(board, -board.turn) &&
 				!isKingInCheck(board, board.turn)) {
 				// LMR with null window
-				int halfSize = moveList.size() >> 1;
+				//int halfSize = moveList.length() >> 1;
 				int reduction = 1 ;//+ (movesSearched > halfSize) /*+ (movesSearched > (halfSize >> 1) + halfSize)*/;
-                //int reduction = 1 + (depth > 6 && movesSearched >= 16) + (movesSearched >= 6)
-                //+ (movesSearched >=8) + (movesSearched >= 12);
+
 				// Try reduced null window search
 				result = alphaBeta(board, depth - 1 - reduction, plys + 1,
 								   -alpha - 1, -alpha,  // NULL WINDOW
 								   0, searchPath, killerMoves, historyTable,
-								   extensionsUsed + extension);
-
-				nodes += result.nodes;
-				tbHits += result.tbHits;
+								   searchValues);
 
 				// If it beat alpha, re-search at full depth
-				if (-result.score > alpha && reduction > 0) {
+				if (-result.score > alpha) {
 					result = alphaBeta(board, depth - 1, plys + 1,
 									   -beta, -alpha,  // Still null window <<< FULL WINDOW, null might be slowing
 									   0, searchPath, killerMoves, historyTable,
-									   extensionsUsed + extension);
+									   searchValues);
 
-					nodes += result.nodes;
-					tbHits += result.tbHits;
 				}
 
 				// If STILL beat alpha, do full window search
@@ -334,26 +323,19 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 				result = alphaBeta(board, depth - 1, plys + 1,
 								   -alpha - 1, -alpha,  // NULL WINDOW
 								   0, searchPath, killerMoves, historyTable,
-								   extensionsUsed + extension);
-
-				nodes += result.nodes;
-				tbHits += result.tbHits;
+								   searchValues);
 
 				// Beat alpha? Re-search with full window
 				if (-result.score > alpha /*&& -result.score < beta*/) {
 					result = alphaBeta(board, depth - 1, plys + 1,
 									   -beta, -alpha,  // FULL WINDOW
 									   0, searchPath, killerMoves, historyTable,
-									   extensionsUsed + extension);
-
-					nodes += result.nodes;
-					tbHits += result.tbHits;
+									   searchValues);
 				}
 			}
 		}
 
 		int score = -result.score;
-
 
 		board.unmakeMove(m, undo);
 		movesSearched++;
@@ -426,13 +408,13 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 		globalTT.store(board.zobristHash, bestMove, depth, ttScore, flag);
 
-		return {bestMove, bestScore, nodes, tbHits, plys, true, pv};
+		return {bestMove, bestScore, plys, true, pv};
 	} else {
-		return {bestMove, bestScore, nodes, tbHits, plys, false, {}};
+		return {bestMove, bestScore, plys, false, {}};
 	}
 }
 
-BestMove selectMove(Board &board, int maxDepth, long timeLimitMS, int numThreads) {
+BestMove selectMove(Board &board, int maxDepth, long timeLimitMS, SearchValues &searchValues, int numThreads) {
 	stopSearch = false;
 	g_timeLimitMS = timeLimitMS;
 	g_searchStart = std::chrono::steady_clock::now();
@@ -467,16 +449,14 @@ BestMove selectMove(Board &board, int maxDepth, long timeLimitMS, int numThreads
 	}
 	// If no time limit, threads will search to maxDepth and stop naturally
 
-//    std::cerr << "Setting stopSearch and joining threads..." << std::endl;
-//    stopSearch = true;
 	for (auto &thread: threads) {
 		thread.join();
 	}
-//    std::cerr << "All threads joined, collecting results..." << std::endl;
 
 	// All threads done - get the best result
 	ThreadResult best = results[0];
-	unsigned long long totalNodes = results[0].nodes;
+	uint64_t totalNodes = results[0].nodes;
+	uint64_t totalTbHits = results[0].tbHits;
 	for (int i = 1; i < numThreads; i++) {
 		// Prefer deeper search, or more nodes at same plys
 		if (results[i].depth > best.depth ||
@@ -484,9 +464,11 @@ BestMove selectMove(Board &board, int maxDepth, long timeLimitMS, int numThreads
 			best = results[i];
 		}
 		totalNodes += results[i].nodes;
+		totalTbHits += results[i].tbHits;
 	}
-
-	return {best.bestMove, best.bestScore, totalNodes, best.tbHits, best.depth, true, best.pv};
+    searchValues.nodes = totalNodes;
+	searchValues.tbHits = totalTbHits;
+	return {best.bestMove, best.bestScore, best.depth, true, best.pv};
 }
 
 std::mutex g_outputMutex;  // Global
@@ -517,7 +499,6 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 
 	for (int depth = startDepth; depth <= maxDepth; depth++) {
 		if (stopSearch) break;
-
 		if (g_timeLimitMS > 0) {
 			auto now = std::chrono::steady_clock::now();
 			auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - g_searchStart).count();
@@ -531,6 +512,7 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 
 		searchPath.clear();
 		BestMove result;
+		SearchValues searchValues{0, 0};
 
 		// ==== Aspiration Windows ====
 		if (depth >= 5 && abs(bestScore) < MATE_SCORE - 100) {
@@ -540,7 +522,7 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 
 			while (true) {
 				result = alphaBeta(board, depth, 0, alpha, beta, bestMove, searchPath,
-								   killerMoves, historyTable, 0);
+								   killerMoves, historyTable, searchValues);
 				if (stopSearch || !result.completed) break;
 
 				// Is score within the window?
@@ -572,7 +554,8 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 		} else {
 			// Depth < 4, or mate score, use full window.
 			result = alphaBeta(board, depth, 0, -INF_SCORE, INF_SCORE,
-							   bestMove, searchPath, killerMoves, historyTable, 0);
+							   bestMove, searchPath, killerMoves, historyTable,
+							   searchValues);
 		}
 
 		if (!result.completed || stopSearch) break;
@@ -580,9 +563,9 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 		bestMove = result.bestMove;
 		bestScore = result.score;
 		pv = result.pv;
-		totalNodes += result.nodes;
+		totalNodes += searchValues.nodes;
 		completedDepth = depth;
-		totalTbHits += result.tbHits;
+		totalTbHits += searchValues.tbHits;
 
 		// Print UCI info
 		auto now = std::chrono::steady_clock::now();
@@ -605,10 +588,10 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 			std::cout << "info "
 					  << score
 					  << " depth " << completedDepth
-					  << " nodes " << result.nodes
-					  << " tbhits " << result.tbHits
+					  << " nodes " << searchValues.nodes
+					  << " tbhits " << searchValues.tbHits
 					  << " time " << elapsed
-					  << " nps " << (elapsed > 0 ? (result.nodes * 1000 / elapsed) : 0)
+					  << " nps " << (elapsed > 0 ? (searchValues.nodes * 1000 / elapsed) : 0)
 					  << " pv ";
 
 			for (Move &m: pv) {

@@ -153,6 +153,14 @@ build CMakeFiles/chessEngine.dir/src/Search/magicBitboards.cpp.obj: CXX_COMPILER
   OBJECT_DIR = CMakeFiles\chessEngine.dir
   OBJECT_FILE_DIR = CMakeFiles\chessEngine.dir\src\Search
 
+build CMakeFiles/chessEngine.dir/src/Moves/move_list.cpp.obj: CXX_COMPILER__chessEngine_unscanned_Debug E$:/CLionProjects/chessEngine/src/Moves/move_list.cpp || cmake_object_order_depends_target_chessEngine
+  CONFIG = Debug
+  DEP_FILE = CMakeFiles\chessEngine.dir\src\Moves\move_list.cpp.obj.d
+  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always
+  INCLUDES = -IE:/CLionProjects/chessEngine/src
+  OBJECT_DIR = CMakeFiles\chessEngine.dir
+  OBJECT_FILE_DIR = CMakeFiles\chessEngine.dir\src\Moves
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target chessEngine
@@ -161,7 +169,7 @@ build CMakeFiles/chessEngine.dir/src/Search/magicBitboards.cpp.obj: CXX_COMPILER
 #############################################
 # Link the executable chessEngine.exe
 
-build chessEngine.exe: CXX_EXECUTABLE_LINKER__chessEngine_Debug CMakeFiles/chessEngine.dir/src/main.cpp.obj CMakeFiles/chessEngine.dir/src/Board/board.cpp.obj CMakeFiles/chessEngine.dir/src/Search/generate_moves.cpp.obj CMakeFiles/chessEngine.dir/src/Board/move.cpp.obj CMakeFiles/chessEngine.dir/src/Board/piece.cpp.obj CMakeFiles/chessEngine.dir/src/Search/search.cpp.obj CMakeFiles/chessEngine.dir/src/Board/zobrist_hash.cpp.obj CMakeFiles/chessEngine.dir/src/Search/transposition_table.cpp.obj CMakeFiles/chessEngine.dir/src/Evaluation/evaluation.cpp.obj CMakeFiles/chessEngine.dir/src/Search/quiescence_search.cpp.obj CMakeFiles/chessEngine.dir/tests/MoveGeneration/test_move_generation.cpp.obj CMakeFiles/chessEngine.dir/src/Evaluation/opening_book.cpp.obj CMakeFiles/chessEngine.dir/src/Search/magicBitboards.cpp.obj
+build chessEngine.exe: CXX_EXECUTABLE_LINKER__chessEngine_Debug CMakeFiles/chessEngine.dir/src/main.cpp.obj CMakeFiles/chessEngine.dir/src/Board/board.cpp.obj CMakeFiles/chessEngine.dir/src/Search/generate_moves.cpp.obj CMakeFiles/chessEngine.dir/src/Board/move.cpp.obj CMakeFiles/chessEngine.dir/src/Board/piece.cpp.obj CMakeFiles/chessEngine.dir/src/Search/search.cpp.obj CMakeFiles/chessEngine.dir/src/Board/zobrist_hash.cpp.obj CMakeFiles/chessEngine.dir/src/Search/transposition_table.cpp.obj CMakeFiles/chessEngine.dir/src/Evaluation/evaluation.cpp.obj CMakeFiles/chessEngine.dir/src/Search/quiescence_search.cpp.obj CMakeFiles/chessEngine.dir/tests/MoveGeneration/test_move_generation.cpp.obj CMakeFiles/chessEngine.dir/src/Evaluation/opening_book.cpp.obj CMakeFiles/chessEngine.dir/src/Search/magicBitboards.cpp.obj CMakeFiles/chessEngine.dir/src/Moves/move_list.cpp.obj
   CONFIG = Debug
   FLAGS = -g
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32

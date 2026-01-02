@@ -41,6 +41,8 @@ add_executable(chessEngine
         src/Evaluation/opening_book.h
         src/Search/magicBitboards.cpp
         src/Search/magicBitboards.h
+        src/Moves/move_list.cpp
+        src/Moves/move_list.h
 
 )
 

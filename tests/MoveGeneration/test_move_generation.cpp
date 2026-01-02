@@ -75,12 +75,13 @@ void testMoveGeneration(int depth) {
 }
 
 uint64_t perftDivide(Board &board, int depth) {
-    std::vector<Move> moves;
+    MoveList moves;
     generateLegalMoves(board, moves);
 
     uint64_t totalNodes = 0;
 
-    for (Move m: moves) {
+    for (int i = 0; i < moves.length(); i++) {
+        Move m = moves.get(i);
         UndoInfo undo = board.makeMove(m);
         uint64_t nodes = perft(depth - 1, board); // plys = 1 for counting leaf moves
         board.unmakeMove(m, undo);
@@ -96,18 +97,19 @@ uint64_t perftDivide(Board &board, int depth) {
 uint64_t perft(int depth, Board &board) {
     if (depth <= 0) return 1;
 
-    std::vector<Move> moveList;
+    MoveList moveList{};
 
     generateLegalMoves(board, moveList);
 
     if (depth == 1) {
-        return moveList.size();
+        return moveList.length();
     }
 
 
     uint64_t nodes = 0;
 
-    for (Move m: moveList) {
+    for (int i = 0; i < moveList.length(); i++) {
+        Move m = moveList.get(i);
         UndoInfo undoInfo = board.makeMove(m);
         nodes += perft(depth - 1, board);
         board.unmakeMove(m, undoInfo);

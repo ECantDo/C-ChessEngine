@@ -10,7 +10,7 @@
 #include <sstream>
 #include <chrono>
 
-#define VERSION "V19.0_TTCluster(Re-do)"
+#define VERSION "V19.1_BestPracticeUpdates"
 
 bool debug = false;
 Board currentBoard;   // Global board state stored between commands
@@ -146,12 +146,13 @@ void startSearch(const std::string &goCmd) {
 
     if (!isPeft) {
         // Pass plys or time-based stopping to your search
-        BestMove bm = selectMove(currentBoard, depth, timeLimit, g_numThreads);
+        SearchValues searchValues{0, 0};
+        BestMove bm = selectMove(currentBoard, depth, timeLimit, searchValues, g_numThreads);
         if (bm.bestMove == 0) {
-            std::vector<Move> moves;
+            MoveList moves;
             generateLegalMoves(currentBoard, moves);
             if (!moves.empty()) {
-                bm.bestMove = moves[0];
+                bm.bestMove = moves.get(0);
                 std::cerr << "WARNING: Search returned null move, using fallback: "
                           << moveToString(bm.bestMove) << std::endl;
             } else {
@@ -187,10 +188,10 @@ void startSearch(const std::string &goCmd) {
         std::cout << "info "
                   << score
                   << " depth " << bm.plys
-                  << " tbhits " << bm.tbHits
-                  << " nodes " << bm.nodes
+                  << " tbhits " << searchValues.tbHits
+                  << " nodes " << searchValues.nodes
                   << " time " << elapsed
-                  << " nps " << (elapsed > 0 ? (bm.nodes * 1000 / elapsed) : 0)
+                  << " nps " << (elapsed > 0 ? (searchValues.nodes * 1000 / elapsed) : 0)
                   << " pv";
         for (Move &m: bm.pv) {
             std::cout << ' ' << moveToString(m);

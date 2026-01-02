@@ -12,6 +12,7 @@
 #include "Board/move.h"
 #include "Board/board.h"
 #include "magicBitboards.h"
+#include "Moves/move_list.h"
 
 constexpr size_t MAX_MOVES = 256;
 
@@ -20,7 +21,7 @@ constexpr size_t MAX_MOVES = 256;
  * @param board The board position to generate moves for
  * @param moveList The array to output the moves into
  */
-void generateLegalMoves(Board &board, std::vector<Move> &moveList, bool capturesOnly = false);
+void generateLegalMoves(Board &board, MoveList &moveList, bool capturesOnly = false);
 
 // HELPER
 bool isEnemyPiece(const Board &board, int square, int myColor);

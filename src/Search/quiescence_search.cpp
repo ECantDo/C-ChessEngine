@@ -12,7 +12,7 @@ BestMove quiescenceSearch(Board &board, int alpha, int beta, int qDepth) {
     int standPat = evaluateBoard(board);
 
     if (standPat >= beta) {
-        return {0, beta, 1, 0, 1, true, {}}; // Beta cutoff
+        return {0, beta, 1, true, {}}; // Beta cutoff
     }
 
     if (standPat > alpha) {
@@ -20,24 +20,23 @@ BestMove quiescenceSearch(Board &board, int alpha, int beta, int qDepth) {
     }
     // Stop quiescence if too deep
     if (qDepth >= MAX_Q_DEPTH) {
-        return {0, standPat, 1, 0, qDepth, true, {}};
+        return {0, standPat, qDepth, true, {}};
     }
 
 
-    std::vector<Move> captures;
+    MoveList captures;
     generateLegalMoves(board, captures, true);
 
     if (captures.empty()) {
-        return {0, standPat, 1, 0, 1, true, {}};
+        return {0, standPat, 1, true, {}};
     }
 
 //    orderMoves(captures, board, 0);
 
     int bestScore = standPat;
 
-    unsigned long long nodes = 1;
-
-    for (Move move: captures) {
+    for (int i = 0; i < captures.length(); i++) {
+        Move move = captures.get(i);
 //        std::cout << "CAPTURE! " << moveToString(move) << std::endl << std::flush;
         int captured = abs(getPieceValue(board.pieceAtSquare(getMoveTo(move))));
         if (standPat + captured + 200 < alpha){
@@ -48,7 +47,6 @@ BestMove quiescenceSearch(Board &board, int alpha, int beta, int qDepth) {
 
         BestMove result = quiescenceSearch(board, -beta, -alpha, qDepth +1);
         int score = -result.score;
-        nodes += result.nodes;
 
         board.unmakeMove(move, ui);
 
@@ -64,5 +62,5 @@ BestMove quiescenceSearch(Board &board, int alpha, int beta, int qDepth) {
             break; // Beta cutoff
         }
     }
-    return {0, bestScore, nodes, 0, 1, true, {}};
+    return {0, bestScore, 1, true, {}};
 }

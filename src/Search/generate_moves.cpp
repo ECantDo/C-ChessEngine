@@ -458,13 +458,12 @@ void generatePseudoLegalMoves(const Board &board, Move *moveList, int &moveCount
 }
 
 
-void generateLegalMoves(Board &board, std::vector<Move> &moveList, bool capturesOnly) {
+void generateLegalMoves(Board &board, MoveList &moveList, bool capturesOnly) {
 	Move pseudoLegal[MAX_MOVES];
 	int moveCount = 0;
 	generatePseudoLegalMoves(board, pseudoLegal, moveCount, capturesOnly);
 
 	moveList.clear();
-	moveList.reserve(moveCount);
 
 	uint64_t ourKing = (board.turn == 1) ? board.whiteKing : board.blackKing;
 	int kingSquare = std::countr_zero(ourKing);
@@ -497,11 +496,11 @@ void generateLegalMoves(Board &board, std::vector<Move> &moveList, bool captures
 			board.unmakeMove(m, undoInfo);
 
 			if (!causesCheck) {
-				moveList.push_back(m);
+				moveList.append(m);
 			}
 		} else {
 			// Not in check, not pinned, not en passant, not king move - move is legal
-			moveList.push_back(m);
+			moveList.append(m);
 		}
 	}
 }
