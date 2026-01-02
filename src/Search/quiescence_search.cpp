@@ -38,7 +38,6 @@ BestMove quiescenceSearch(Board &board, int alpha, int beta, int qDepth) {
     unsigned long long nodes = 1;
 
     for (Move move: captures) {
-//        std::cout << "CAPTURE! " << moveToString(move) << std::endl << std::flush;
         int captured = abs(getPieceValue(board.pieceAtSquare(getMoveTo(move))));
         if (standPat + captured + 200 < alpha){
             continue;

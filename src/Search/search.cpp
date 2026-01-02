@@ -214,7 +214,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 			board.zobristHash ^= Zobrist::enPassantFile[oldEnPass];
 		}
 
-		int R = (depth >= 6 ? 3 : 2); // Reduction -- Basically skipping my move
+		int R = 2;// (depth >= 6 ? 3 : 2); // Reduction -- Basically skipping my move
 		BestMove nullResult = alphaBeta(board, depth - 1 - R, plys + 1, -beta, -beta + 1,
 										0, searchPath, killerMoves, historyTable,
 										extensionsUsed, false);
@@ -292,7 +292,6 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 				!isKingInCheck(board, board.turn)) {
 
 				int reduction = 1;
-				reduction = std::min(reduction, depth - 2);
 
 				// LMR with null window
 				result = alphaBeta(board, depth - 1 - reduction, plys + 1,

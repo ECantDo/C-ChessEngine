@@ -96,9 +96,15 @@ public:
 
         // Same position? Depth priority
         if (matchingIdx != -1){
-            if (cluster.entry[matchingIdx].depth > depth
-            && cluster.entry[matchingIdx].flag == TT_EXACT){
-                return;
+            // Always prefer deeper searches, regardless of flag
+            if (cluster.entry[matchingIdx].depth > depth) {
+                return;  // Don't overwrite deeper with shallower
+            }
+            // If same depth, prefer exact scores
+            if (cluster.entry[matchingIdx].depth == depth
+                && cluster.entry[matchingIdx].flag == TT_EXACT
+                && flag != TT_EXACT) {
+                return;  // Don't overwrite exact with bound
             }
             writeIndex = matchingIdx;
             goto writeToTable;
