@@ -10,7 +10,7 @@
 #include <sstream>
 #include <chrono>
 
-#define VERSION "V17.16_TTFix"
+#define VERSION "V17.17"
 
 bool debug = false;
 Board currentBoard;   // Global board state stored between commands

@@ -250,13 +250,13 @@ int evaluatePawns(Board &board, int side) {
 
 	// ==== Pawns around the king, push the pawns on the other side ====
 	// also known as pawn shelter
-	score += evaluatePawnShelter(board, side, kingSquare, kingFile, kingRank, myPawns, theirPawns);
+	//score += evaluatePawnShelter(board, side, kingSquare, kingFile, kingRank, myPawns, theirPawns);
 
 	return score;
 }
 
 int evaluateBoard(Board &board) {
-	int score = 0;
+	int score = 0; // 10 for TEMPO
 
 	int mgScore = 0;
 	int egScore = 0;
@@ -294,8 +294,8 @@ int evaluateBoard(Board &board) {
 
 	score += ((mgScore * phase) + (egScore * (24 - phase))) / 24;
 
-	//score += evaluatePawns(board, 1); // Add the score for white; when score is negative, bad for white
-	//score -= evaluatePawns(board, -1); // Subtract the score for black; when score is negative, good for white
+	score += evaluatePawns(board, 1); // Add the score for white; when score is negative, bad for white
+	score -= evaluatePawns(board, -1); // Subtract the score for black; when score is negative, good for white
 
 	// ==== Mobility ====
 	// TODO
