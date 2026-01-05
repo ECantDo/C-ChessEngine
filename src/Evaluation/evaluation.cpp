@@ -255,6 +255,74 @@ int evaluatePawns(Board &board, int side) {
 	return score;
 }
 
+int evaluateMobility(Board &board) {
+    int score = 0;
+
+    uint64_t whitePieces = board.getWhiteBitboard();
+    uint64_t blackPieces = board.getBlackBitboard();
+    uint64_t blockers = whitePieces | blackPieces;
+    uint64_t bitboard;
+
+    int whiteMobility, blackMobility;
+
+    // ==== Rook Mobility ====
+    bitboard = board.whiteRooks;
+    whiteMobility = 0;
+    blackMobility = 0;
+
+    while(bitboard){
+        int square = std::countr_zero(bitboard);
+        bitboard &= bitboard - 1;
+
+		uint64_t attacks = getRookAttacks(square, blockers);
+		attacks &= ~whitePieces; // Remove my pieces from the attack
+
+		whiteMobility += std::popcount(attacks);
+    }
+	bitboard = board.blackRooks;
+	while(bitboard){
+		int square = std::countr_zero(bitboard);
+		bitboard &= bitboard - 1;
+
+		uint64_t attacks = getRookAttacks(square, blockers);
+		attacks &= ~blackPieces; // Remove my pieces from the attack
+
+		blackMobility += std::popcount(attacks);
+	}
+    // 4 cp per rook legal move. Rooks having lots of moves is good
+    score += 5 * (whiteMobility - blackMobility);
+
+	// ==== Bishop Mobility ====
+	/*
+	bitboard = board.whiteBishops;
+	whiteMobility = 0;
+	blackMobility = 0;
+
+	while(bitboard){
+		int square = std::countr_zero(bitboard);
+		bitboard &= bitboard - 1;
+
+		uint64_t attacks = getBishopAttacks(square, blockers);
+		attacks &= ~whitePieces; // Remove my pieces from the attack
+
+		whiteMobility += std::popcount(attacks);
+	}
+	bitboard = board.blackBishops;
+	while(bitboard){
+		int square = std::countr_zero(bitboard);
+		bitboard &= bitboard - 1;
+
+		uint64_t attacks = getBishopAttacks(square, blockers);
+		attacks &= ~blackPieces; // Remove my pieces from the attack
+
+		blackMobility += std::popcount(attacks);
+	}
+    // 3 cp per move, good mobility, but not as critical as rooks
+	score += 3 * (whiteMobility - blackMobility);
+	*/
+    return score;
+}
+
 int evaluateBoard(Board &board) {
 	int score = 0;
 
@@ -304,6 +372,8 @@ int evaluateBoard(Board &board) {
 	//  Open files near king
 	//  Game phase
 	//  Hanging pieces
+
+	score += evaluateMobility(board);
 
 	// Return from current player's perspective; black does need to be negative
 	return board.turn == 1 ? score : -score;

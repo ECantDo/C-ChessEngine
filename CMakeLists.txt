@@ -14,8 +14,8 @@ add_executable(chessEngine
         src/Board/board.h
         src/Board/board.cpp
 
-        src/Search/generate_moves.h
-        src/Search/generate_moves.cpp
+        src/Moves/generate_moves.h
+        src/Moves/generate_moves.cpp
 
         src/Board/move.h
         src/Board/move.cpp
@@ -39,8 +39,8 @@ add_executable(chessEngine
         tests/MoveGeneration/test_move_generation.h
         src/Evaluation/opening_book.cpp
         src/Evaluation/opening_book.h
-        src/Search/magicBitboards.cpp
-        src/Search/magicBitboards.h
+        src/Moves/magicBitboards.cpp
+        src/Moves/magicBitboards.h
         src/Moves/move_list.cpp
         src/Moves/move_list.h
 
@@ -66,11 +66,11 @@ add_executable(testChessEngine tests/test_all.cpp
         src/Board/move.h
         src/Board/move.cpp
 
-        src/Search/magicBitboards.cpp
-        src/Search/magicBitboards.h
+        src/Moves/magicBitboards.cpp
+        src/Moves/magicBitboards.h
 
-        src/Search/generate_moves.cpp
-        src/Search/generate_moves.h
+        src/Moves/generate_moves.cpp
+        src/Moves/generate_moves.h
         tests/MoveGeneration/test_move_generation.cpp
         tests/MoveGeneration/test_move_generation.h
 

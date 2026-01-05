@@ -8,7 +8,7 @@
 
 #include <cstring>
 #include "board.h"
-#include "Search/generate_moves.h"
+#include "Moves/generate_moves.h"
 
 
 // =====================================================================================================================

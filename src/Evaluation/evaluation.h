@@ -6,7 +6,7 @@
 #define CHESSENGINE_EVALUATION_H
 
 #include "Board/board.h"
-#include "Search/generate_moves.h"
+#include "Moves/generate_moves.h"
 
 #define FILE_MASK 0x0101010101010101ULL
 #define RANK_MASK 0xFFULL

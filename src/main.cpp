@@ -10,7 +10,7 @@
 #include <sstream>
 #include <chrono>
 
-#define VERSION "V19.1_BestPracticeUpdates"
+#define VERSION "V19.2_RookMobility"
 
 bool debug = false;
 Board currentBoard;   // Global board state stored between commands

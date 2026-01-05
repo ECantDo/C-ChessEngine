@@ -19,7 +19,7 @@
 
 #include "Board/piece.h"
 #include "Board/board.h"
-#include "generate_moves.h"
+#include "Moves/generate_moves.h"
 #include "quiescence_search.h"
 #include "Evaluation/evaluation.h"
 #include "transposition_table.h"

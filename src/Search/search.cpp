@@ -19,7 +19,7 @@ void orderMoves(MoveList &moves, const Board &board, Move previousBest, int ply,
 	scoredMoves.reserve(moves.length());
 
 	for (int i = 0; i < moves.length(); i++) {
-	    Move m = moves.get(i);
+		Move m = moves.get(i);
 		if (m == previousBest) {
 			scoredMoves.emplace_back(m, 10000000); // Guarantee first
 		} else {
@@ -30,7 +30,7 @@ void orderMoves(MoveList &moves, const Board &board, Move previousBest, int ply,
 
 	// Use partial_sort - only sort the top moves fully
 	// Most beta cutoffs happen in the first few moves
-	int len = (int)moves.length();
+	int len = (int) moves.length();
 	int numToSort = len;// std::min(len, std::min(len >> 1, 8)); // Only fully sort top 8
 	std::sort(
 			scoredMoves.begin(),
@@ -76,6 +76,8 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 				   unsigned long long historyTable[2][64][64],
 				   SearchValues &searchValues, bool nullMoveAllowed = true) {
 
+	searchValues.nodes++;
+
 	bool inCheck = isKingInCheck(board, board.turn);
 
 
@@ -86,12 +88,10 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 	if (board.halfMoveClock >= 100) {
 		searchPath.pop_back();
-		searchValues.nodes++;
 		return {0, 0, plys, true, {}};
 	}
 	if (board.isRepetitionInSearch(searchPath)) {
 		searchPath.pop_back();
-		searchValues.nodes++;
 		return {0, 0, plys, true, {}};  /* Draw score = 0 */
 	}
 
@@ -100,7 +100,6 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		 board.whiteBishops | board.blackBishops | board.whiteKnights | board.blackKnights |
 		 board.whiteQueens | board.blackQueens) == 0) {
 		searchPath.pop_back();
-		searchValues.nodes++;
 		return {0, 0, plys, true, {}};  /* Draw score = 0 */
 
 	}
@@ -144,13 +143,11 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 			// Only seeing this move, or a from-here plys of 1
 
 			globalTT.store(board.zobristHash, 0, depth, -MATE_SCORE, TT_EXACT);
-			searchValues.nodes++;
 			return {0, mateScore, plys, true, {}};
 		}
 		// King not in check -> Draw
 		// Only seeing this move, or plys of 1
 		globalTT.store(board.zobristHash, 0, depth, 0, TT_EXACT);
-		searchValues.nodes++;
 		return {0, 0, plys, true, {}};
 	}
 
@@ -163,7 +160,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 	if (depth <= 0) {
 		searchPath.pop_back();
 
-		return quiescenceSearch(board, alpha, beta);
+		return quiescenceSearch(board, alpha, beta, searchValues);
 	}
 
 	// ============ Reverse Futility Pruning ============
@@ -244,12 +241,11 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 	int bestScore = -INF_SCORE;
 	std::vector<Move> pv;
 
-    searchValues.nodes++;
 	bool completed = true;
 	int movesSearched = 0;
 
 	for (int i = 0; i < moveList.length(); i++) {
-	    Move m = moveList.get(i);
+		Move m = moveList.get(i);
 		UndoInfo undo = board.makeMove(m);
 		/*
 		if (movesSearched > 0 &&
@@ -294,7 +290,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 				!isKingInCheck(board, board.turn)) {
 				// LMR with null window
 				//int halfSize = moveList.length() >> 1;
-				int reduction = 1 ;//+ (movesSearched > halfSize) /*+ (movesSearched > (halfSize >> 1) + halfSize)*/;
+				int reduction = 1;//+ (movesSearched > halfSize) /*+ (movesSearched > (halfSize >> 1) + halfSize)*/;
 
 				// Try reduced null window search
 				result = alphaBeta(board, depth - 1 - reduction, plys + 1,
@@ -407,7 +403,6 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		}
 
 		globalTT.store(board.zobristHash, bestMove, depth, ttScore, flag);
-
 		return {bestMove, bestScore, plys, true, pv};
 	} else {
 		return {bestMove, bestScore, plys, false, {}};
@@ -431,7 +426,6 @@ BestMove selectMove(Board &board, int maxDepth, long timeLimitMS, SearchValues &
 		});
 	}
 	// All threads are running
-//    std::cerr << "All threads launched, monitoring time... (" << g_timeLimitMS << " ms)" << std::endl;
 
 	// Main thread monitors time ONLY if there's a time limit
 	if (g_timeLimitMS > 0) {
@@ -444,7 +438,7 @@ BestMove selectMove(Board &board, int maxDepth, long timeLimitMS, SearchValues &
 				stopSearch = true;
 			}
 
-			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+			std::this_thread::sleep_for(std::chrono::milliseconds(5));
 		}
 	}
 	// If no time limit, threads will search to maxDepth and stop naturally
@@ -466,7 +460,7 @@ BestMove selectMove(Board &board, int maxDepth, long timeLimitMS, SearchValues &
 		totalNodes += results[i].nodes;
 		totalTbHits += results[i].tbHits;
 	}
-    searchValues.nodes = totalNodes;
+	searchValues.nodes = totalNodes;
 	searchValues.tbHits = totalTbHits;
 	return {best.bestMove, best.bestScore, best.depth, true, best.pv};
 }
@@ -515,7 +509,8 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 		SearchValues searchValues{0, 0};
 
 		// ==== Aspiration Windows ====
-		if (depth >= 5 && abs(bestScore) < MATE_SCORE - 100) {
+		// Search is at least 200 ms faster without it -- get a better eval?
+		if (false && depth >= 5 && abs(bestScore) < MATE_SCORE - 100) {
 			int delta = 100; // Window size; typical is 50, but I am going with 100 for now, to make sure it works
 			int alpha = bestScore - delta;
 			int beta = bestScore + delta;
