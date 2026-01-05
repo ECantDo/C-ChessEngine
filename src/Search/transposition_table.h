@@ -104,18 +104,21 @@ public:
                 && flag != TT_EXACT) {
                 return;  // Don't overwrite exact with bound
             }
+            overwriteSameKey++;
             writeIndex = matchingIdx;
             goto writeToTable;
         }
 
         // Not same position, and there is blank, just write to blank
         if (blankIdx != -1){
+            stored++;
             writeIndex = blankIdx;
             goto writeToTable;
         }
         // Otherwise, shift values to the left; sudo-aging
         // and write to the right-most position, or the youngest spot
         writeIndex = CLUSTER_SIZE - 1;
+        overwrites++;
         for (int8_t i = 0; i < writeIndex; i++){
             cluster.entry[i] = cluster.entry[i + 1];
         }
@@ -131,7 +134,7 @@ public:
         // Lock automatically releases here when the guard goes out of scope
     }
 
-    size_t getSize() {
+    [[nodiscard]] size_t getSize() const {
         return size;
     }
 

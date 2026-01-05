@@ -584,8 +584,9 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 					  << score
 					  << " depth " << completedDepth
 					  << " nodes " << searchValues.nodes
-					  << " tbhits " << searchValues.tbHits
+					  //<< " tbhits " << searchValues.tbHits
 					  << " time " << elapsed
+					  << " hashfull " << (globalTT.stored / globalTT.getSize()) * 1000
 					  << " nps " << (elapsed > 0 ? (searchValues.nodes * 1000 / elapsed) : 0)
 					  << " pv ";
 

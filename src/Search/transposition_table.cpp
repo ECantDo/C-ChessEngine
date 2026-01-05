@@ -4,7 +4,7 @@
 
 #include "transposition_table.h"
 
-TranspositionTable globalTT(256);
+TranspositionTable globalTT(64);
 
 void TranspositionTable::clear() {
     delete[] table;
