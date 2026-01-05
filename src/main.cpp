@@ -10,7 +10,7 @@
 #include <sstream>
 #include <chrono>
 
-#define VERSION "V19.2_RookMobility"
+#define VERSION "V19.3_PartialSort"
 
 bool debug = false;
 Board currentBoard;
@@ -191,7 +191,7 @@ void startSearch(const std::string &goCmd) {
                   //<< " tbhits " << searchValues.tbHits
                   << " nodes " << searchValues.nodes
                   << " time " << elapsed
-                  << " hashfull " << (globalTT.stored / globalTT.getSize()) * 1000
+                  << " hashfull " << (globalTT.stored * 1000) / globalTT.getSize()
                   << " nps " << (elapsed > 0 ? (searchValues.nodes * 1000 / elapsed) : 0)
                   << " pv";
         for (Move &m: bm.pv) {

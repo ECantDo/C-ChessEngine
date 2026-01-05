@@ -11,6 +11,47 @@ std::atomic<bool> stopSearch{false};
 static long g_timeLimitMS = 0;
 static std::chrono::steady_clock::time_point g_searchStart;
 
+// TODO: Move Picker vs scoring all moves
+
+void scoreAllMoves(MoveList &moves, std::array<int, MoveLimit> &moveScores,
+				   const Board &board, Move previousBest, int ply,
+				   Move killers[MAX_PLY][2], unsigned long long history[2][64][64]) {
+	for (int i = 0; i < moves.length(); i++) {
+		if (moves.get(i) == previousBest) {
+			moveScores[i] = 100000000; // Ensure this is the first move, likely is the best
+		} else {
+			moveScores[i] = scoreMoveForOrdering(moves.get(i), board, ply, killers, history);
+		}
+	}
+}
+
+// Basically selection sort
+void selectNextBestMove(MoveList &moves, std::array<int, MoveLimit> &moveScores, int startIdx, int endIdx) {
+	// No work to be done if `start == end` or `start > end`
+	if (startIdx >= endIdx) return;
+
+	int bestIdx = -1;
+	int bestScore = INT32_MIN;
+	for (int i = startIdx; i < endIdx; i++) {
+		if (moveScores[i] > bestScore) {
+			bestScore = moveScores[i];
+			bestIdx = i;
+		}
+	}
+
+	// Check to be safe; should never happen... but to be safe.. Should always find the best move
+	if (bestIdx == -1 || bestScore == INT32_MIN) [[unlikely]] {
+		return;
+	} else {
+		Move bestMove = moves.get(bestIdx);
+		moves.set(bestIdx, moves.get(startIdx));
+		moves.set(startIdx, bestMove);
+
+		std::swap(moveScores[startIdx], moveScores[bestIdx]);
+	}
+
+}
+
 void orderMoves(MoveList &moves, const Board &board, Move previousBest, int ply,
 				Move killers[MAX_PLY][2], unsigned long long history[2][64][64]) {
 
@@ -151,11 +192,6 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		return {0, 0, plys, true, {}};
 	}
 
-	// ============ Order Moves ============
-	// Depth also happens to be the ply
-	orderMoves(moveList, board, ttEntry.bestMove, plys, killerMoves, historyTable);
-	Move bestMove = moveList.get(0);
-
 	// ============ Exceeded parameters ============
 	if (depth <= 0) {
 		searchPath.pop_back();
@@ -209,7 +245,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 			board.zobristHash ^= Zobrist::enPassantFile[oldEnPass];
 		}
 
-		int R = (depth >= 6 ? 3 : 2); // Reduction -- Basically skipping my move
+		int R = 2;//(depth >= 6 ? 3 : 2); // Reduction -- Basically skipping my move
 		BestMove nullResult = alphaBeta(board, depth - 1 - R, plys + 1, -beta, -beta + 1,
 										0, searchPath, killerMoves, historyTable,
 										searchValues, false);
@@ -231,12 +267,15 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		}
 	}
 
+// ============ Order Moves ============
+	// Only setting it up for in the list
+//	orderMoves(moveList, board, ttEntry.bestMove, plys, killerMoves, historyTable);
+	std::array<int, MoveLimit> moveScores{};
+	scoreAllMoves(moveList, moveScores,
+				  board, ttEntry.bestMove, plys, killerMoves, historyTable);
+	Move bestMove;// = moveList.get(0);
+
 	int extension = calculateExtension(board);
-
-
-//    if (stopSearch) {
-//        return {0, 0, 1, plys, false, {bestMove}};
-//    }
 
 	int bestScore = -INF_SCORE;
 	std::vector<Move> pv;
@@ -245,6 +284,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 	int movesSearched = 0;
 
 	for (int i = 0; i < moveList.length(); i++) {
+		selectNextBestMove(moveList, moveScores, i, (int) moveList.length());
 		Move m = moveList.get(i);
 		UndoInfo undo = board.makeMove(m);
 		/*
@@ -586,7 +626,7 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 					  << " nodes " << searchValues.nodes
 					  //<< " tbhits " << searchValues.tbHits
 					  << " time " << elapsed
-					  << " hashfull " << (globalTT.stored / globalTT.getSize()) * 1000
+					  << " hashfull " << (globalTT.stored * 1000) / globalTT.getSize()
 					  << " nps " << (elapsed > 0 ? (searchValues.nodes * 1000 / elapsed) : 0)
 					  << " pv ";
 

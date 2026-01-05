@@ -9,7 +9,7 @@
 #include <array>
 #include "Board/move.h"
 
-const size_t MoveLimit = 256;
+constexpr size_t MoveLimit = 256;
 
 class MoveList {
 private:
