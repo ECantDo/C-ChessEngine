@@ -10,7 +10,7 @@
 #include <sstream>
 #include <chrono>
 
-#define VERSION "V19.3_PartialSort"
+#define VERSION "V19.4_Extensions"
 
 bool debug = false;
 Board currentBoard;

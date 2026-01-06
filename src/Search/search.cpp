@@ -52,43 +52,16 @@ void selectNextBestMove(MoveList &moves, std::array<int, MoveLimit> &moveScores,
 
 }
 
-void orderMoves(MoveList &moves, const Board &board, Move previousBest, int ply,
-				Move killers[MAX_PLY][2], unsigned long long history[2][64][64]) {
-
-	// Score all moves once
-	std::vector<std::pair<Move, int>> scoredMoves;
-	scoredMoves.reserve(moves.length());
-
-	for (int i = 0; i < moves.length(); i++) {
-		Move m = moves.get(i);
-		if (m == previousBest) {
-			scoredMoves.emplace_back(m, 10000000); // Guarantee first
-		} else {
-			int score = scoreMoveForOrdering(m, board, ply, killers, history);
-			scoredMoves.emplace_back(m, score);
-		}
-	}
-
-	// Use partial_sort - only sort the top moves fully
-	// Most beta cutoffs happen in the first few moves
-	int len = (int) moves.length();
-	int numToSort = len;// std::min(len, std::min(len >> 1, 8)); // Only fully sort top 8
-	std::sort(
-			scoredMoves.begin(),
-			scoredMoves.end(),
-			[](const auto &a, const auto &b) { return a.second > b.second; }
-	);
-
-	// Extract sorted moves
-	for (size_t i = 0; i < moves.length(); i++) {
-		moves.set(i, scoredMoves[i].first);
-	}
-}
-
-int calculateExtension(Board &board) {
+int calculateExtension(Board &board, Move move) {
 	int extension = 0;
 	bool inCheck = isKingInCheck(board, board.turn);
 	if (inCheck) {
+		extension += 1;
+	}
+
+	int toSquare = getMoveTo(move);
+	int pieceMoved = getPieceType(board.pieceAtSquare(getMoveFrom(move)));
+	if (pieceMoved == TYPE_PAWN && (toSquare == 1 || toSquare == 6)){
 		extension += 1;
 	}
 
@@ -201,7 +174,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 	// ============ Reverse Futility Pruning ============
 	// How good is my static eval? Is it so far above beta that even if I make a bad move, I will still beat beta
-	if (depth <= 2 &&
+	if (depth <= 3 &&
 		!inCheck &&
 		abs(beta) < MATE_SCORE - 100) {
 
@@ -210,7 +183,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		// TODO: Replace with function
 		switch (depth) {
 			case 1:
-				margin = 100;
+				margin = 150;
 				break;
 			case 2:
 				margin = 300;
@@ -275,7 +248,6 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 				  board, ttEntry.bestMove, plys, killerMoves, historyTable);
 	Move bestMove;// = moveList.get(0);
 
-	int extension = calculateExtension(board);
 
 	int bestScore = -INF_SCORE;
 	std::vector<Move> pv;
@@ -285,13 +257,13 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 	for (int i = 0; i < moveList.length(); i++) {
 		selectNextBestMove(moveList, moveScores, i, (int) moveList.length());
-		Move m = moveList.get(i);
-		UndoInfo undo = board.makeMove(m);
+		Move move = moveList.get(i);
+		UndoInfo undo = board.makeMove(move);
 		/*
 		if (movesSearched > 0 &&
 			depth <= 2 &&
 			!inCheck &&
-			!(m & MOVE_FLAG_CAPTURE) &&
+			!(move & MOVE_FLAG_CAPTURE) &&
 			!isKingInCheck(board, board.turn) &&  // Not in check after move
 			alpha < MATE_SCORE - 100) {
 
@@ -300,7 +272,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 			// If opponent's position + margin is still worse than our alpha
 			if (-staticEval + futilityMargin <= alpha) {
-				board.unmakeMove(m, undo);
+				board.unmakeMove(move, undo);
 				movesSearched++;
 				continue; // Skip searching this move
 			}
@@ -310,22 +282,24 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 		// Since using genPseudoLegal(), only actually checking when it's for a move I have made
 //        if (isKingInCheck(board, -board.turn)) {
-//            board.unmakeMove(m, undo);
+//            board.unmakeMove(move, undo);
 //            continue;
 //        }
 
 		BestMove result;
 
+		int extension = calculateExtension(board, move);
+
 		// Get PV node
 		if (movesSearched == 0) {
-			result = alphaBeta(board, depth - 1, plys + 1, -beta, -alpha,
+			result = alphaBeta(board, depth - 1 + extension, plys + 1, -beta, -alpha,
 							   0, searchPath, killerMoves, historyTable,
 							   searchValues, nullMoveAllowed);
 
 		} else {
 			// Later moves: try null window search first
 			if (movesSearched >= 4 && plys >= 1 &&
-				!(m & MOVE_FLAG_CAPTURE) &&
+				!(move & MOVE_FLAG_CAPTURE) &&
 				!isKingInCheck(board, -board.turn) &&
 				!isKingInCheck(board, board.turn)) {
 				// LMR with null window
@@ -340,13 +314,14 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 				// If it beat alpha, re-search at full depth
 				if (-result.score > alpha) {
-					result = alphaBeta(board, depth - 1, plys + 1,
+					result = alphaBeta(board, depth - 1 + extension, plys + 1,
 									   -beta, -alpha,  // Still null window <<< FULL WINDOW, null might be slowing
 									   0, searchPath, killerMoves, historyTable,
 									   searchValues);
 
 				}
 
+				// TODO: Test when better eval
 				// If STILL beat alpha, do full window search
 //				if (-result.score > alpha) {
 //					result = alphaBeta(board, depth - 1, plys + 1,
@@ -356,14 +331,14 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 //				}
 			} else {
 				// Non-LMR moves: null window then full if needed
-				result = alphaBeta(board, depth - 1, plys + 1,
+				result = alphaBeta(board, depth - 1 + extension, plys + 1,
 								   -alpha - 1, -alpha,  // NULL WINDOW
 								   0, searchPath, killerMoves, historyTable,
 								   searchValues);
 
 				// Beat alpha? Re-search with full window
 				if (-result.score > alpha /*&& -result.score < beta*/) {
-					result = alphaBeta(board, depth - 1, plys + 1,
+					result = alphaBeta(board, depth - 1 + extension, plys + 1,
 									   -beta, -alpha,  // FULL WINDOW
 									   0, searchPath, killerMoves, historyTable,
 									   searchValues);
@@ -373,15 +348,15 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 		int score = -result.score;
 
-		board.unmakeMove(m, undo);
+		board.unmakeMove(move, undo);
 		movesSearched++;
 
 		if (score > bestScore) {
-			bestMove = m;
+			bestMove = move;
 			bestScore = score;
 
 			pv.clear();
-			pv.push_back(m);
+			pv.push_back(move);
 			if (!result.pv.empty() && result.pv[0] != 0) {
 				pv.insert(pv.end(), result.pv.begin(), result.pv.end());
 
@@ -394,14 +369,14 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 		if (alpha >= beta) {
 			// If quiet move (i.e. not a capture)
-			if (!(m & MOVE_FLAG_CAPTURE)) {
+			if (!(move & MOVE_FLAG_CAPTURE)) {
 				// Shift old killer to slot 1, new to slot 0
 				killerMoves[plys][1] = killerMoves[plys][0];
-				killerMoves[plys][0] = m;
+				killerMoves[plys][0] = move;
 
 				int color = board.turn == 1 ? 0 : 1;
-				int from = getMoveFrom(m);
-				int to = getMoveTo(m);
+				int from = getMoveFrom(move);
+				int to = getMoveTo(move);
 				historyTable[color][from][to] += depth * depth;
 				if (historyTable[color][from][to] > 100000) {
 					// Age all history values
