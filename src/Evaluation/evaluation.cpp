@@ -257,31 +257,31 @@ int evaluatePawns(Board &board, int side) {
 }
 
 int evaluateMobility(Board &board) {
-    int score = 0;
+	int score = 0;
 
-    uint64_t whitePieces = board.getWhiteBitboard();
-    uint64_t blackPieces = board.getBlackBitboard();
-    uint64_t blockers = whitePieces | blackPieces;
-    uint64_t bitboard;
+	uint64_t whitePieces = board.getWhiteBitboard();
+	uint64_t blackPieces = board.getBlackBitboard();
+	uint64_t blockers = whitePieces | blackPieces;
+	uint64_t bitboard;
 
-    int whiteMobility, blackMobility;
+	int whiteMobility, blackMobility;
 
-    // ==== Rook Mobility ====
-    bitboard = board.whiteRooks;
-    whiteMobility = 0;
-    blackMobility = 0;
+	// ==== Rook Mobility ====
+	bitboard = board.whiteRooks;
+	whiteMobility = 0;
+	blackMobility = 0;
 
-    while(bitboard){
-        int square = std::countr_zero(bitboard);
-        bitboard &= bitboard - 1;
+	while (bitboard) {
+		int square = std::countr_zero(bitboard);
+		bitboard &= bitboard - 1;
 
 		uint64_t attacks = getRookAttacks(square, blockers);
 		attacks &= ~whitePieces; // Remove my pieces from the attack
 
 		whiteMobility += std::popcount(attacks);
-    }
+	}
 	bitboard = board.blackRooks;
-	while(bitboard){
+	while (bitboard) {
 		int square = std::countr_zero(bitboard);
 		bitboard &= bitboard - 1;
 
@@ -290,8 +290,8 @@ int evaluateMobility(Board &board) {
 
 		blackMobility += std::popcount(attacks);
 	}
-    // 4 cp per rook legal move. Rooks having lots of moves is good
-    score += 5 * (whiteMobility - blackMobility);
+	// 4 cp per rook legal move. Rooks having lots of moves is good
+	score += 5 * (whiteMobility - blackMobility);
 
 	// ==== Bishop Mobility ====
 	/*
@@ -321,13 +321,11 @@ int evaluateMobility(Board &board) {
     // 3 cp per move, good mobility, but not as critical as rooks
 	score += 3 * (whiteMobility - blackMobility);
 	*/
-    return score;
+	return score;
 }
 
-int evaluateBoard(Board &board, int alpha, int beta) {
-	constexpr int MARGIN = 500;
+int evaluateMaterial(const Board &board) {
 	int score = 0;
-
 	int mgScore = 0;
 	int egScore = 0;
 
@@ -364,16 +362,35 @@ int evaluateBoard(Board &board, int alpha, int beta) {
 
 	score += ((mgScore * phase) + (egScore * (24 - phase))) / 24;
 
+	return score;
+}
+
+int evaluateBoardNNUE(Board &board, int alpha, int beta, int depth, bool isPV) {
+	if (!g_nnueLoaded || depth < 3 || isPV) {
+		return evaluateBoard(board);
+	}
+
+	constexpr int MARGIN = 200;
+
+	int score = evaluateMaterial(board);
+
 	// Above eval is really cheap ; compare and if right, use NNUE
-	if (g_nnueLoaded) {
-		if (score + MARGIN <= alpha){
-			return score;
-		}
-		if (score - MARGIN >= beta){
-			return score;
-		}
-		return evaluateNNUE(board, g_nnueAccumulator);
-	} // else; regular eval
+
+	int stmScore = (board.turn == 1) ? score : -score;
+	if (stmScore + MARGIN <= alpha) {
+		return stmScore;
+	}
+	if (stmScore - MARGIN >= beta) {
+		return stmScore;
+	}
+	return evaluateNNUE(board, g_nnueAccumulator);
+
+}
+
+int evaluateBoard(Board &board) {
+	int score = 0;
+
+	score += evaluateMaterial(board);
 
 	score += evaluatePawns(board, 1); // Add the score for white; when score is negative, bad for white
 	score -= evaluatePawns(board, -1); // Subtract the score for black; when score is negative, good for white
