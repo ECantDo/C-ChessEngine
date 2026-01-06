@@ -2,13 +2,13 @@ cmake_minimum_required(VERSION 3.28)
 project(chessEngine)
 
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g -mavx2")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g -mavx2 -march=native")
 
 include_directories(${CMAKE_SOURCE_DIR}/src)
 
 find_package(Threads REQUIRED)
 
-add_executable(chessEngineNNUE
+add_executable(chessEngine
         src/main.cpp
 
         src/Board/board.h
@@ -91,5 +91,17 @@ add_executable(testChessEngine tests/test_all.cpp
         src/Evaluation/opening_book.h
 )
 
-target_link_libraries(chessEngineNNUE PRIVATE Threads::Threads)
+target_compile_options(chessEngine PRIVATE
+        -O3
+        -mavx2
+        -march=native
+)
+
+target_compile_options(testChessEngine PRIVATE
+        -O3
+        -mavx2
+        -march=native
+)
+
+target_link_libraries(chessEngine PRIVATE Threads::Threads)
 

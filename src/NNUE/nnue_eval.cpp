@@ -12,6 +12,8 @@ bool g_nnueLoaded = false;
 
 // Load network from binary file
 bool initNNUE(const char *filename) {
+	static_assert(NNUE_HIDDEN_SIZE % 16 == 0);
+
 	std::ifstream file(filename, std::ios::binary);
 	if (!file) {
 		std::cerr << "Failed to open NNUE file: " << filename << std::endl;
@@ -76,37 +78,29 @@ void updateAccumulatorAdd(Piece piece, int square, NNUEAccumulator &accumulator)
 	int featureIdx = getInputFeatureIndex(piece, square);
 	if (featureIdx < 0) return;
 
-	// Update white's perspective
-	for (int i = 0; i < NNUE_HIDDEN_SIZE; i++) {
-		accumulator.white[i] += g_nnueParams.inputWeights[featureIdx][i];
-	}
+	const int16_t *weights = g_nnueParams.inputWeights[featureIdx];
+	addWeightsSIMD(accumulator.white, weights);
 
-	// Update black's perspective (mirror the square)
 	int mirroredSquare = square ^ 56;  // Flip rank
 	int mirroredFeatureIdx = getInputFeatureIndex(piece, mirroredSquare);
 
-	for (int i = 0; i < NNUE_HIDDEN_SIZE; i++) {
-		accumulator.black[i] += g_nnueParams.inputWeights[mirroredFeatureIdx][i];
-	}
+	weights = g_nnueParams.inputWeights[mirroredFeatureIdx];
+	addWeightsSIMD(accumulator.black, weights);
 }
 
 // Remove a piece from the accumulator
-void updateAccumulatorRemove(Piece piece, int square, NNUEAccumulator &acc) {
+void updateAccumulatorRemove(Piece piece, int square, NNUEAccumulator &accumulator) {
 	int featureIdx = getInputFeatureIndex(piece, square);
 	if (featureIdx < 0) return;
 
-	// Update white's perspective
-	for (int i = 0; i < NNUE_HIDDEN_SIZE; i++) {
-		acc.white[i] -= g_nnueParams.inputWeights[featureIdx][i];
-	}
+	const int16_t *weights = g_nnueParams.inputWeights[featureIdx];
+	subWeightsSIMD(accumulator.white, weights);
 
-	// Update black's perspective
-	int mirroredSquare = square ^ 56;
+	int mirroredSquare = square ^ 56;  // Flip rank
 	int mirroredFeatureIdx = getInputFeatureIndex(piece, mirroredSquare);
 
-	for (int i = 0; i < NNUE_HIDDEN_SIZE; i++) {
-		acc.black[i] -= g_nnueParams.inputWeights[mirroredFeatureIdx][i];
-	}
+	weights = g_nnueParams.inputWeights[mirroredFeatureIdx];
+	subWeightsSIMD(accumulator.black, weights);
 }
 
 // Evaluate the position using the accumulator

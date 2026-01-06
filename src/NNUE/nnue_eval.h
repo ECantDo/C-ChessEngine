@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <string>
 #include <algorithm>
+#include <immintrin.h>
 #include "Board/board.h"
 
 constexpr int NNUE_INPUT_SIZE = 768;
@@ -46,6 +47,57 @@ void initAccumulator(const Board &board, NNUEAccumulator &accumulator);
 void updateAccumulatorAdd(Piece piece, int square, NNUEAccumulator &accumulator);
 
 void updateAccumulatorRemove(Piece piece, int square, NNUEAccumulator &accumulator);
+
+static inline void addWeightsSIMD(
+		int16_t* accumulator,
+		const int16_t* weights
+) {
+	// Process 16 int16 values at a time
+	for (int i = 0; i < NNUE_HIDDEN_SIZE; i += 16) {
+
+		// Load 16 accumulator values
+		__m256i acc = _mm256_load_si256(
+				reinterpret_cast<const __m256i*>(accumulator + i)
+		);
+
+		// Load 16 weights
+		__m256i w = _mm256_load_si256(
+				reinterpret_cast<const __m256i*>(weights + i)
+		);
+
+		// acc += w
+		acc = _mm256_add_epi16(acc, w);
+
+		// Store back
+		_mm256_store_si256(
+				reinterpret_cast<__m256i*>(accumulator + i),
+				acc
+		);
+	}
+}
+
+static inline void subWeightsSIMD(
+		int16_t* accumulator,
+		const int16_t* weights
+) {
+	for (int i = 0; i < NNUE_HIDDEN_SIZE; i += 16) {
+
+		__m256i acc = _mm256_load_si256(
+				reinterpret_cast<const __m256i*>(accumulator + i)
+		);
+
+		__m256i w = _mm256_load_si256(
+				reinterpret_cast<const __m256i*>(weights + i)
+		);
+
+		acc = _mm256_sub_epi16(acc, w);
+
+		_mm256_store_si256(
+				reinterpret_cast<__m256i*>(accumulator + i),
+				acc
+		);
+	}
+}
 
 inline int getInputFeatureIndex(Piece piece, int square) {
 	// Simple encoding: piece type (0-11) × 64 squares

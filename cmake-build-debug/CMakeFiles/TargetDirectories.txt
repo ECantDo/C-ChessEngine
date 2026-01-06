@@ -1,4 +1,4 @@
-E:/CLionProjects/chessEngine/cmake-build-debug/CMakeFiles/chessEngineNNUE.dir
+E:/CLionProjects/chessEngine/cmake-build-debug/CMakeFiles/chessEngine.dir
 E:/CLionProjects/chessEngine/cmake-build-debug/CMakeFiles/testChessEngine.dir
 E:/CLionProjects/chessEngine/cmake-build-debug/CMakeFiles/edit_cache.dir
 E:/CLionProjects/chessEngine/cmake-build-debug/CMakeFiles/rebuild_cache.dir
