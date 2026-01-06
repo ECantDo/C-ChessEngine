@@ -9,6 +9,7 @@
 #include <cstring>
 #include "board.h"
 #include "Moves/generate_moves.h"
+#include "NNUE/nnue_eval.h"
 
 
 // =====================================================================================================================
@@ -557,6 +558,27 @@ UndoInfo Board::makeMove(Move m) {
 			.zobristHash = zobristHash,
 	};
 
+	if (g_nnueLoaded) {
+		// EP capture
+		if (isEnPassant) {
+			int captureSquare = toLocation + (turn == 1 ? -8 : 8);
+			Piece capturedPawn = undoInfo.capturedPiece; // Will be pawn since isEnPassant is true
+			updateAccumulatorRemove(capturedPawn, captureSquare, g_nnueAccumulator);
+		} else if (isPiece(capturedPiece)) {
+			updateAccumulatorRemove(capturedPiece, toLocation, g_nnueAccumulator);
+		}
+
+		// Remove from source
+		updateAccumulatorRemove(thisPiece, fromLocation, g_nnueAccumulator);
+
+		// Add to destination
+		Piece finalPiece = thisPiece;
+		if (isPromotion) {
+			finalPiece = getPromotedPiece(flags, turn);
+		}
+		updateAccumulatorAdd(finalPiece, toLocation, g_nnueAccumulator);
+	}
+
 	// ========== UPDATE ZOBRIST HASH (Part 1: Removals) ==========
 
 	// Remove piece from source square
@@ -609,21 +631,37 @@ UndoInfo Board::makeMove(Move m) {
 			removePieceAtSquare(7, WHITE_ROOK);
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(WHITE_ROOK)][7];
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(WHITE_ROOK)][5];
+			if (g_nnueLoaded) {
+				updateAccumulatorRemove(WHITE_ROOK, 7, g_nnueAccumulator);
+				updateAccumulatorAdd(WHITE_ROOK, 5, g_nnueAccumulator);
+			}
 		} else if (toLocation == 2) {  // White queenside
 			addPieceAtSquare(3, WHITE_ROOK);
 			removePieceAtSquare(0, WHITE_ROOK);
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(WHITE_ROOK)][0];
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(WHITE_ROOK)][3];
+			if (g_nnueLoaded) {
+				updateAccumulatorRemove(WHITE_ROOK, 0, g_nnueAccumulator);
+				updateAccumulatorAdd(WHITE_ROOK, 3, g_nnueAccumulator);
+			}
 		} else if (toLocation == 62) {  // Black kingside
 			addPieceAtSquare(61, BLACK_ROOK);
 			removePieceAtSquare(63, BLACK_ROOK);
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(BLACK_ROOK)][63];
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(BLACK_ROOK)][61];
+			if (g_nnueLoaded) {
+				updateAccumulatorRemove(BLACK_ROOK, 63, g_nnueAccumulator);
+				updateAccumulatorAdd(BLACK_ROOK, 61, g_nnueAccumulator);
+			}
 		} else if (toLocation == 58) {  // Black queenside
 			addPieceAtSquare(59, BLACK_ROOK);
 			removePieceAtSquare(56, BLACK_ROOK);
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(BLACK_ROOK)][56];
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(BLACK_ROOK)][59];
+			if (g_nnueLoaded) {
+				updateAccumulatorRemove(BLACK_ROOK, 56, g_nnueAccumulator);
+				updateAccumulatorAdd(BLACK_ROOK, 59, g_nnueAccumulator);
+			}
 		}
 	}
 
@@ -691,6 +729,51 @@ void Board::unmakeMove(Move m, const UndoInfo &undoInfo) {
 	int fromLocation = getMoveFrom(m);
 	int toLocation = getMoveTo(m);
 	int flags = getMoveFlags(m);
+
+	// ==== NNUE Updates ====
+	if (g_nnueLoaded) {
+		// Handle castling rook first
+		if (flags & MOVE_FLAG_CASTLING) {
+			if (toLocation == 6) {  // White kingside
+				updateAccumulatorRemove(WHITE_ROOK, 5, g_nnueAccumulator);
+				updateAccumulatorAdd(WHITE_ROOK, 7, g_nnueAccumulator);
+			} else if (toLocation == 2) {  // White queenside
+				updateAccumulatorRemove(WHITE_ROOK, 3, g_nnueAccumulator);
+				updateAccumulatorAdd(WHITE_ROOK, 0, g_nnueAccumulator);
+			} else if (toLocation == 62) {  // Black kingside
+				updateAccumulatorRemove(BLACK_ROOK, 61, g_nnueAccumulator);
+				updateAccumulatorAdd(BLACK_ROOK, 63, g_nnueAccumulator);
+			} else if (toLocation == 58) {  // Black queenside
+				updateAccumulatorRemove(BLACK_ROOK, 59, g_nnueAccumulator);
+				updateAccumulatorAdd(BLACK_ROOK, 56, g_nnueAccumulator);
+			}
+		}
+
+		// Get the piece (might have been promoted)
+		Piece finalPiece = pieceAtSquare(toLocation);
+		Piece originalPiece = finalPiece;
+
+		// If it was a promotion, the original piece was a pawn
+		if (flags & MOVE_FLAG_PROMOTION) {
+			originalPiece = (turn == -1) ? WHITE_PAWN : BLACK_PAWN;  // turn already flipped
+		}
+
+		// Remove piece from destination
+		updateAccumulatorRemove(finalPiece, toLocation, g_nnueAccumulator);
+
+		// Add piece back to source
+		updateAccumulatorAdd(originalPiece, fromLocation, g_nnueAccumulator);
+
+		// Restore captured piece
+		if (undoInfo.capturedPiece != NONE) {
+			if (flags & MOVE_FLAG_EN_PASSANT) {
+				int capturedSquare = toLocation + (turn == -1 ? -8 : 8);
+				updateAccumulatorAdd(undoInfo.capturedPiece, capturedSquare, g_nnueAccumulator);
+			} else {
+				updateAccumulatorAdd(undoInfo.capturedPiece, toLocation, g_nnueAccumulator);
+			}
+		}
+	}
 
 	/* Flip turn back first */
 	turn = (int8_t) -turn;

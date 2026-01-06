@@ -2,13 +2,13 @@ cmake_minimum_required(VERSION 3.28)
 project(chessEngine)
 
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g")
 
 include_directories(${CMAKE_SOURCE_DIR}/src)
 
 find_package(Threads REQUIRED)
 
-add_executable(chessEngine
+add_executable(chessEngineNNUE
         src/main.cpp
 
         src/Board/board.h
@@ -43,6 +43,8 @@ add_executable(chessEngine
         src/Moves/magicBitboards.h
         src/Moves/move_list.cpp
         src/Moves/move_list.h
+        src/NNUE/nnue_eval.h
+        src/NNUE/nnue_eval.cpp
 
 )
 
@@ -89,5 +91,5 @@ add_executable(testChessEngine tests/test_all.cpp
         src/Evaluation/opening_book.h
 )
 
-target_link_libraries(chessEngine PRIVATE Threads::Threads)
+target_link_libraries(chessEngineNNUE PRIVATE Threads::Threads)
 

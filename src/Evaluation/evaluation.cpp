@@ -3,6 +3,7 @@
 //
 
 #include "evaluation.h"
+#include "NNUE/nnue_eval.h"
 
 int evaluatePawnShelter(Board &board, int side, int kingSquare, int kingFile, int kingRank,
 						uint64_t myPawns, uint64_t theirPawns) {
@@ -323,7 +324,8 @@ int evaluateMobility(Board &board) {
     return score;
 }
 
-int evaluateBoard(Board &board) {
+int evaluateBoard(Board &board, int alpha, int beta) {
+	constexpr int MARGIN = 500;
 	int score = 0;
 
 	int mgScore = 0;
@@ -361,6 +363,17 @@ int evaluateBoard(Board &board) {
 	phase = std::min(phase, 24);
 
 	score += ((mgScore * phase) + (egScore * (24 - phase))) / 24;
+
+	// Above eval is really cheap ; compare and if right, use NNUE
+	if (g_nnueLoaded) {
+		if (score + MARGIN <= alpha){
+			return score;
+		}
+		if (score - MARGIN >= beta){
+			return score;
+		}
+		return evaluateNNUE(board, g_nnueAccumulator);
+	} // else; regular eval
 
 	score += evaluatePawns(board, 1); // Add the score for white; when score is negative, bad for white
 	score -= evaluatePawns(board, -1); // Subtract the score for black; when score is negative, good for white

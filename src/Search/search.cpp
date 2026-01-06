@@ -4,6 +4,7 @@
 
 #include "search.h"
 #include "Moves/move_list.h"
+#include "NNUE/nnue_eval.h"
 
 bool useOpeningBook = true;
 std::atomic<bool> stopSearch{false};
@@ -488,6 +489,11 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 	std::vector<Move> pv;
 	unsigned long long totalNodes = 0, totalTbHits = 0;
 	int completedDepth = 0;
+
+	// TODO: Make nnueAcc per thread rather than global (mandatory 1 thread)
+	if (g_nnueLoaded){
+		initAccumulator(board, g_nnueAccumulator);
+	}
 
 	int earlyExits = 0;
 
