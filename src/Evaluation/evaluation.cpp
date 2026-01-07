@@ -365,24 +365,11 @@ int evaluateMaterial(const Board &board) {
 	return score;
 }
 
-int evaluateBoardNNUE(Board &board, int alpha, int beta, int depth, bool isPV) {
-	if (!g_nnueLoaded || depth < 3 || isPV) {
+int evaluateBoardNNUE(Board &board) {
+	if (!g_nnueLoaded) {
 		return evaluateBoard(board);
 	}
 
-	constexpr int MARGIN = 200;
-
-	int score = evaluateMaterial(board);
-
-	// Above eval is really cheap ; compare and if right, use NNUE
-
-	int stmScore = (board.turn == 1) ? score : -score;
-	if (stmScore + MARGIN <= alpha) {
-		return stmScore;
-	}
-	if (stmScore - MARGIN >= beta) {
-		return stmScore;
-	}
 	return evaluateNNUE(board, g_nnueAccumulator);
 
 }

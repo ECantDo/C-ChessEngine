@@ -6,6 +6,7 @@
 #include "Moves/move_list.h"
 #include "NNUE/nnue_eval.h"
 
+bool g_printInfo = true;
 bool useOpeningBook = true;
 std::atomic<bool> stopSearch{false};
 
@@ -111,9 +112,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 	}
 
 	// Draw on insufficient material (one of the)
-	if ((board.whitePawns | board.blackPawns | board.whiteRooks | board.blackRooks |
-		 board.whiteBishops | board.blackBishops | board.whiteKnights | board.blackKnights |
-		 board.whiteQueens | board.blackQueens) == 0) {
+	if (insufficientMaterial(board)) {
 		searchPath.pop_back();
 		return {0, 0, plys, true, {}};  /* Draw score = 0 */
 
@@ -179,7 +178,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		!inCheck &&
 		abs(beta) < MATE_SCORE - 100) {
 
-		int staticEval = evaluateBoard(board);
+		int staticEval = evaluateBoardNNUE(board);
 		int margin;
 		// TODO: Replace with function
 		switch (depth) {
@@ -587,7 +586,7 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 		auto now = std::chrono::steady_clock::now();
 		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
 
-		{
+		if (g_printInfo){
 			std::lock_guard<std::mutex> lock(g_outputMutex);
 
 			std::string score;
@@ -607,7 +606,7 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 					  << " nodes " << searchValues.nodes
 					  //<< " tbhits " << searchValues.tbHits
 					  << " time " << elapsed
-					  << " hashfull " << (globalTT.stored * 1000) / globalTT.getSize()
+					  << " hashfull " << (globalTT.stored * 1000) / (globalTT.getSize() * CLUSTER_SIZE)
 					  << " nps " << (elapsed > 0 ? (searchValues.nodes * 1000 / elapsed) : 0)
 					  << " pv ";
 
@@ -649,4 +648,10 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 bool isKingInCheck(const Board &board, int color) {
 	uint64_t king = color == 1 ? board.whiteKing : board.blackKing;
 	return isSquareAttacked(board, std::countr_zero(king), -color);
+}
+
+bool insufficientMaterial(Board &board){
+	return (board.whitePawns | board.blackPawns | board.whiteRooks | board.blackRooks |
+			board.whiteBishops | board.blackBishops | board.whiteKnights | board.blackKnights |
+			board.whiteQueens | board.blackQueens) == 0;
 }

@@ -10,7 +10,7 @@ BestMove quiescenceSearch(Board &board, int alpha, int beta, SearchValues &searc
 	const int MAX_Q_DEPTH = 20;
 
 	// If we do nothing, what's the score???
-	int standPat = evaluateBoard(board);
+	int standPat = evaluateBoardNNUE(board);
 
 	if (standPat >= beta) {
 		return {0, beta, 1, true, {}}; // Beta cutoff

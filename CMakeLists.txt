@@ -45,6 +45,8 @@ add_executable(chessEngine
         src/Moves/move_list.h
         src/NNUE/nnue_eval.h
         src/NNUE/nnue_eval.cpp
+        src/NNUE/self_play_training.cpp
+        src/NNUE/self_play_training.h
 
 )
 

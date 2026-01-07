@@ -14,7 +14,7 @@
 // =====================================================================================================================
 // Main Evaluation Functions
 // =====================================================================================================================
-int evaluateBoardNNUE(Board &board, int alpha, int beta, int depth, bool isPV);
+int evaluateBoardNNUE(Board &board);
 
 int evaluateBoard(Board &board);
 

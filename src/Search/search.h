@@ -28,6 +28,7 @@
 
 #define MAX_PLY 128
 
+extern bool g_printInfo;
 extern bool useOpeningBook;
 extern std::atomic<bool> stopSearch;
 
@@ -40,8 +41,8 @@ struct BestMove {
 };
 
 struct SearchValues {
-    uint64_t nodes;
-    uint64_t tbHits;
+	uint64_t nodes;
+	uint64_t tbHits;
 };
 
 struct ThreadResult {
@@ -57,6 +58,8 @@ struct ThreadResult {
 BestMove selectMove(Board &board, int maxDepth, long timeLimitMS, SearchValues &searchValues, int numThreads = 1);
 
 bool isKingInCheck(const Board &board, int color);
+
+bool insufficientMaterial(Board &board);
 
 ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThreads);
 
@@ -74,11 +77,21 @@ inline int scoreMoveForOrdering(Move m, const Board &board, int ply,
 		int promoType = flags & 0x3;
 		int baseScore = 0;
 		switch (promoType) {
-			case PROMOTE_TO_QUEEN:  baseScore = 9000000; break;
-			case PROMOTE_TO_ROOK:   baseScore = 5000000; break;
-			case PROMOTE_TO_BISHOP: baseScore = 3300000; break;
-			case PROMOTE_TO_KNIGHT: baseScore = 3000000; break;
-			default: baseScore = 3000000; break;
+			case PROMOTE_TO_QUEEN:
+				baseScore = 9000000;
+				break;
+			case PROMOTE_TO_ROOK:
+				baseScore = 5000000;
+				break;
+			case PROMOTE_TO_BISHOP:
+				baseScore = 3300000;
+				break;
+			case PROMOTE_TO_KNIGHT:
+				baseScore = 3000000;
+				break;
+			default:
+				baseScore = 3000000;
+				break;
 		}
 
 		// Bonus for capturing promotions
@@ -110,7 +123,7 @@ inline int scoreMoveForOrdering(Move m, const Board &board, int ply,
 	// 5. HISTORY (statistical goodness - capped below killers)
 	int color = (board.turn == 1) ? 0 : 1;
 	int historyScore = history[color][from][to];
-	return std::min((int)historyScore, 70000);  // Cap to stay below killers
+	return std::min((int) historyScore, 70000);  // Cap to stay below killers
 }
 
 

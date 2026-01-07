@@ -5,6 +5,7 @@
 #include "Evaluation/evaluation.h"
 #include "../tests/MoveGeneration/test_move_generation.h"
 #include "NNUE/nnue_eval.h"
+#include "NNUE/self_play_training.h"
 
 #include <iostream>
 #include <string>
@@ -192,7 +193,7 @@ void startSearch(const std::string &goCmd) {
 				  //<< " tbhits " << searchValues.tbHits
 				  << " nodes " << searchValues.nodes
 				  << " time " << elapsed
-				  << " hashfull " << (globalTT.stored * 1000) / globalTT.getSize()
+				  << " hashfull " << (globalTT.stored * 1000) / (globalTT.getSize() * CLUSTER_SIZE)
 				  << " nps " << (elapsed > 0 ? (searchValues.nodes * 1000 / elapsed) : 0)
 				  << " pv";
 		for (Move &m: bm.pv) {
@@ -223,9 +224,9 @@ int main() {
 	initMagicBitboards();
 
 	// Try to load NNUE network
-//	if (!initNNUE("network.nnue")) {
-//		std::cout << "info string No NNUE network found, using classical evaluation" << std::endl;
-//	}
+	if (!initNNUE("network.nnue")) {
+		std::cout << "info string No NNUE network found, using classical evaluation" << std::endl;
+	}
 
 //    std::string openingBookLocation = "./openingBook.bin";
 //    loadBookToHashMap(openingBookLocation);
@@ -277,6 +278,24 @@ int main() {
 		} else if (line.rfind("debug", 0) == 0) {
 //            rootDebugAlphaBeta(currentBoard, 6);
 			parseDebug(line);
+		} else if (line.rfind("selfplay", 0) == 0) {
+			std::stringstream ss(line);
+			std::string cmd;
+			int numGames = 1000;
+			int depth = 8;
+			std::string filename = "selfplay_data.txt";
+
+			ss >> cmd;  // "selfplay"
+
+			// Parse optional parameters
+			std::string tok;
+			while (ss >> tok) {
+				if (tok == "games") ss >> numGames;
+				else if (tok == "depth") ss >> depth;
+				else if (tok == "file") ss >> filename;
+			}
+
+			generateTrainingData(filename.c_str(), numGames, depth);
 		}
 	}
 
