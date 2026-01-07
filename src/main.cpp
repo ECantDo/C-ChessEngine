@@ -296,6 +296,8 @@ int main() {
 			}
 
 			generateTrainingData(filename.c_str(), numGames, depth);
+		} else if (line.rfind("supervised", 0) == 0) {
+			generateSupervisedData(line);
 		}
 	}
 
