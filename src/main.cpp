@@ -224,9 +224,9 @@ int main() {
 	initMagicBitboards();
 
 	// Try to load NNUE network
-	if (!initNNUE("network.nnue")) {
-		std::cout << "info string No NNUE network found, using classical evaluation" << std::endl;
-	}
+	// if (!initNNUE("network.nnue")) {
+		// std::cout << "info string No NNUE network found, using classical evaluation" << std::endl;
+	// }
 
 //    std::string openingBookLocation = "./openingBook.bin";
 //    loadBookToHashMap(openingBookLocation);

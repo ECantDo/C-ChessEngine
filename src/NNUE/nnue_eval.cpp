@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iostream>
 #include "nnue_eval.h"
+#include <cstring>
 
 NNUEParameters g_nnueParams;
 NNUEAccumulator g_nnueAccumulator; // TODO: Make per thread
@@ -110,7 +111,7 @@ int evaluateNNUE(const Board &board, const NNUEAccumulator &acc) {
 	const int16_t *them = (board.turn == 1) ? acc.black : acc.white;
 
 	// Output layer computation
-	int32_t output = g_nnueParams.outputBias;
+	int32_t output = 0;// g_nnueParams.outputBias;
 
 	for (int i = 0; i < NNUE_HIDDEN_SIZE; i++) {
 		// Apply ClippedReLU activation
@@ -124,5 +125,5 @@ int evaluateNNUE(const Board &board, const NNUEAccumulator &acc) {
 
 	// Scale to centipawns (adjust this divisor based on your training)
 	// This depends on how you scaled weights during training
-	return output / 64;
+	return (output / 127 + g_nnueParams.outputBias) / 64 * board.turn;
 }

@@ -199,6 +199,7 @@ void generateTrainingData(const char *outputFile, int numGames, int depth) {
 	std::cout << "info string Self-play data saved to " << outputFile << std::endl << std::flush;
 	g_printInfo = true;
 }
+
 void generateSupervisedData(const std::string &cmd) {
 	bool nnueLoadedValue = g_nnueLoaded;
 	g_printInfo = false;
@@ -250,12 +251,16 @@ void generateSupervisedData(const std::string &cmd) {
 			SearchValues sv{0, 0};
 			BestMove bestMove = selectMove(board, searchDepth, searchTime, sv, 1);
 
+			if (abs(bestMove.score) >= MATE_SCORE - 100) {
+				break; // Don't save this position; game over, cant use further scores, all will be mates
+			}
+
 			// Save position + eval
 			outFile << board.generateFen() << " | " << bestMove.score << "\n";
 			validPositions++;
 
-			if (validPositions % 100 == 0) {
-				std::cout << "Generated " << validPositions << "/" << numPositions << "\r" << std::flush;
+			if (validPositions % 20 == 0) {
+				std::cout << "Generated " << validPositions << "/" << numPositions << std::endl << std::flush;
 			}
 
 			// Make a move (with some randomness)
