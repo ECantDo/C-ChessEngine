@@ -228,6 +228,7 @@ int main() {
 		// std::cout << "info string No NNUE network found, using classical evaluation" << std::endl;
 	// }
 
+	
 //    std::string openingBookLocation = "./openingBook.bin";
 //    loadBookToHashMap(openingBookLocation);
 
