@@ -36,6 +36,7 @@ struct BestMove {
 	Move bestMove;
 	int score;
 	int plys;
+	int selDepth;
 	bool completed;
 	std::vector<Move> pv;
 };
@@ -49,6 +50,7 @@ struct ThreadResult {
 	Move bestMove;
 	int bestScore;
 	int depth;
+	int selDepth;
 	std::vector<Move> pv;
 	unsigned long long nodes;
 	unsigned long long tbHits;
@@ -67,7 +69,6 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 inline int scoreMoveForOrdering(Move m, const Board &board, int ply,
 								Move killers[MAX_PLY][2],
 								unsigned long long history[2][64][64]) {
-
 	int flags = getMoveFlags(m);
 	int to = getMoveTo(m);
 	int from = getMoveFrom(m);
@@ -123,7 +124,7 @@ inline int scoreMoveForOrdering(Move m, const Board &board, int ply,
 	// 5. HISTORY (statistical goodness - capped below killers)
 	int color = (board.turn == 1) ? 0 : 1;
 	int historyScore = history[color][from][to];
-	return std::min((int) historyScore, 70000);  // Cap to stay below killers
+	return std::min((int) historyScore, 70000); // Cap to stay below killers
 }
 
 

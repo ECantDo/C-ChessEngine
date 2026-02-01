@@ -7,13 +7,13 @@
 
 BestMove quiescenceSearch(Board &board, int alpha, int beta, SearchValues &searchValues, int qDepth) {
 	searchValues.nodes++;
-	const int MAX_Q_DEPTH = 20;
+	const int MAX_Q_DEPTH = 32;
 
 	// If we do nothing, what's the score???
 	int standPat = evaluateBoardNNUE(board);
 
 	if (standPat >= beta) {
-		return {0, beta, 1, true, {}}; // Beta cutoff
+		return {0, beta, 1, qDepth, true, {}}; // Beta cutoff
 	}
 
 	if (standPat > alpha) {
@@ -21,7 +21,7 @@ BestMove quiescenceSearch(Board &board, int alpha, int beta, SearchValues &searc
 	}
 	// Stop quiescence if too deep
 	if (qDepth >= MAX_Q_DEPTH) {
-		return {0, standPat, qDepth, true, {}};
+		return {0, standPat, qDepth, qDepth, true, {}};
 	}
 
 
@@ -29,7 +29,7 @@ BestMove quiescenceSearch(Board &board, int alpha, int beta, SearchValues &searc
 	generateLegalMoves(board, captures, true);
 
 	if (captures.empty()) {
-		return {0, standPat, 1, true, {}};
+		return {0, standPat, 1, qDepth, true, {}};
 	}
 
 //    orderMoves(captures, board, 0);
@@ -63,5 +63,5 @@ BestMove quiescenceSearch(Board &board, int alpha, int beta, SearchValues &searc
 			break; // Beta cutoff
 		}
 	}
-	return {0, bestScore, 1, true, {}};
+	return {0, bestScore, 1, qDepth, true, {}};
 }

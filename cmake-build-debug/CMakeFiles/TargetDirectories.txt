@@ -1,4 +1,4 @@
-/media/ecando/Local Disk 1/CLionProjects/chessEngine/cmake-build-debug/CMakeFiles/chessEngine.dir
-/media/ecando/Local Disk 1/CLionProjects/chessEngine/cmake-build-debug/CMakeFiles/testChessEngine.dir
-/media/ecando/Local Disk 1/CLionProjects/chessEngine/cmake-build-debug/CMakeFiles/edit_cache.dir
-/media/ecando/Local Disk 1/CLionProjects/chessEngine/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/ecando/Documents/CLionProjects/chessEngine/cmake-build-debug/CMakeFiles/chessEngine.dir
+/home/ecando/Documents/CLionProjects/chessEngine/cmake-build-debug/CMakeFiles/testChessEngine.dir
+/home/ecando/Documents/CLionProjects/chessEngine/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/ecando/Documents/CLionProjects/chessEngine/cmake-build-debug/CMakeFiles/rebuild_cache.dir

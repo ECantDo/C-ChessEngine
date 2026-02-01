@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.28)
 project(chessEngine)
 
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g -mavx2 -march=native")
+#set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g -mavx2 -march=native")
 
 include_directories(${CMAKE_SOURCE_DIR}/src)
 

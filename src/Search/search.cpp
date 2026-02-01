@@ -51,7 +51,6 @@ void selectNextBestMove(MoveList &moves, std::array<int, MoveLimit> &moveScores,
 
 		std::swap(moveScores[startIdx], moveScores[bestIdx]);
 	}
-
 }
 
 int calculateExtension(Board &board, Move move) {
@@ -63,7 +62,7 @@ int calculateExtension(Board &board, Move move) {
 
 	int toSquare = getMoveTo(move);
 	int pieceMoved = getPieceType(board.pieceAtSquare(getMoveFrom(move)));
-	if (pieceMoved == TYPE_PAWN && (toSquare == 1 || toSquare == 6)){
+	if (pieceMoved == TYPE_PAWN && (toSquare == 1 || toSquare == 6)) {
 		extension += 1;
 	}
 
@@ -91,7 +90,6 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 				   std::vector<uint64_t> &searchPath, Move killerMoves[MAX_PLY][2],
 				   unsigned long long historyTable[2][64][64],
 				   SearchValues &searchValues, bool nullMoveAllowed = true) {
-
 	searchValues.nodes++;
 
 	bool inCheck = isKingInCheck(board, board.turn);
@@ -104,18 +102,17 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 	if (board.halfMoveClock >= 100) {
 		searchPath.pop_back();
-		return {0, 0, plys, true, {}};
+		return {0, 0, plys, plys, true, {}};
 	}
 	if (board.isRepetitionInSearch(searchPath)) {
 		searchPath.pop_back();
-		return {0, 0, plys, true, {}};  /* Draw score = 0 */
+		return {0, 0, plys, plys, true, {}}; /* Draw score = 0 */
 	}
 
 	// Draw on insufficient material (one of the)
 	if (insufficientMaterial(board)) {
 		searchPath.pop_back();
-		return {0, 0, plys, true, {}};  /* Draw score = 0 */
-
+		return {0, 0, plys, plys, true, {}}; /* Draw score = 0 */
 	}
 
 	// ============ TT Storage consts ============
@@ -129,7 +126,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 	if (globalTT.probe(board.zobristHash, depth, alpha, beta, ttEntry)) {
 		int score = ttEntry.score;
 
-//        // Adjust mate scores relative to current position
+		//        // Adjust mate scores relative to current position
 		if (score >= MATE_SCORE - 100) {
 			// We're delivering mate - subtract plys to make it closer
 			score -= plys;
@@ -140,7 +137,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 		searchPath.pop_back();
 		searchValues.tbHits++;
-		return {ttEntry.bestMove, score, plys, true, {ttEntry.bestMove}};
+		return {ttEntry.bestMove, score, plys, plys, true, {ttEntry.bestMove}};
 	}
 
 	// ============ Generate Moves ============
@@ -157,19 +154,20 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 			// Only seeing this move, or a from-here plys of 1
 
 			globalTT.store(board.zobristHash, 0, depth, -MATE_SCORE, TT_EXACT);
-			return {0, mateScore, plys, true, {}};
+			return {0, mateScore, plys, plys, true, {}};
 		}
 		// King not in check -> Draw
 		// Only seeing this move, or plys of 1
 		globalTT.store(board.zobristHash, 0, depth, 0, TT_EXACT);
-		return {0, 0, plys, true, {}};
+		return {0, 0, plys, plys, true, {}};
 	}
 
 	// ============ Exceeded parameters ============
 	if (depth <= 0) {
 		searchPath.pop_back();
-
-		return quiescenceSearch(board, alpha, beta, searchValues);
+		BestMove qSearchRes = quiescenceSearch(board, alpha, beta, searchValues);
+		qSearchRes.selDepth += plys;
+		return qSearchRes;
 	}
 
 	// ============ Reverse Futility Pruning ============
@@ -177,7 +175,6 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 	if (depth <= 3 &&
 		!inCheck &&
 		abs(beta) < MATE_SCORE - 100) {
-
 		int staticEval = evaluateBoardNNUE(board);
 		int margin;
 		// TODO: Replace with function
@@ -198,7 +195,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		if (staticEval - margin >= beta) {
 			searchPath.pop_back();
 			searchValues.nodes++;
-			return {0, staticEval - margin, plys, true, {}};
+			return {0, staticEval - margin, plys, plys, true, {}};
 		}
 	}
 
@@ -218,7 +215,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 			board.zobristHash ^= Zobrist::enPassantFile[oldEnPass];
 		}
 
-		int R = 2;//(depth >= 6 ? 3 : 2); // Reduction -- Basically skipping my move
+		int R = 2; //(depth >= 6 ? 3 : 2); // Reduction -- Basically skipping my move
 		BestMove nullResult = alphaBeta(board, depth - 1 - R, plys + 1, -beta, -beta + 1,
 										0, searchPath, killerMoves, historyTable,
 										searchValues, false);
@@ -235,21 +232,22 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 			if (verify.score >= beta) {
 				searchPath.pop_back();
-				return {0, beta, plys, true, {}};
+				return {0, beta, plys, plys, true, {}};
 			}
 		}
 	}
 
-// ============ Order Moves ============
+	// ============ Order Moves ============
 	// Only setting it up for in the list
-//	orderMoves(moveList, board, ttEntry.bestMove, plys, killerMoves, historyTable);
+	//	orderMoves(moveList, board, ttEntry.bestMove, plys, killerMoves, historyTable);
 	std::array<int, MoveLimit> moveScores{};
 	scoreAllMoves(moveList, moveScores,
 				  board, ttEntry.bestMove, plys, killerMoves, historyTable);
-	Move bestMove;// = moveList.get(0);
+	Move bestMove; // = moveList.get(0);
 
 
 	int bestScore = -INF_SCORE;
+	int maxSelDepth = plys;
 	std::vector<Move> pv;
 
 	bool completed = true;
@@ -281,10 +279,10 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 
 		// Since using genPseudoLegal(), only actually checking when it's for a move I have made
-//        if (isKingInCheck(board, -board.turn)) {
-//            board.unmakeMove(move, undo);
-//            continue;
-//        }
+		//        if (isKingInCheck(board, -board.turn)) {
+		//            board.unmakeMove(move, undo);
+		//            continue;
+		//        }
 
 		BestMove result;
 
@@ -295,7 +293,6 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 			result = alphaBeta(board, depth - 1 + extension, plys + 1, -beta, -alpha,
 							   0, searchPath, killerMoves, historyTable,
 							   searchValues, nullMoveAllowed);
-
 		} else {
 			// Later moves: try null window search first
 			if (movesSearched >= 4 && plys >= 1 &&
@@ -304,42 +301,41 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 				!isKingInCheck(board, board.turn)) {
 				// LMR with null window
 				//int halfSize = moveList.length() >> 1;
-				int reduction = 1;//+ (movesSearched > halfSize) /*+ (movesSearched > (halfSize >> 1) + halfSize)*/;
+				int reduction = 1; //+ (movesSearched > halfSize) /*+ (movesSearched > (halfSize >> 1) + halfSize)*/;
 
 				// Try reduced null window search
 				result = alphaBeta(board, depth - 1 - reduction, plys + 1,
-								   -alpha - 1, -alpha,  // NULL WINDOW
+								   -alpha - 1, -alpha, // NULL WINDOW
 								   0, searchPath, killerMoves, historyTable,
 								   searchValues);
 
 				// If it beat alpha, re-search at full depth
 				if (-result.score > alpha) {
 					result = alphaBeta(board, depth - 1 + extension, plys + 1,
-									   -beta, -alpha,  // Still null window <<< FULL WINDOW, null might be slowing
+									   -beta, -alpha, // Still null window <<< FULL WINDOW, null might be slowing
 									   0, searchPath, killerMoves, historyTable,
 									   searchValues);
-
 				}
 
 				// TODO: Test when better eval
 				// If STILL beat alpha, do full window search
-//				if (-result.score > alpha) {
-//					result = alphaBeta(board, depth - 1, plys + 1,
-//									   -beta, -alpha,  // FULL WINDOW
-//									   0, searchPath, killerMoves, historyTable,
-//									   extensionsUsed + extension);
-//				}
+				//				if (-result.score > alpha) {
+				//					result = alphaBeta(board, depth - 1, plys + 1,
+				//									   -beta, -alpha,  // FULL WINDOW
+				//									   0, searchPath, killerMoves, historyTable,
+				//									   extensionsUsed + extension);
+				//				}
 			} else {
 				// Non-LMR moves: null window then full if needed
 				result = alphaBeta(board, depth - 1 + extension, plys + 1,
-								   -alpha - 1, -alpha,  // NULL WINDOW
+								   -alpha - 1, -alpha, // NULL WINDOW
 								   0, searchPath, killerMoves, historyTable,
 								   searchValues);
 
 				// Beat alpha? Re-search with full window
 				if (-result.score > alpha /*&& -result.score < beta*/) {
 					result = alphaBeta(board, depth - 1 + extension, plys + 1,
-									   -beta, -alpha,  // FULL WINDOW
+									   -beta, -alpha, // FULL WINDOW
 									   0, searchPath, killerMoves, historyTable,
 									   searchValues);
 				}
@@ -351,6 +347,10 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		board.unmakeMove(move, undo);
 		movesSearched++;
 
+		if (result.selDepth > maxSelDepth) {
+			maxSelDepth = result.selDepth;
+		}
+
 		if (score > bestScore) {
 			bestMove = move;
 			bestScore = score;
@@ -359,7 +359,6 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 			pv.push_back(move);
 			if (!result.pv.empty() && result.pv[0] != 0) {
 				pv.insert(pv.end(), result.pv.begin(), result.pv.end());
-
 			}
 		}
 
@@ -383,7 +382,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 					for (int c = 0; c < 2; c++) {
 						for (int f = 0; f < 64; f++) {
 							for (int t = 0; t < 64; t++) {
-								historyTable[c][f][t] >>= 1;  // Divide by 2
+								historyTable[c][f][t] >>= 1; // Divide by 2
 							}
 						}
 					}
@@ -418,9 +417,9 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		}
 
 		globalTT.store(board.zobristHash, bestMove, depth, ttScore, flag);
-		return {bestMove, bestScore, plys, true, pv};
+		return {bestMove, bestScore, plys, maxSelDepth, true, pv};
 	} else {
-		return {bestMove, bestScore, plys, false, {}};
+		return {bestMove, bestScore, plys, maxSelDepth, false, {}};
 	}
 }
 
@@ -434,7 +433,7 @@ BestMove selectMove(Board &board, int maxDepth, long timeLimitMS, SearchValues &
 
 	// Launch all threads
 	for (int i = 0; i < numThreads; i++) {
-//        std::cerr << "Launching thread " << i << std::endl;
+		//        std::cerr << "Launching thread " << i << std::endl;
 
 		threads.emplace_back([&results, board, maxDepth, i, numThreads]() {
 			results[i] = searchThread(board, maxDepth, i, numThreads);
@@ -447,7 +446,7 @@ BestMove selectMove(Board &board, int maxDepth, long timeLimitMS, SearchValues &
 		while (!stopSearch) {
 			auto now = std::chrono::steady_clock::now();
 			unsigned long elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-					now - g_searchStart).count();
+				now - g_searchStart).count();
 
 			if (elapsed >= g_timeLimitMS) {
 				stopSearch = true;
@@ -477,10 +476,10 @@ BestMove selectMove(Board &board, int maxDepth, long timeLimitMS, SearchValues &
 	}
 	searchValues.nodes = totalNodes;
 	searchValues.tbHits = totalTbHits;
-	return {best.bestMove, best.bestScore, best.depth, true, best.pv};
+	return {best.bestMove, best.bestScore, best.depth, best.selDepth, true, best.pv};
 }
 
-std::mutex g_outputMutex;  // Global
+std::mutex g_outputMutex; // Global
 
 ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThreads) {
 	Move bestMove = 0;
@@ -490,13 +489,13 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 	int completedDepth = 0;
 
 	// TODO: Make nnueAcc per thread rather than global (mandatory 1 thread)
-	if (g_nnueLoaded){
+	if (g_nnueLoaded) {
 		initAccumulator(board, g_nnueAccumulator);
 	}
 
 	int earlyExits = 0;
 
-	int startDepth = 1;// 1 + (threadId % std::min(8, totalThreads));
+	int startDepth = 1; // 1 + (threadId % std::min(8, totalThreads));
 	auto startTime = std::chrono::steady_clock::now();
 
 	// TODO: Make history global
@@ -507,6 +506,7 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 	Move lastBestMove = 0;
 	int lastScore = 0;
 	int stableMoveCount = 0;
+	int selDepth = 0;
 
 	std::vector<uint64_t> searchPath;
 	searchPath.reserve(64);
@@ -551,7 +551,7 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 					// Exponentially widen the window
 					delta <<= 1; // Same as *= 2
 				}
-					// Failed high; widen upper bound
+				// Failed high; widen upper bound
 				else if (result.score >= beta) {
 					beta = std::min(beta + delta, INF_SCORE);
 					delta <<= 1; // Same as *= 2
@@ -564,7 +564,6 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 					alpha = -INF_SCORE;
 					beta = INF_SCORE;
 				}
-
 			}
 		} else {
 			// Depth < 4, or mate score, use full window.
@@ -581,12 +580,15 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 		totalNodes += searchValues.nodes;
 		completedDepth = depth;
 		totalTbHits += searchValues.tbHits;
+		selDepth = result.selDepth;
+
+		int absBestScore = abs(bestScore);
 
 		// Print UCI info
 		auto now = std::chrono::steady_clock::now();
 		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
 
-		if (g_printInfo){
+		if (g_printInfo) {
 			std::lock_guard<std::mutex> lock(g_outputMutex);
 
 			std::string score;
@@ -595,20 +597,21 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 				int mateMoves = (mateDistance + 1) >> 1;
 
 				score = (bestScore > 0)
-						? std::format(" score mate {}", mateMoves)
-						: std::format(" score mate -{}", mateMoves);
+							? std::format(" score mate {}", mateMoves)
+							: std::format(" score mate -{}", mateMoves);
 			} else {
 				score = std::format(" score cp {}", bestScore);
 			}
 			std::cout << "info "
-					  << score
-					  << " depth " << completedDepth
-					  << " nodes " << searchValues.nodes
-					  //<< " tbhits " << searchValues.tbHits
-					  << " time " << elapsed
-					  << " hashfull " << (globalTT.stored * 1000) / (globalTT.getSize() * CLUSTER_SIZE)
-					  << " nps " << (elapsed > 0 ? (searchValues.nodes * 1000 / elapsed) : 0)
-					  << " pv ";
+					<< score
+					<< " depth " << completedDepth
+					<< " seldepth " << result.selDepth
+					<< " nodes " << searchValues.nodes
+					//<< " tbhits " << searchValues.tbHits
+					<< " time " << elapsed
+					<< " hashfull " << (globalTT.stored * 1000) / (globalTT.getSize() * CLUSTER_SIZE)
+					<< " nps " << (elapsed > 0 ? (searchValues.nodes * 1000 / elapsed) : 0)
+					<< " pv ";
 
 			for (Move &m: pv) {
 				std::cout << moveToString(m) << ' ';
@@ -619,9 +622,8 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 		if (g_timeLimitMS > 0 && depth >= 5) {
 			if (bestMove == lastBestMove
 				&& abs(bestScore - lastScore) < 80
-				&& abs(bestScore) < MATE_SCORE - 100) {
-
-				stableMoveCount++;  // Increment here
+				&& absBestScore < MATE_SCORE - 100) {
+				stableMoveCount++; // Increment here
 
 				// Exit if stable for 3 iterations and used >30% time
 				if (stableMoveCount >= 3 && elapsed > (long long) round(g_timeLimitMS * 0.3)) {
@@ -629,19 +631,23 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 					break;
 				}
 			} else {
-				stableMoveCount = 0;  // Reset only when NOT stable
+				stableMoveCount = 0; // Reset only when NOT stable
 			}
 		}
+		if (absBestScore > MATE_SCORE - 100) {
+			stopSearch = true;
+		}
+
 		lastScore = bestScore;
 		lastBestMove = bestMove;
 	}
 
-//	if (earlyExits > 0) {
-//	std::cerr << "Early exits: " << earlyExits << " at depth " << completedDepth << std::endl << std::flush;
-//	}
+	//	if (earlyExits > 0) {
+	//	std::cerr << "Early exits: " << earlyExits << " at depth " << completedDepth << std::endl << std::flush;
+	//	}
 	stopSearch = true;
 
-	return {bestMove, bestScore, completedDepth, pv, totalNodes, totalTbHits};
+	return {bestMove, bestScore, completedDepth, selDepth, pv, totalNodes, totalTbHits};
 }
 
 
@@ -650,7 +656,7 @@ bool isKingInCheck(const Board &board, int color) {
 	return isSquareAttacked(board, std::countr_zero(king), -color);
 }
 
-bool insufficientMaterial(Board &board){
+bool insufficientMaterial(Board &board) {
 	return (board.whitePawns | board.blackPawns | board.whiteRooks | board.blackRooks |
 			board.whiteBishops | board.blackBishops | board.whiteKnights | board.blackKnights |
 			board.whiteQueens | board.blackQueens) == 0;

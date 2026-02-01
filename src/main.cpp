@@ -29,7 +29,7 @@ void setPosition(const std::string &line) {
 	ss >> tok;
 
 	if (tok == "startpos") {
-		currentBoard = Board();  // Should initialize startpos
+		currentBoard = Board(); // Should initialize startpos
 		if (ss >> tok && tok == "moves") {
 			while (ss >> tok) {
 				currentBoard.makeMove(stringToMove(tok, currentBoard));
@@ -77,12 +77,12 @@ void startSearch(const std::string &goCmd) {
 
 	bool isPeft = false;
 
-	long movetime = -1;     // exact time to use (ms)
-	long depth = -1;     // plys limit
-	long nodes = -1;     // node limit
+	long movetime = -1; // exact time to use (ms)
+	long depth = -1; // plys limit
+	long nodes = -1; // node limit
 
-	long wtime = -1, btime = -1;   // remaining time (ms)
-	long winc = 0, binc = 0;    // increments (ms)
+	long wtime = -1, btime = -1; // remaining time (ms)
+	long winc = 0, binc = 0; // increments (ms)
 
 
 	std::stringstream ss(goCmd);
@@ -156,26 +156,27 @@ void startSearch(const std::string &goCmd) {
 			if (!moves.empty()) {
 				bm.bestMove = moves.get(0);
 				std::cerr << "WARNING: Search returned null move, using fallback: "
-						  << moveToString(bm.bestMove) << std::endl;
+						<< moveToString(bm.bestMove) << std::endl;
 			} else {
 				std::cout << "bestmove (none)\n" << std::flush;
-				return;  /* Early return */
+				return; /* Early return */
 			}
 		}
 		if (debug) {
 			std::cout << "info string |"
-					  << " TT Stored = " << globalTT.stored
-					  << " TT Overwrite = " << globalTT.overwrites
-					  << " TT Overwrite same key " << globalTT.overwriteSameKey
-					  << " TT Size = " << globalTT.getSize()
-					  << std::endl << std::flush;
+					<< " TT Stored = " << globalTT.stored
+					<< " TT Overwrite = " << globalTT.overwrites
+					<< " TT Overwrite same key " << globalTT.overwriteSameKey
+					<< " TT Size = " << globalTT.getSize()
+					<< std::endl << std::flush;
 		}
 
 		long long elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-				std::chrono::steady_clock::now() - startTime).count();
+			std::chrono::steady_clock::now() - startTime).count();
 
 		std::string score;
-		if (abs(bm.score) >= MATE_SCORE - 100) { // I doubt it can find a forced mate in 50
+		if (abs(bm.score) >= MATE_SCORE - 100) {
+			// I doubt it can find a forced mate in 50
 			int mateDistance = MATE_SCORE - abs(bm.score);
 			int mateMoves = (mateDistance + 1) / 2;
 
@@ -183,19 +184,19 @@ void startSearch(const std::string &goCmd) {
 				score = std::format("score mate {}", mateMoves);
 			else
 				score = std::format("score mate -{}", mateMoves);
-
 		} else {
 			score = std::format("score cp {}", bm.score);
 		}
 		std::cout << "info "
-				  << score
-				  << " depth " << bm.plys
-				  //<< " tbhits " << searchValues.tbHits
-				  << " nodes " << searchValues.nodes
-				  << " time " << elapsed
-				  << " hashfull " << (globalTT.stored * 1000) / (globalTT.getSize() * CLUSTER_SIZE)
-				  << " nps " << (elapsed > 0 ? (searchValues.nodes * 1000 / elapsed) : 0)
-				  << " pv";
+				<< score
+				<< " depth " << bm.plys
+				<< " seldepth " << bm.selDepth
+				//<< " tbhits " << searchValues.tbHits
+				<< " nodes " << searchValues.nodes
+				<< " time " << elapsed
+				<< " hashfull " << (globalTT.stored * 1000) / (globalTT.getSize() * CLUSTER_SIZE)
+				<< " nps " << (elapsed > 0 ? (searchValues.nodes * 1000 / elapsed) : 0)
+				<< " pv";
 		for (Move &m: bm.pv) {
 			std::cout << ' ' << moveToString(m);
 		}
@@ -225,12 +226,12 @@ int main() {
 
 	// Try to load NNUE network
 	// if (!initNNUE("network.nnue")) {
-		// std::cout << "info string No NNUE network found, using classical evaluation" << std::endl;
+	// std::cout << "info string No NNUE network found, using classical evaluation" << std::endl;
 	// }
 
-	
-//    std::string openingBookLocation = "./openingBook.bin";
-//    loadBookToHashMap(openingBookLocation);
+
+	//    std::string openingBookLocation = "./openingBook.bin";
+	//    loadBookToHashMap(openingBookLocation);
 
 
 	std::ios::sync_with_stdio(false);
@@ -239,10 +240,10 @@ int main() {
 	std::string line;
 
 	while (std::getline(std::cin, line)) {
-
 		if (line.empty()) continue;
 
-		if (line.rfind("go", 0) == 0) { // Keep at the top, the most common input
+		if (line.rfind("go", 0) == 0) {
+			// Keep at the top, the most common input
 			startSearch(line);
 		} else if (line == "uci") {
 			std::cout << std::format("id name ECanBot-{}\n", VERSION) << std::flush;
@@ -277,7 +278,7 @@ int main() {
 			std::cout << "Evaluation: " << evaluateBoard(currentBoard) << std::endl;
 			std::cout << "FEN: " << currentBoard.generateFen() << std::endl << std::flush;
 		} else if (line.rfind("debug", 0) == 0) {
-//            rootDebugAlphaBeta(currentBoard, 6);
+			//            rootDebugAlphaBeta(currentBoard, 6);
 			parseDebug(line);
 		} else if (line.rfind("selfplay", 0) == 0) {
 			std::stringstream ss(line);
@@ -286,7 +287,7 @@ int main() {
 			int depth = 8;
 			std::string filename = "selfplay_data.txt";
 
-			ss >> cmd;  // "selfplay"
+			ss >> cmd; // "selfplay"
 
 			// Parse optional parameters
 			std::string tok;
