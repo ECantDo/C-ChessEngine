@@ -11,25 +11,119 @@
 #include <string>
 #include <sstream>
 #include <chrono>
+#include <thread>
+#include <atomic>
+#include <mutex>
 
-#define VERSION "V21.0_classicEval"
+#define VERSION "V21.1_classicEval_betterEarlyMateExit"
 
 bool debug = false;
 Board currentBoard;
 int g_numThreads = 1;
 
-//-------------------------------------------------------------
-// Parse "position ..." command
-//-------------------------------------------------------------
+std::atomic<bool> searchRunning{false};
+std::atomic<bool> isPondering{false};
+std::thread mainSearchThread;
+Move ponderMove = 0;
+
+/*-------------------------------------------------------------
+ * Function to run the search in a separate thread
+ *-------------------------------------------------------------*/
+void runSearchThread(Board board, long timeLimit, long depth, int numThreads) {
+	globalTT.overwrites = 0;
+	globalTT.overwriteSameKey = 0;
+
+	std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
+
+	SearchValues searchValues{0, 0};
+	BestMove bm = selectMove(board, depth, timeLimit, searchValues, numThreads);
+
+	if (bm.bestMove == 0) {
+		MoveList moves;
+		generateLegalMoves(board, moves);
+		if (!moves.empty()) {
+			bm.bestMove = moves.get(0);
+			std::cerr << "WARNING: Search returned null move, using fallback: "
+					  << moveToString(bm.bestMove) << std::endl;
+		} else {
+			std::cout << "bestmove (none)\n" << std::flush;
+			searchRunning = false;
+			isPondering = false;
+			return;
+		}
+	}
+
+	if (debug) {
+		std::cout << "info string |"
+				  << " TT Stored = " << globalTT.stored
+				  << " TT Overwrite = " << globalTT.overwrites
+				  << " TT Overwrite same key " << globalTT.overwriteSameKey
+				  << " TT Size = " << globalTT.getSize()
+				  << std::endl << std::flush;
+	}
+
+	long long elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+		std::chrono::steady_clock::now() - startTime).count();
+
+	std::string score;
+	if (abs(bm.score) >= MATE_SCORE - 100) {
+		int mateDistance = MATE_SCORE - abs(bm.score);
+		int mateMoves = (mateDistance + 1) / 2;
+
+		if (bm.score > 0)
+			score = std::format("score mate {}", mateMoves);
+		else
+			score = std::format("score mate -{}", mateMoves);
+	} else {
+		score = std::format("score cp {}", bm.score);
+	}
+
+	/* Only output info and bestmove if not pondering or if pondering was converted to regular search */
+	if (!isPondering) {
+		std::cout << "info "
+				  << score
+				  << " depth " << bm.plys
+				  << " seldepth " << bm.selDepth
+				  //<< " tbhits " << searchValues.tbHits
+				  << " nodes " << searchValues.nodes
+				  << " time " << elapsed
+				  << " hashfull " << (globalTT.stored * 1000) / (globalTT.getSize() * CLUSTER_SIZE)
+				  << " nps " << (elapsed > 0 ? (searchValues.nodes * 1000 / elapsed) : 0)
+				  << " pv";
+		for (Move &m: bm.pv) {
+			std::cout << ' ' << moveToString(m);
+		}
+		std::cout << std::endl << std::flush;
+
+		/* Store ponder move if available (second move in PV) */
+		Move ponderOutput = 0;
+		if (bm.pv.size() >= 2) {
+			ponderOutput = bm.pv[1];
+		}
+
+		std::cout << "bestmove " << moveToString(bm.bestMove);
+		if (ponderOutput != 0) {
+			std::cout << " ponder " << moveToString(ponderOutput);
+		}
+		std::cout << '\n' << std::flush;
+	}
+
+	searchRunning = false;
+	isPondering = false;
+}
+
+/*-------------------------------------------------------------
+ * Parse "position ..." command
+ *-------------------------------------------------------------*/
 void setPosition(const std::string &line) {
 	std::stringstream ss(line);
 	std::string tok;
 
-	ss >> tok; // "position"
+	ss >> tok; /* "position" */
 	ss >> tok;
 
 	if (tok == "startpos") {
-		currentBoard = Board(); // Should initialize startpos
+		currentBoard = Board(); /* Should initialize startpos */
 		if (ss >> tok && tok == "moves") {
 			while (ss >> tok) {
 				currentBoard.makeMove(stringToMove(tok, currentBoard));
@@ -61,33 +155,40 @@ void parseDebug(const std::string &cmd) {
 	std::stringstream ss(cmd);
 	std::string tok;
 
-	ss >> tok; // "debug"
+	ss >> tok; /* "debug" */
 
-	ss >> tok; // "on" or "off"
+	ss >> tok; /* "on" or "off" */
 
 	if (tok == "on") debug = true;
 	else if (tok == "off") debug = false;
 }
 
-//-------------------------------------------------------------
-//
-//-------------------------------------------------------------
+/*-------------------------------------------------------------
+ * Start search (possibly in separate thread)
+ *-------------------------------------------------------------*/
 void startSearch(const std::string &goCmd) {
+	/* If search is already running, stop it first */
+	if (searchRunning) {
+		stopSearch = true;
+		if (mainSearchThread.joinable()) {
+			mainSearchThread.join();
+		}
+	}
+
 	stopSearch = false;
-
 	bool isPeft = false;
+	bool ponder = false;
 
-	long movetime = -1; // exact time to use (ms)
-	long depth = -1; // plys limit
-	long nodes = -1; // node limit
+	long movetime = -1; /* exact time to use (ms) */
+	long depth = -1; /* plys limit */
+	long nodes = -1; /* node limit */
 
-	long wtime = -1, btime = -1; // remaining time (ms)
-	long winc = 0, binc = 0; // increments (ms)
-
+	long wtime = -1, btime = -1; /* remaining time (ms) */
+	long winc = 0, binc = 0; /* increments (ms) */
 
 	std::stringstream ss(goCmd);
 	std::string tok;
-	ss >> tok; // "go"
+	ss >> tok; /* "go" */
 
 	while (ss >> tok) {
 		if (tok == "movetime") ss >> movetime;
@@ -98,112 +199,64 @@ void startSearch(const std::string &goCmd) {
 		else if (tok == "btime") ss >> btime;
 		else if (tok == "winc") ss >> winc;
 		else if (tok == "binc") ss >> binc;
+		else if (tok == "ponder") ponder = true;
 		else if (tok == "perft") {
 			ss >> depth;
 			isPeft = true;
 		}
 	}
 
-	//---------------------------------------------------------
-	// If no limits were explicitly given, derive a time limit
-	//---------------------------------------------------------
+	/*---------------------------------------------------------
+	 * If no limits were explicitly given, derive a time limit
+	 *---------------------------------------------------------*/
 	long timeLimit = 0;
 
 	if (movetime > 0) {
 		timeLimit = movetime;
-		depth = 50; // No need in going any higher than 30 tbh
+		depth = 50; /* No need in going any higher than 50 */
 	} else if (wtime >= 0 && btime >= 0) {
-		// Allocate time based on whose move it is
+		/* Allocate time based on whose move it is */
 		long remaining = (currentBoard.turn == 1 ? wtime : btime);
 		long increment = (currentBoard.turn == 1 ? winc : binc);
 
-		// Basic time allocation: use 1/30 of remaining + 80% of increment (allow for some overhead)
+		/* Basic time allocation: use 1/30 of remaining + 80% of increment (allow for some overhead) */
 		timeLimit = remaining / 30 + (long) (increment * 0.8);
 
-		// Safety clamp: never more than 80% of remaining
+		/* Safety clamp: never more than 80% of remaining */
 		if (timeLimit > remaining * 4 / 5)
 			timeLimit = remaining * 4 / 5;
 
 		depth = 50;
 	} else {
-		// No time controls given — default to plys search
+		/* No time controls given — default to plys search */
 		if (depth <= 0)
-			depth = 6; // fallback
+			depth = 6; /* fallback */
 	}
 
-	if (timeLimit > 100) {
-		timeLimit -= 80; // Allow for 80ms of outputting time
+	/* When pondering, use infinite time and depth */
+	if (ponder) {
+		timeLimit = 0; /* infinite time */
+		depth = 50; /* deep search */
+		isPondering = true;
+	} else {
+		isPondering = false;
+		if (timeLimit > 100) {
+			timeLimit -= 80; /* Allow for 80ms of outputting time */
+		}
 	}
-
-	//---------------------------------------------------------
-	// Now you have:
-	//   timeLimit  (ms)  — guaranteed non-negative
-	//   plys      (ply) — maybe -1 if no plys limit
-	//   nodes      (cnt) — maybe -1 if no node limit
-	//---------------------------------------------------------
-	globalTT.overwrites = 0;
-	globalTT.overwriteSameKey = 0;
-
-	std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
 
 	if (!isPeft) {
-		// Pass plys or time-based stopping to your search
-		SearchValues searchValues{0, 0};
-		BestMove bm = selectMove(currentBoard, depth, timeLimit, searchValues, g_numThreads);
-		if (bm.bestMove == 0) {
-			MoveList moves;
-			generateLegalMoves(currentBoard, moves);
-			if (!moves.empty()) {
-				bm.bestMove = moves.get(0);
-				std::cerr << "WARNING: Search returned null move, using fallback: "
-						<< moveToString(bm.bestMove) << std::endl;
-			} else {
-				std::cout << "bestmove (none)\n" << std::flush;
-				return; /* Early return */
-			}
-		}
-		if (debug) {
-			std::cout << "info string |"
-					<< " TT Stored = " << globalTT.stored
-					<< " TT Overwrite = " << globalTT.overwrites
-					<< " TT Overwrite same key " << globalTT.overwriteSameKey
-					<< " TT Size = " << globalTT.getSize()
-					<< std::endl << std::flush;
+		/* Launch search in separate thread */
+		searchRunning = true;
+		Board boardCopy = currentBoard; /* Copy board for thread safety */
+
+		if (mainSearchThread.joinable()) {
+			mainSearchThread.join();
 		}
 
-		long long elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-			std::chrono::steady_clock::now() - startTime).count();
-
-		std::string score;
-		if (abs(bm.score) >= MATE_SCORE - 100) {
-			// I doubt it can find a forced mate in 50
-			int mateDistance = MATE_SCORE - abs(bm.score);
-			int mateMoves = (mateDistance + 1) / 2;
-
-			if (bm.score > 0)
-				score = std::format("score mate {}", mateMoves);
-			else
-				score = std::format("score mate -{}", mateMoves);
-		} else {
-			score = std::format("score cp {}", bm.score);
-		}
-		std::cout << "info "
-				<< score
-				<< " depth " << bm.plys
-				<< " seldepth " << bm.selDepth
-				//<< " tbhits " << searchValues.tbHits
-				<< " nodes " << searchValues.nodes
-				<< " time " << elapsed
-				<< " hashfull " << (globalTT.stored * 1000) / (globalTT.getSize() * CLUSTER_SIZE)
-				<< " nps " << (elapsed > 0 ? (searchValues.nodes * 1000 / elapsed) : 0)
-				<< " pv";
-		for (Move &m: bm.pv) {
-			std::cout << ' ' << moveToString(m);
-		}
-		std::cout << std::endl << std::flush;
-
-		std::cout << "bestmove " << moveToString(bm.bestMove) << '\n' << std::flush;
+		mainSearchThread = std::thread(runSearchThread, boardCopy, timeLimit, depth, g_numThreads);
 	} else {
+		/* Perft runs in main thread (it's fast and synchronous) */
 		auto start = std::chrono::high_resolution_clock::now();
 
 		uint64_t totalNodes = perft(depth, currentBoard);
@@ -216,23 +269,21 @@ void startSearch(const std::string &goCmd) {
 	}
 }
 
-//-------------------------------------------------------------
-// UCI main loop
-//-------------------------------------------------------------
+/*-------------------------------------------------------------
+ * UCI main loop
+ *-------------------------------------------------------------*/
 int main() {
 	Zobrist::init();
 	globalTT.clear();
 	initMagicBitboards();
 
-	// Try to load NNUE network
+	/* Try to load NNUE network */
 	// if (!initNNUE("network.nnue")) {
 	// std::cout << "info string No NNUE network found, using classical evaluation" << std::endl;
 	// }
 
-
 	//    std::string openingBookLocation = "./openingBook.bin";
 	//    loadBookToHashMap(openingBookLocation);
-
 
 	std::ios::sync_with_stdio(false);
 	std::cin.tie(nullptr);
@@ -243,25 +294,43 @@ int main() {
 		if (line.empty()) continue;
 
 		if (line.rfind("go", 0) == 0) {
-			// Keep at the top, the most common input
+			/* Keep at the top, the most common input */
 			startSearch(line);
 		} else if (line == "uci") {
 			std::cout << std::format("id name ECanBot-{}\n", VERSION) << std::flush;
 			std::cout << "id author ECanDo\n" << std::flush;
 
-			// Future options:
+			/* Advertise pondering support */
+			std::cout << "option name Ponder type check default false\n" << std::flush;
+
+			/* Future options: */
 			// std::cout << "option name Hash type spin default 16 min 1 max 4096\n";
 
 			std::cout << "uciok\n" << std::flush;
 		} else if (line == "isready") {
+			/* Wait for search to finish if running */
+			if (mainSearchThread.joinable() && searchRunning) {
+				mainSearchThread.join();
+			}
 			std::cout << "readyok\n" << std::flush;
 		} else if (line.rfind("setoption", 0) == 0) {
-			// TODO: handle engine options
+			/* TODO: handle engine options */
 		} else if (line == "ucinewgame") {
+			/* Stop any running search */
+			stopSearch = true;
+			if (mainSearchThread.joinable()) {
+				mainSearchThread.join();
+			}
 			useOpeningBook = true;
 			currentBoard = Board();
 			globalTT.clear();
+			ponderMove = 0;
 		} else if (line.rfind("position", 0) == 0) {
+			/* Stop any running search before changing position */
+			stopSearch = true;
+			if (mainSearchThread.joinable()) {
+				mainSearchThread.join();
+			}
 			try {
 				setPosition(line);
 			} catch (std::invalid_argument &e) {
@@ -269,7 +338,18 @@ int main() {
 			}
 		} else if (line == "stop") {
 			stopSearch = true;
+			/* Don't join here - let search finish naturally and output bestmove */
+		} else if (line == "ponderhit") {
+			/* Opponent made the move we were pondering on */
+			/* Convert pondering search to regular search */
+			isPondering = false;
+			/* The search thread will continue but now with proper time management */
+			/* In a more sophisticated implementation, you would adjust time allocation here */
 		} else if (line == "quit") {
+			stopSearch = true;
+			if (mainSearchThread.joinable()) {
+				mainSearchThread.join();
+			}
 			break;
 		} else if (line == "d") {
 			currentBoard.printBoard();
@@ -287,9 +367,9 @@ int main() {
 			int depth = 8;
 			std::string filename = "selfplay_data.txt";
 
-			ss >> cmd; // "selfplay"
+			ss >> cmd; /* "selfplay" */
 
-			// Parse optional parameters
+			/* Parse optional parameters */
 			std::string tok;
 			while (ss >> tok) {
 				if (tok == "games") ss >> numGames;

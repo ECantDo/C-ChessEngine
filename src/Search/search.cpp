@@ -583,19 +583,55 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 		selDepth = result.selDepth;
 
 		int absBestScore = abs(bestScore);
-
 		// Print UCI info
 		auto now = std::chrono::steady_clock::now();
 		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
+
+		if (depth >= 5 && g_timeLimitMS > 0) {
+			if (bestMove == lastBestMove
+				&& abs(bestScore - lastScore) < 80
+				&& absBestScore < MATE_SCORE - 100
+			) {
+				stableMoveCount++; // Increment here
+
+				// Exit if stable for 3 iterations and used >30% time
+				if (stableMoveCount >= 3 && elapsed > (long long) round(g_timeLimitMS * 0.3)) {
+					earlyExits++;
+					stopSearch = true;
+				}
+			} else {
+				stableMoveCount = 0; // Reset only when NOT stable
+			}
+		}
+
+		// Mate distance calculation; Mate distance will be -1 if there is not a forced mate
+		// greater than 1 otherwise
+		int mateDistance = -1;
+		int mateMoves = -1;
+		if (abs(bestScore) >= MATE_SCORE - 100) {
+			mateDistance = MATE_SCORE - std::abs(bestScore);
+			mateMoves = (mateDistance + 1) >> 1;
+		}
+
+
+		// Early exit on Mate; but do a search first to depth 6
+		if (mateDistance >= 0 && depth >= 6) {
+			// mateDistance is in plies, mateMoves is in moves (for UCI output)
+
+			// Exit if we've searched 2+ plies deeper than the mate distance
+			// OR if it's a short mate (≤3 moves) and we've reached depth 6
+			if (depth >= mateDistance + 2 || mateDistance <= 6) {
+				earlyExits++;
+				stopSearch = true;
+			}
+
+		}
 
 		if (g_printInfo) {
 			std::lock_guard<std::mutex> lock(g_outputMutex);
 
 			std::string score;
-			if (abs(bestScore) >= MATE_SCORE - 100) {
-				int mateDistance = MATE_SCORE - std::abs(bestScore);
-				int mateMoves = (mateDistance + 1) >> 1;
-
+			if (mateDistance >= 0) {
 				score = (bestScore > 0)
 							? std::format(" score mate {}", mateMoves)
 							: std::format(" score mate -{}", mateMoves);
@@ -619,24 +655,6 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 			std::cout << std::endl << std::flush;
 		}
 
-		if (g_timeLimitMS > 0 && depth >= 5) {
-			if (bestMove == lastBestMove
-				&& abs(bestScore - lastScore) < 80
-				&& absBestScore < MATE_SCORE - 100) {
-				stableMoveCount++; // Increment here
-
-				// Exit if stable for 3 iterations and used >30% time
-				if (stableMoveCount >= 3 && elapsed > (long long) round(g_timeLimitMS * 0.3)) {
-					earlyExits++;
-					break;
-				}
-			} else {
-				stableMoveCount = 0; // Reset only when NOT stable
-			}
-		}
-		if (absBestScore > MATE_SCORE - 100) {
-			stopSearch = true;
-		}
 
 		lastScore = bestScore;
 		lastBestMove = bestMove;
