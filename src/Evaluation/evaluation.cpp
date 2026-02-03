@@ -136,25 +136,25 @@ int evaluatePawnShelter(Board &board, int side, int kingSquare, int kingFile, in
 	}
 
 	// === Fianchetto Bonus ===
-//    if (kingsideCastle || queensideCastle) {
-//        uint64_t myBishops = (side == 1) ? board.whiteBishops : board.blackBishops;
-//
-//        int fianchettoSquare, pawnSquare;
-//        if (kingsideCastle) {
-//            fianchettoSquare = (side == 1) ? 14 : 62;  // g2 or g7
-//            pawnSquare = (side == 1) ? 23 : 55;        // h3 or h6
-//        } else {
-//            fianchettoSquare = (side == 1) ? 9 : 57;   // b2 or b7
-//            pawnSquare = (side == 1) ? 16 : 48;        // a3 or a6
-//        }
-//
-//        bool hasFianchettoBishop = myBishops & (1ULL << fianchettoSquare);
-//        bool hasFianchettoPawn = myPawns & (1ULL << pawnSquare);
-//
-//        if (hasFianchettoBishop && hasFianchettoPawn) {
-//            score += 20;
-//        }
-//    }
+    if (kingsideCastle || queensideCastle) {
+        uint64_t myBishops = (side == 1) ? board.whiteBishops : board.blackBishops;
+
+        int fianchettoSquare, pawnSquare;
+        if (kingsideCastle) {
+            fianchettoSquare = (side == 1) ? 14 : 62;  // g2 or g7
+            pawnSquare = (side == 1) ? 23 : 55;        // h3 or h6
+        } else {
+            fianchettoSquare = (side == 1) ? 9 : 57;   // b2 or b7
+            pawnSquare = (side == 1) ? 16 : 48;        // a3 or a6
+        }
+
+        bool hasFianchettoBishop = myBishops & (1ULL << fianchettoSquare);
+        bool hasFianchettoPawn = myPawns & (1ULL << pawnSquare);
+
+        if (hasFianchettoBishop && hasFianchettoPawn) {
+            score += 20;
+        }
+    }
 
 	return score;
 }

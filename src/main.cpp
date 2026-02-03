@@ -12,7 +12,7 @@
 #include <sstream>
 #include <chrono>
 
-#define VERSION "V20_nnue"
+#define VERSION "V21.0_classicEval"
 
 bool debug = false;
 Board currentBoard;
