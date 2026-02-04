@@ -44,7 +44,7 @@ void runSearchThread(Board board, long timeLimit, long depth, int numThreads) {
 		if (!moves.empty()) {
 			bm.bestMove = moves.get(0);
 			std::cerr << "WARNING: Search returned null move, using fallback: "
-					  << moveToString(bm.bestMove) << std::endl;
+					<< moveToString(bm.bestMove) << std::endl;
 		} else {
 			std::cout << "bestmove (none)\n" << std::flush;
 			searchRunning = false;
@@ -55,11 +55,11 @@ void runSearchThread(Board board, long timeLimit, long depth, int numThreads) {
 
 	if (debug) {
 		std::cout << "info string |"
-				  << " TT Stored = " << globalTT.stored
-				  << " TT Overwrite = " << globalTT.overwrites
-				  << " TT Overwrite same key " << globalTT.overwriteSameKey
-				  << " TT Size = " << globalTT.getSize()
-				  << std::endl << std::flush;
+				<< " TT Stored = " << globalTT.stored
+				<< " TT Overwrite = " << globalTT.overwrites
+				<< " TT Overwrite same key " << globalTT.overwriteSameKey
+				<< " TT Size = " << globalTT.getSize()
+				<< std::endl << std::flush;
 	}
 
 	long long elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -81,15 +81,15 @@ void runSearchThread(Board board, long timeLimit, long depth, int numThreads) {
 	/* Only output info and bestmove if not pondering or if pondering was converted to regular search */
 	if (!isPondering) {
 		std::cout << "info "
-				  << score
-				  << " depth " << bm.plys
-				  << " seldepth " << bm.selDepth
-				  //<< " tbhits " << searchValues.tbHits
-				  << " nodes " << searchValues.nodes
-				  << " time " << elapsed
-				  << " hashfull " << (globalTT.stored * 1000) / (globalTT.getSize() * CLUSTER_SIZE)
-				  << " nps " << (elapsed > 0 ? (searchValues.nodes * 1000 / elapsed) : 0)
-				  << " pv";
+				<< score
+				<< " depth " << bm.plys
+				<< " seldepth " << bm.selDepth
+				//<< " tbhits " << searchValues.tbHits
+				<< " nodes " << searchValues.nodes
+				<< " time " << elapsed
+				<< " hashfull " << (globalTT.stored * 1000) / (globalTT.getSize() * CLUSTER_SIZE)
+				<< " nps " << (elapsed > 0 ? (searchValues.nodes * 1000 / elapsed) : 0)
+				<< " pv";
 		for (Move &m: bm.pv) {
 			std::cout << ' ' << moveToString(m);
 		}
@@ -177,7 +177,6 @@ void startSearch(const std::string &goCmd) {
 
 	stopSearch = false;
 	bool isPeft = false;
-	bool ponder = false;
 
 	long movetime = -1; /* exact time to use (ms) */
 	long depth = -1; /* plys limit */
@@ -199,7 +198,6 @@ void startSearch(const std::string &goCmd) {
 		else if (tok == "btime") ss >> btime;
 		else if (tok == "winc") ss >> winc;
 		else if (tok == "binc") ss >> binc;
-		else if (tok == "ponder") ponder = true;
 		else if (tok == "perft") {
 			ss >> depth;
 			isPeft = true;
@@ -234,16 +232,11 @@ void startSearch(const std::string &goCmd) {
 	}
 
 	/* When pondering, use infinite time and depth */
-	if (ponder) {
-		timeLimit = 0; /* infinite time */
-		depth = 50; /* deep search */
-		isPondering = true;
-	} else {
-		isPondering = false;
-		if (timeLimit > 100) {
-			timeLimit -= 80; /* Allow for 80ms of outputting time */
-		}
+
+	if (timeLimit > 100) {
+		timeLimit -= 80; /* Allow for 80ms of outputting time */
 	}
+
 
 	if (!isPeft) {
 		/* Launch search in separate thread */
@@ -339,12 +332,6 @@ int main() {
 		} else if (line == "stop") {
 			stopSearch = true;
 			/* Don't join here - let search finish naturally and output bestmove */
-		} else if (line == "ponderhit") {
-			/* Opponent made the move we were pondering on */
-			/* Convert pondering search to regular search */
-			isPondering = false;
-			/* The search thread will continue but now with proper time management */
-			/* In a more sophisticated implementation, you would adjust time allocation here */
 		} else if (line == "quit") {
 			stopSearch = true;
 			if (mainSearchThread.joinable()) {
