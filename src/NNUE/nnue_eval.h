@@ -14,6 +14,9 @@
 
 constexpr int NNUE_INPUT_SIZE = 768;
 constexpr int NNUE_HIDDEN_SIZE = 1024;
+constexpr int32_t QA = 255;
+constexpr int32_t QB = 64;
+constexpr int32_t SCALE = 400;
 
 // int16 for speed :3
 using NNUEWeight = int16_t;
@@ -49,20 +52,19 @@ void updateAccumulatorAdd(Piece piece, int square, NNUEAccumulator &accumulator)
 void updateAccumulatorRemove(Piece piece, int square, NNUEAccumulator &accumulator);
 
 static inline void addWeightsSIMD(
-		int16_t* accumulator,
-		const int16_t* weights
+	int16_t *accumulator,
+	const int16_t *weights
 ) {
 	// Process 16 int16 values at a time
 	for (int i = 0; i < NNUE_HIDDEN_SIZE; i += 16) {
-
 		// Load 16 accumulator values
 		__m256i acc = _mm256_load_si256(
-				reinterpret_cast<const __m256i*>(accumulator + i)
+			reinterpret_cast<const __m256i *>(accumulator + i)
 		);
 
 		// Load 16 weights
 		__m256i w = _mm256_load_si256(
-				reinterpret_cast<const __m256i*>(weights + i)
+			reinterpret_cast<const __m256i *>(weights + i)
 		);
 
 		// acc += w
@@ -70,31 +72,30 @@ static inline void addWeightsSIMD(
 
 		// Store back
 		_mm256_store_si256(
-				reinterpret_cast<__m256i*>(accumulator + i),
-				acc
+			reinterpret_cast<__m256i *>(accumulator + i),
+			acc
 		);
 	}
 }
 
 static inline void subWeightsSIMD(
-		int16_t* accumulator,
-		const int16_t* weights
+	int16_t *accumulator,
+	const int16_t *weights
 ) {
 	for (int i = 0; i < NNUE_HIDDEN_SIZE; i += 16) {
-
 		__m256i acc = _mm256_load_si256(
-				reinterpret_cast<const __m256i*>(accumulator + i)
+			reinterpret_cast<const __m256i *>(accumulator + i)
 		);
 
 		__m256i w = _mm256_load_si256(
-				reinterpret_cast<const __m256i*>(weights + i)
+			reinterpret_cast<const __m256i *>(weights + i)
 		);
 
 		acc = _mm256_sub_epi16(acc, w);
 
 		_mm256_store_si256(
-				reinterpret_cast<__m256i*>(accumulator + i),
-				acc
+			reinterpret_cast<__m256i *>(accumulator + i),
+			acc
 		);
 	}
 }
@@ -147,8 +148,9 @@ inline int getInputFeatureIndex(Piece piece, int square) {
 	return pieceIndex * 64 + square;
 }
 
-inline int16_t crelu(int16_t x) {
-	return std::clamp(x, (int16_t) 0, (int16_t) 127);
+inline int32_t screlu(int16_t x) {
+	int32_t y = std::clamp(static_cast<int32_t>(x), 0, QA);
+	return y * y;
 }
 
 #endif //CHESSENGINE_NNUE_EVAL_H

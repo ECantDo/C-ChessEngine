@@ -272,7 +272,7 @@ int main() {
 
 	/* Try to load NNUE network */
 	// if (!initNNUE("network.nnue")) {
-	// std::cout << "info string No NNUE network found, using classical evaluation" << std::endl;
+	// 	std::cout << "info string No NNUE network found, using classical evaluation" << std::endl;
 	// }
 
 	//    std::string openingBookLocation = "./openingBook.bin";
@@ -350,8 +350,8 @@ int main() {
 		} else if (line.rfind("selfplay", 0) == 0) {
 			std::stringstream ss(line);
 			std::string cmd;
-			int numGames = 1000;
-			int depth = 8;
+			int numGames = 10000;
+			int searchTime = 150;
 			std::string filename = "selfplay_data.txt";
 
 			ss >> cmd; /* "selfplay" */
@@ -360,13 +360,11 @@ int main() {
 			std::string tok;
 			while (ss >> tok) {
 				if (tok == "games") ss >> numGames;
-				else if (tok == "depth") ss >> depth;
+				else if (tok == "searchTime") ss >> searchTime;
 				else if (tok == "file") ss >> filename;
 			}
 
-			generateTrainingData(filename.c_str(), numGames, depth);
-		} else if (line.rfind("supervised", 0) == 0) {
-			generateSupervisedData(line);
+			generateTrainingData(filename.c_str(), numGames, searchTime);
 		}
 	}
 

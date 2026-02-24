@@ -21,25 +21,12 @@ bool initNNUE(const char *filename) {
 		return false;
 	}
 
-	// Read magic header (for validation)
-	uint32_t magic;
-	file.read(reinterpret_cast<char *>(&magic), sizeof(magic));
-	if (magic != 0x4E4E5545) {  // "NNUE" in hex
-		std::cerr << "Invalid NNUE file format" << std::endl;
-		return false;
-	}
-
-	// Read network dimensions
-	uint32_t inputSize, hiddenSize;
-	file.read(reinterpret_cast<char *>(&inputSize), sizeof(inputSize));
-	file.read(reinterpret_cast<char *>(&hiddenSize), sizeof(hiddenSize));
-
-	if (inputSize != NNUE_INPUT_SIZE || hiddenSize != NNUE_HIDDEN_SIZE) {
-		std::cerr << "Network size mismatch" << std::endl;
-		return false;
-	}
-
-	// Read all weights and biases
+	// Bullet outputs a raw struct dump — no magic header, no size fields.
+	// Order matches the Network struct in simple.rs:
+	//   feature_weights  [768][HIDDEN_SIZE]  i16  quantised × QA
+	//   feature_bias     [HIDDEN_SIZE]       i16  quantised × QA
+	//   output_weights   [2*HIDDEN_SIZE]     i16  quantised × QB
+	//   output_bias      [1]                 i16  quantised × QA*QB
 	file.read(reinterpret_cast<char *>(g_nnueParams.inputWeights),
 			  sizeof(g_nnueParams.inputWeights));
 	file.read(reinterpret_cast<char *>(g_nnueParams.inputBiases),
@@ -75,15 +62,16 @@ void initAccumulator(const Board &board, NNUEAccumulator &accumulator) {
 }
 
 // TODO: Use SIMD
-void updateAccumulatorAdd(Piece piece, int square, NNUEAccumulator &accumulator) {
+void updateAccumulatorAdd(const Piece piece, int square, NNUEAccumulator &accumulator) {
 	int featureIdx = getInputFeatureIndex(piece, square);
 	if (featureIdx < 0) return;
 
 	const int16_t *weights = g_nnueParams.inputWeights[featureIdx];
 	addWeightsSIMD(accumulator.white, weights);
 
-	int mirroredSquare = square ^ 56;  // Flip rank
-	int mirroredFeatureIdx = getInputFeatureIndex(piece, mirroredSquare);
+	Piece mirroredPiece = flipColor(piece);
+	int mirroredSquare = square ^ 56; // Flip rank
+	int mirroredFeatureIdx = getInputFeatureIndex(mirroredPiece, mirroredSquare);
 
 	weights = g_nnueParams.inputWeights[mirroredFeatureIdx];
 	addWeightsSIMD(accumulator.black, weights);
@@ -97,8 +85,9 @@ void updateAccumulatorRemove(Piece piece, int square, NNUEAccumulator &accumulat
 	const int16_t *weights = g_nnueParams.inputWeights[featureIdx];
 	subWeightsSIMD(accumulator.white, weights);
 
-	int mirroredSquare = square ^ 56;  // Flip rank
-	int mirroredFeatureIdx = getInputFeatureIndex(piece, mirroredSquare);
+	Piece mirroredPiece = flipColor(piece);
+	int mirroredSquare = square ^ 56; // Flip rank
+	int mirroredFeatureIdx = getInputFeatureIndex(mirroredPiece, mirroredSquare);
 
 	weights = g_nnueParams.inputWeights[mirroredFeatureIdx];
 	subWeightsSIMD(accumulator.black, weights);
@@ -106,24 +95,22 @@ void updateAccumulatorRemove(Piece piece, int square, NNUEAccumulator &accumulat
 
 // Evaluate the position using the accumulator
 int evaluateNNUE(const Board &board, const NNUEAccumulator &acc) {
-	// Choose perspective based on side to move
 	const int16_t *us = (board.turn == 1) ? acc.white : acc.black;
 	const int16_t *them = (board.turn == 1) ? acc.black : acc.white;
 
-	// Output layer computation
-	int32_t output = 0;// g_nnueParams.outputBias;
+	int32_t output = 0;
 
 	for (int i = 0; i < NNUE_HIDDEN_SIZE; i++) {
-		// Apply ClippedReLU activation
-		int16_t usActivated = crelu(us[i]);
-		int16_t themActivated = crelu(them[i]);
-
-		// Weighted sum
-		output += usActivated * g_nnueParams.outputWeights[i];
-		output += themActivated * g_nnueParams.outputWeights[NNUE_HIDDEN_SIZE + i];
+		int32_t u = std::clamp((int32_t) us[i], 0, QA);
+		int32_t t = std::clamp((int32_t) them[i], 0, QA);
+		output += u * u * (int32_t) g_nnueParams.outputWeights[i];
+		output += t * t * (int32_t) g_nnueParams.outputWeights[NNUE_HIDDEN_SIZE + i];
 	}
 
-	// Scale to centipawns (adjust this divisor based on your training)
-	// This depends on how you scaled weights during training
-	return (output / 127 + g_nnueParams.outputBias) / 64 * board.turn;
+	output /= QA; // QA²·QB → QA·QB
+	output += (int32_t) g_nnueParams.outputBias;
+	output *= SCALE;
+	output /= QA * QB; // remove quantisation entirely
+
+	return output;
 }
