@@ -1,4 +1,4 @@
-cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/snap/clion/415/bin/ninja/linux/x64/ninja -G Ninja -S /home/ecando/Documents/CLionProjects/chessEngine -B /home/ecando/Documents/CLionProjects/chessEngine/cmake-build-debug
+cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/snap/clion/425/bin/ninja/linux/x64/ninja -G Ninja -S /home/ecando/Documents/CLionProjects/chessEngine -B /home/ecando/Documents/CLionProjects/chessEngine/cmake-build-debug
 -- Configuring done (0.0s)
 -- Generating done (0.0s)
 -- Build files have been written to: /home/ecando/Documents/CLionProjects/chessEngine/cmake-build-debug

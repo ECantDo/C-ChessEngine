@@ -624,7 +624,6 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 				earlyExits++;
 				stopSearch = true;
 			}
-
 		}
 
 		if (g_printInfo) {

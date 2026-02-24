@@ -103,36 +103,36 @@ int evaluatePawnShelter(Board &board, int side, int kingSquare, int kingFile, in
 
 		// After minor tuning, doesn't add anything to it
 		// === Enemy Pawn Storm ===
-//        if (theirPawnsOnFile != 0) {
-//            uint64_t stormPawns = theirPawnsOnFile;
-//            while (stormPawns) {
-//                int pawnSquare = std::countr_zero(stormPawns);
-//                stormPawns &= stormPawns - 1;
-//                int pawnRank = pawnSquare >> 3;
-//
-//                // Calculate advancement: how far from starting rank
-//                int advancementRank;
-//                if (side == 1) {
-//                    // Black pawns advancing down (start rank 6)
-//                    advancementRank = 6 - pawnRank;
-//                } else {
-//                    // White pawns advancing up (start rank 1)
-//                    advancementRank = pawnRank - 1;
-//                }
-//
-//                if (advancementRank >= 2 && advancementRank < 8) {
-//                    score -= PAWN_STORM_BONUS[advancementRank] >> 3;
-//
-//                    if (fileOffset == 0) {
-//                        score -= 10;
-//                    }
-//
-//                    if (myPawnsOnFile == 0) {
-//                        score -= 15;
-//                    }
-//                }
-//            }
-//        }
+        // if (theirPawnsOnFile != 0) {
+        //     uint64_t stormPawns = theirPawnsOnFile;
+        //     while (stormPawns) {
+        //         int pawnSquare = std::countr_zero(stormPawns);
+        //         stormPawns &= stormPawns - 1;
+        //         int pawnRank = pawnSquare >> 3;
+        //
+        //         // Calculate advancement: how far from starting rank
+        //         int advancementRank;
+        //         if (side == 1) {
+        //             // Black pawns advancing down (start rank 6)
+        //             advancementRank = 6 - pawnRank;
+        //         } else {
+        //             // White pawns advancing up (start rank 1)
+        //             advancementRank = pawnRank - 1;
+        //         }
+        //
+        //         if (advancementRank >= 2 && advancementRank < 8) {
+        //             score -= PAWN_STORM_BONUS[advancementRank] >> 3;
+        //
+        //             if (fileOffset == 0) {
+        //                 score -= 10;
+        //             }
+        //
+        //             if (myPawnsOnFile == 0) {
+        //                 score -= 15;
+        //             }
+        //         }
+        //     }
+        // }
 	}
 
 	// === Fianchetto Bonus ===
@@ -375,7 +375,7 @@ int evaluateBoardNNUE(Board &board) {
 }
 
 int evaluateBoard(Board &board) {
-	int score = 0;
+	int score = 10;  // 10 for tempo
 
 	score += evaluateMaterial(board);
 

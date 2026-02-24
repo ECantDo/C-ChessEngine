@@ -15,7 +15,7 @@
 #include <atomic>
 #include <mutex>
 
-#define VERSION "V21.1_classicEval_betterEarlyMateExit"
+#define VERSION "V21.2_tempo"
 
 bool debug = false;
 Board currentBoard;

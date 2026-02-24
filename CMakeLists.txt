@@ -47,8 +47,6 @@ add_executable(chessEngine
         src/NNUE/nnue_eval.cpp
         src/NNUE/self_play_training.cpp
         src/NNUE/self_play_training.h
-		src/ponder_globals.h
-
 )
 
 add_executable(testChessEngine tests/test_all.cpp
