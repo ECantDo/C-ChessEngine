@@ -262,6 +262,12 @@ void startSearch(const std::string &goCmd) {
 	}
 }
 
+void try_init_nnue() {
+	if (!initNNUE("quantised.bin")) {
+		std::cout << "info string No NNUE network found, using classical evaluation" << std::endl;
+	}
+}
+
 /*-------------------------------------------------------------
  * UCI main loop
  *-------------------------------------------------------------*/
@@ -271,9 +277,7 @@ int main() {
 	initMagicBitboards();
 
 	/* Try to load NNUE network */
-	if (!initNNUE("quantised.bin")) {
-		std::cout << "info string No NNUE network found, using classical evaluation" << std::endl;
-	}
+	try_init_nnue();
 
 	//    std::string openingBookLocation = "./openingBook.bin";
 	//    loadBookToHashMap(openingBookLocation);
@@ -342,7 +346,7 @@ int main() {
 			currentBoard.printBoard();
 			std::cout << currentBoard.generateFen() << std::endl << std::flush;
 		} else if (line == "eval") {
-			std::cout << "Evaluation: " << evaluateBoard(currentBoard) << std::endl;
+			std::cout << "Evaluation: " << evaluateBoardNNUE(currentBoard) << std::endl;
 			std::cout << "FEN: " << currentBoard.generateFen() << std::endl << std::flush;
 		} else if (line.rfind("debug", 0) == 0) {
 			//            rootDebugAlphaBeta(currentBoard, 6);
@@ -365,6 +369,8 @@ int main() {
 			}
 
 			generateTrainingData(filename.c_str(), numGames, searchTime);
+		} else if (line == "reload") {
+			try_init_nnue();
 		}
 	}
 
