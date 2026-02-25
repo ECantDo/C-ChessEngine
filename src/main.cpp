@@ -15,7 +15,7 @@
 #include <atomic>
 #include <mutex>
 
-#define VERSION "V21.2_tempo"
+#define VERSION "V22.0_NNUE_Attempt2"
 
 bool debug = false;
 Board currentBoard;
@@ -271,9 +271,9 @@ int main() {
 	initMagicBitboards();
 
 	/* Try to load NNUE network */
-	// if (!initNNUE("network.nnue")) {
-	// 	std::cout << "info string No NNUE network found, using classical evaluation" << std::endl;
-	// }
+	if (!initNNUE("quantised.bin")) {
+		std::cout << "info string No NNUE network found, using classical evaluation" << std::endl;
+	}
 
 	//    std::string openingBookLocation = "./openingBook.bin";
 	//    loadBookToHashMap(openingBookLocation);

@@ -101,14 +101,14 @@ int evaluateNNUE(const Board &board, const NNUEAccumulator &acc) {
 	int32_t output = 0;
 
 	for (int i = 0; i < NNUE_HIDDEN_SIZE; i++) {
-		int32_t u = std::clamp((int32_t) us[i], 0, QA);
-		int32_t t = std::clamp((int32_t) them[i], 0, QA);
-		output += u * u * (int32_t) g_nnueParams.outputWeights[i];
-		output += t * t * (int32_t) g_nnueParams.outputWeights[NNUE_HIDDEN_SIZE + i];
+		int32_t u = screlu(us[i]);
+		int32_t t = screlu(them[i]);
+		output += u * (int32_t) g_nnueParams.outputWeights[i];
+		output += t * (int32_t) g_nnueParams.outputWeights[NNUE_HIDDEN_SIZE + i];
 	}
 
 	output /= QA; // QA²·QB → QA·QB
-	output += (int32_t) g_nnueParams.outputBias;
+	output += static_cast<int32_t>(g_nnueParams.outputBias);
 	output *= SCALE;
 	output /= QA * QB; // remove quantisation entirely
 

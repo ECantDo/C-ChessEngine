@@ -28,7 +28,7 @@ struct alignas(64) NNUEParameters {
 
 	// 2 perspectives
 	NNUEWeight outputWeights[NNUE_HIDDEN_SIZE * 2];
-	int32_t outputBias;
+	int16_t outputBias;
 };
 
 struct alignas(64) NNUEAccumulator {
