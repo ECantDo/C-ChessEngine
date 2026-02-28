@@ -13,7 +13,7 @@
 #include "Board/board.h"
 
 constexpr int NNUE_INPUT_SIZE = 768;
-constexpr int NNUE_HIDDEN_SIZE = 1024;
+constexpr int NNUE_HIDDEN_SIZE = 256; // TODO: When training working, set back to 1024
 constexpr int32_t QA = 255;
 constexpr int32_t QB = 64;
 constexpr int32_t SCALE = 400;

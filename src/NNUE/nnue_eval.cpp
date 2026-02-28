@@ -61,7 +61,6 @@ void initAccumulator(const Board &board, NNUEAccumulator &accumulator) {
 	}
 }
 
-// TODO: Use SIMD
 void updateAccumulatorAdd(const Piece piece, int square, NNUEAccumulator &accumulator) {
 	int featureIdx = getInputFeatureIndex(piece, square);
 	if (featureIdx < 0) return;
