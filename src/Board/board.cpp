@@ -17,10 +17,10 @@
 // =====================================================================================================================
 
 Board::Board()
-		: whitePawns(0), whiteBishops(0), whiteKing(0), whiteKnights(0), whiteQueens(0), whiteRooks(0),
-		  blackPawns(0), blackBishops(0), blackKing(0), blackKnights(0), blackQueens(0), blackRooks(0),
-		  enPassantSquare(-1), turn(0), castling(0), halfMoveClock(0), fullMove(1), zobristHash(0),
-		  pieceAtSquareArray() {
+	: whitePawns(0), whiteBishops(0), whiteKing(0), whiteKnights(0), whiteQueens(0), whiteRooks(0),
+	  blackPawns(0), blackBishops(0), blackKing(0), blackKnights(0), blackQueens(0), blackRooks(0),
+	  enPassantSquare(-1), turn(0), castling(0), halfMoveClock(0), fullMove(1), zobristHash(0),
+	  pieceAtSquareArray() {
 	loadStartPosition();
 	Board::initCastlingTable();
 	zobristHash = computeZobristHash();
@@ -61,6 +61,10 @@ void Board::loadStartPosition() {
 	turn = 1;
 
 	initPieceArrayFromBitboards();
+
+	if (g_nnueLoaded) {
+		initAccumulator(*this, g_nnueAccumulator);
+	}
 }
 
 void Board::initPieceArrayFromBitboards() {
@@ -105,8 +109,8 @@ void Board::initPieceArrayFromBitboards() {
 
 // Promotion piece lookup: [isWhite][promoType] -> piece
 static const Piece PROMO_PIECES[2][4] = {
-		{BLACK_KNIGHT, BLACK_BISHOP, BLACK_ROOK, BLACK_QUEEN}, // Black (turn = -1)
-		{WHITE_KNIGHT, WHITE_BISHOP, WHITE_ROOK, WHITE_QUEEN}  // White (turn = 1)
+	{BLACK_KNIGHT, BLACK_BISHOP, BLACK_ROOK, BLACK_QUEEN}, // Black (turn = -1)
+	{WHITE_KNIGHT, WHITE_BISHOP, WHITE_ROOK, WHITE_QUEEN} // White (turn = 1)
 };
 
 // Castling rights removal: [piece type][square] -> rights to remove
@@ -128,8 +132,8 @@ void Board::initCastlingTable() {
 	}
 
 	// White rooks
-	CASTLING_REMOVE[2][0] = 0b0100;  // Queen side
-	CASTLING_REMOVE[2][7] = 0b1000;  // King side
+	CASTLING_REMOVE[2][0] = 0b0100; // Queen side
+	CASTLING_REMOVE[2][7] = 0b1000; // King side
 
 	// Black rooks
 	CASTLING_REMOVE[3][56] = 0b0001; // Queen side
@@ -297,15 +301,15 @@ bool Board::loadFenPosition(std::string &fen) {
 
 
 	/* ===== PART 1: Piece Placement ===== */
-	int rank = 7;  /* Start from rank 8 (index 7) */
-	int file = 0;  /* Start from file a (index 0) */
+	int rank = 7; /* Start from rank 8 (index 7) */
+	int file = 0; /* Start from file a (index 0) */
 
 	while (idx < fen.size() && fen[idx] != ' ') {
 		char ch = fen[idx++];
 
 		if (ch == '/') {
 			/* Move to next rank */
-			if (file != 8) return false;  /* Previous rank wasn't complete */
+			if (file != 8) return false; /* Previous rank wasn't complete */
 			rank--;
 			file = 0;
 			continue;
@@ -315,12 +319,12 @@ bool Board::loadFenPosition(std::string &fen) {
 			/* Empty squares */
 			int emptyCount = ch - '0';
 			file += emptyCount;
-			if (file > 8) return false;  /* Too many squares in rank */
+			if (file > 8) return false; /* Too many squares in rank */
 			continue;
 		}
 
 		/* Must be a piece character */
-		if (file >= 8) return false;  /* Too many pieces in rank */
+		if (file >= 8) return false; /* Too many pieces in rank */
 
 		int square = rank * 8 + file;
 		Piece p = charToPiece(ch);
@@ -333,7 +337,7 @@ bool Board::loadFenPosition(std::string &fen) {
 
 	/* ===== PART 2: Active Color ===== */
 	if (idx >= fen.size() || fen[idx] != ' ') return false;
-	idx++;  /* Skip space */
+	idx++; /* Skip space */
 
 	if (idx >= fen.size()) return false;
 	if (fen[idx] == 'w') {
@@ -347,7 +351,7 @@ bool Board::loadFenPosition(std::string &fen) {
 
 	/* ===== PART 3: Castling Rights ===== */
 	if (idx >= fen.size() || fen[idx] != ' ') return false;
-	idx++;  /* Skip space */
+	idx++; /* Skip space */
 
 	if (idx >= fen.size()) return false;
 
@@ -373,14 +377,14 @@ bool Board::loadFenPosition(std::string &fen) {
 					newBoard.castling |= 0b0001;
 					break;
 				default:
-					return false;  /* Invalid castling character */
+					return false; /* Invalid castling character */
 			}
 		}
 	}
 
 	/* ===== PART 4: En Passant Square ===== */
 	if (idx >= fen.size() || fen[idx] != ' ') return false;
-	idx++;  /* Skip space */
+	idx++; /* Skip space */
 
 	if (idx >= fen.size()) return false;
 
@@ -405,7 +409,7 @@ bool Board::loadFenPosition(std::string &fen) {
 
 	/* ===== PART 5: Halfmove Clock ===== */
 	if (idx >= fen.size() || fen[idx] != ' ') return false;
-	idx++;  /* Skip space */
+	idx++; /* Skip space */
 
 	if (idx >= fen.size() || !isdigit(fen[idx])) return false;
 
@@ -417,7 +421,7 @@ bool Board::loadFenPosition(std::string &fen) {
 
 	/* ===== PART 6: Fullmove Number ===== */
 	if (idx >= fen.size() || fen[idx] != ' ') return false;
-	idx++;  /* Skip space */
+	idx++; /* Skip space */
 
 	if (idx >= fen.size() || !isdigit(fen[idx])) return false;
 
@@ -426,13 +430,17 @@ bool Board::loadFenPosition(std::string &fen) {
 		fullmove = fullmove * 10 + (fen[idx++] - '0');
 	}
 
-	if (fullmove < 1) return false;  /* Fullmove must be at least 1 */
+	if (fullmove < 1) return false; /* Fullmove must be at least 1 */
 	newBoard.fullMove = fullmove;
 
 	/* ===== Success - Update Board ===== */
 	newBoard.zobristHash = newBoard.computeZobristHash();
 
 	*this = newBoard;
+
+	if (g_nnueLoaded) {
+		initAccumulator(*this, g_nnueAccumulator);
+	}
 	return true;
 }
 
@@ -504,6 +512,7 @@ std::string Board::generateFen() const {
 
 	return fen.str();
 }
+
 //======================================================================================================================
 // Non-class helper functions
 //======================================================================================================================
@@ -512,7 +521,7 @@ std::string Board::generateFen() const {
 int getBoardIndex(int file, int rank) {
 	if (file < 0 || file > 7 || rank < 0 || rank > 7)
 		return -1;
-	return rank * 8 + file;  /* RANK times 8, plus FILE */
+	return rank * 8 + file; /* RANK times 8, plus FILE */
 }
 
 /* Takes algebraic notation like 'b' and '7' */
@@ -549,13 +558,13 @@ UndoInfo Board::makeMove(Move m) {
 
 	// Save undo info
 	UndoInfo undoInfo = {
-			.capturedPiece = isEnPassant
+		.capturedPiece = isEnPassant
 							 ? (turn == 1 ? BLACK_PAWN : WHITE_PAWN)
 							 : capturedPiece,
-			.enPassantSquare = (int8_t) enPassantSquare,
-			.castlingRights = castling,
-			.halfMoveClock = (uint8_t) halfMoveClock,
-			.zobristHash = zobristHash,
+		.enPassantSquare = (int8_t) enPassantSquare,
+		.castlingRights = castling,
+		.halfMoveClock = (uint8_t) halfMoveClock,
+		.zobristHash = zobristHash,
 	};
 
 	if (g_nnueLoaded) {
@@ -626,7 +635,8 @@ UndoInfo Board::makeMove(Move m) {
 
 	if (isCastling) {
 		// Move rook based on king's destination
-		if (toLocation == 6) {  // White kingside
+		if (toLocation == 6) {
+			// White kingside
 			addPieceAtSquare(5, WHITE_ROOK);
 			removePieceAtSquare(7, WHITE_ROOK);
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(WHITE_ROOK)][7];
@@ -635,7 +645,8 @@ UndoInfo Board::makeMove(Move m) {
 				updateAccumulatorRemove(WHITE_ROOK, 7, g_nnueAccumulator);
 				updateAccumulatorAdd(WHITE_ROOK, 5, g_nnueAccumulator);
 			}
-		} else if (toLocation == 2) {  // White queenside
+		} else if (toLocation == 2) {
+			// White queenside
 			addPieceAtSquare(3, WHITE_ROOK);
 			removePieceAtSquare(0, WHITE_ROOK);
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(WHITE_ROOK)][0];
@@ -644,7 +655,8 @@ UndoInfo Board::makeMove(Move m) {
 				updateAccumulatorRemove(WHITE_ROOK, 0, g_nnueAccumulator);
 				updateAccumulatorAdd(WHITE_ROOK, 3, g_nnueAccumulator);
 			}
-		} else if (toLocation == 62) {  // Black kingside
+		} else if (toLocation == 62) {
+			// Black kingside
 			addPieceAtSquare(61, BLACK_ROOK);
 			removePieceAtSquare(63, BLACK_ROOK);
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(BLACK_ROOK)][63];
@@ -653,7 +665,8 @@ UndoInfo Board::makeMove(Move m) {
 				updateAccumulatorRemove(BLACK_ROOK, 63, g_nnueAccumulator);
 				updateAccumulatorAdd(BLACK_ROOK, 61, g_nnueAccumulator);
 			}
-		} else if (toLocation == 58) {  // Black queenside
+		} else if (toLocation == 58) {
+			// Black queenside
 			addPieceAtSquare(59, BLACK_ROOK);
 			removePieceAtSquare(56, BLACK_ROOK);
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(BLACK_ROOK)][56];
@@ -734,16 +747,20 @@ void Board::unmakeMove(Move m, const UndoInfo &undoInfo) {
 	if (g_nnueLoaded) {
 		// Handle castling rook first
 		if (flags & MOVE_FLAG_CASTLING) {
-			if (toLocation == 6) {  // White kingside
+			if (toLocation == 6) {
+				// White kingside
 				updateAccumulatorRemove(WHITE_ROOK, 5, g_nnueAccumulator);
 				updateAccumulatorAdd(WHITE_ROOK, 7, g_nnueAccumulator);
-			} else if (toLocation == 2) {  // White queenside
+			} else if (toLocation == 2) {
+				// White queenside
 				updateAccumulatorRemove(WHITE_ROOK, 3, g_nnueAccumulator);
 				updateAccumulatorAdd(WHITE_ROOK, 0, g_nnueAccumulator);
-			} else if (toLocation == 62) {  // Black kingside
+			} else if (toLocation == 62) {
+				// Black kingside
 				updateAccumulatorRemove(BLACK_ROOK, 61, g_nnueAccumulator);
 				updateAccumulatorAdd(BLACK_ROOK, 63, g_nnueAccumulator);
-			} else if (toLocation == 58) {  // Black queenside
+			} else if (toLocation == 58) {
+				// Black queenside
 				updateAccumulatorRemove(BLACK_ROOK, 59, g_nnueAccumulator);
 				updateAccumulatorAdd(BLACK_ROOK, 56, g_nnueAccumulator);
 			}
@@ -755,7 +772,7 @@ void Board::unmakeMove(Move m, const UndoInfo &undoInfo) {
 
 		// If it was a promotion, the original piece was a pawn
 		if (flags & MOVE_FLAG_PROMOTION) {
-			originalPiece = (turn == -1) ? WHITE_PAWN : BLACK_PAWN;  // turn already flipped
+			originalPiece = (turn == -1) ? WHITE_PAWN : BLACK_PAWN; // turn already flipped
 		}
 
 		// Remove piece from destination
@@ -809,16 +826,20 @@ void Board::unmakeMove(Move m, const UndoInfo &undoInfo) {
 
 	/* Undo castling */
 	if (flags & MOVE_FLAG_CASTLING) {
-		if (toLocation == 6) {  /* White kingside */
+		if (toLocation == 6) {
+			/* White kingside */
 			addPieceAtSquare(7, WHITE_ROOK);
 			removePieceAtSquare(5, WHITE_ROOK);
-		} else if (toLocation == 2) {  /* White queenside */
+		} else if (toLocation == 2) {
+			/* White queenside */
 			addPieceAtSquare(0, WHITE_ROOK);
 			removePieceAtSquare(3, WHITE_ROOK);
-		} else if (toLocation == 62) {  /* Black kingside */
+		} else if (toLocation == 62) {
+			/* Black kingside */
 			addPieceAtSquare(63, BLACK_ROOK);
 			removePieceAtSquare(61, BLACK_ROOK);
-		} else if (toLocation == 58) {  /* Black queenside */
+		} else if (toLocation == 58) {
+			/* Black queenside */
 			addPieceAtSquare(56, BLACK_ROOK);
 			removePieceAtSquare(59, BLACK_ROOK);
 		}

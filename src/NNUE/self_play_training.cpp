@@ -65,7 +65,7 @@ struct PositionRecord {
 // =====================================================================================================================
 // generateTrainingData
 // =====================================================================================================================
-void generateTrainingData(const char *outputFile, int numGames, int searchTimeMs) {
+void generateTrainingData(const char *outputFile, int numGames, int searchNodes) {
 	g_printInfo = false;
 
 	std::ofstream file(outputFile, std::ios::app);
@@ -76,7 +76,7 @@ void generateTrainingData(const char *outputFile, int numGames, int searchTimeMs
 	}
 
 	std::cout << "info string Generating " << numGames
-			<< " self-play games at " << searchTimeMs << "ms/move" << std::endl;
+			<< " self-play games at " << searchNodes << " nodes" << std::endl;
 
 	std::mt19937 rng(std::chrono::steady_clock::now().time_since_epoch().count());
 
@@ -91,11 +91,11 @@ void generateTrainingData(const char *outputFile, int numGames, int searchTimeMs
 		gamePath.reserve(200);
 
 		// ---- Random opening (4-8 random half-moves) ----
-		std::uniform_int_distribution<int> openingDist(4, 8);
+		std::uniform_int_distribution<int> openingDist(8, 10);
 		int openingMoves = openingDist(rng);
 
 		bool validStart = false;
-		for (int attempt = 0; attempt < 10 && !validStart; attempt++) {
+		while (!validStart) {
 			board.loadStartPosition();
 			gamePath.clear();
 			validStart = true;
@@ -113,14 +113,9 @@ void generateTrainingData(const char *outputFile, int numGames, int searchTimeMs
 				board.makeMove(moveList.get(moveDist(rng)));
 			}
 
-			if (validStart && abs(evaluateBoard(board)) > 500) {
+			if (validStart && abs(evaluateBoard(board)) > 1000) {
 				validStart = false;
 			}
-		}
-
-		if (!validStart) {
-			board.loadStartPosition();
-			gamePath.clear();
 		}
 
 		// ---- Play game ----
@@ -129,7 +124,7 @@ void generateTrainingData(const char *outputFile, int numGames, int searchTimeMs
 		bool adjudicated = false;
 		int adjudicatedScore = 0;
 
-		while (moveCount < 400) {
+		while (moveCount < 200) {
 			MoveList moves;
 			generateLegalMoves(board, moves);
 
@@ -139,7 +134,7 @@ void generateTrainingData(const char *outputFile, int numGames, int searchTimeMs
 			if (board.isRepetitionInSearch(gamePath)) break;
 
 			SearchValues sv{0, 0};
-			BestMove bm = selectMove(board, 32, searchTimeMs, sv, 1);
+			BestMove bm = selectMove(board, 32, 50, sv, 1, searchNodes);
 			if (bm.bestMove == 0) break;
 
 			// bm.score is from side-to-move's perspective (negamax).

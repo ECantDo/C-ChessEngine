@@ -57,13 +57,13 @@ struct ThreadResult {
 };
 
 
-BestMove selectMove(Board &board, int maxDepth, long timeLimitMS, SearchValues &searchValues, int numThreads = 1);
+BestMove selectMove(Board &board, int maxDepth, long timeLimitMS, SearchValues &searchValues, int numThreads = 1, uint64_t maxNodes = -1);
 
 bool isKingInCheck(const Board &board, int color);
 
 bool insufficientMaterial(Board &board);
 
-ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThreads);
+ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThreads, uint64_t maxNodes);
 
 
 inline int scoreMoveForOrdering(Move m, const Board &board, int ply,

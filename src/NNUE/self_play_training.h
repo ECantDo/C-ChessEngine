@@ -12,6 +12,6 @@
 // outputFile  : path to write to (opened in append mode)
 // numGames    : number of self-play games to run
 // searchTimeMs: milliseconds per move for each search call
-void generateTrainingData(const char *outputFile, int numGames, int searchTimeMs);
+void generateTrainingData(const char *outputFile, int numGames, int searchNodes);
 
 #endif //CHESSENGINE_SELF_PLAY_TRAINING_H

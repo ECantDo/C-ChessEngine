@@ -423,7 +423,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 	}
 }
 
-BestMove selectMove(Board &board, int maxDepth, long timeLimitMS, SearchValues &searchValues, int numThreads) {
+BestMove selectMove(Board &board, int maxDepth, long timeLimitMS, SearchValues &searchValues, int numThreads, uint64_t maxNodes) {
 	stopSearch = false;
 	g_timeLimitMS = timeLimitMS;
 	g_searchStart = std::chrono::steady_clock::now();
@@ -435,8 +435,8 @@ BestMove selectMove(Board &board, int maxDepth, long timeLimitMS, SearchValues &
 	for (int i = 0; i < numThreads; i++) {
 		//        std::cerr << "Launching thread " << i << std::endl;
 
-		threads.emplace_back([&results, board, maxDepth, i, numThreads]() {
-			results[i] = searchThread(board, maxDepth, i, numThreads);
+		threads.emplace_back([&results, board, maxDepth, i, numThreads, maxNodes]() {
+			results[i] = searchThread(board, maxDepth, i, numThreads, maxNodes);
 		});
 	}
 	// All threads are running
@@ -452,7 +452,7 @@ BestMove selectMove(Board &board, int maxDepth, long timeLimitMS, SearchValues &
 				stopSearch = true;
 			}
 
-			std::this_thread::sleep_for(std::chrono::milliseconds(5));
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 		}
 	}
 	// If no time limit, threads will search to maxDepth and stop naturally
@@ -481,7 +481,7 @@ BestMove selectMove(Board &board, int maxDepth, long timeLimitMS, SearchValues &
 
 std::mutex g_outputMutex; // Global
 
-ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThreads) {
+ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThreads, uint64_t maxNodes) {
 	Move bestMove = 0;
 	int bestScore = 0;
 	std::vector<Move> pv;
@@ -509,7 +509,7 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 	int selDepth = 0;
 
 	std::vector<uint64_t> searchPath;
-	searchPath.reserve(64);
+	searchPath.reserve(maxDepth);
 
 	for (int depth = startDepth; depth <= maxDepth; depth++) {
 		if (stopSearch) break;
@@ -522,6 +522,11 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 				earlyExits++;
 				break;
 			}
+		}
+
+		if (totalNodes > maxNodes) {
+			earlyExits++;
+			break;
 		}
 
 		searchPath.clear();

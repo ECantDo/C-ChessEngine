@@ -29,14 +29,14 @@ Move ponderMove = 0;
 /*-------------------------------------------------------------
  * Function to run the search in a separate thread
  *-------------------------------------------------------------*/
-void runSearchThread(Board board, long timeLimit, long depth, int numThreads) {
+void runSearchThread(Board board, long timeLimit, long depth, int numThreads, uint64_t maxNodes) {
 	globalTT.overwrites = 0;
 	globalTT.overwriteSameKey = 0;
 
 	std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
 
 	SearchValues searchValues{0, 0};
-	BestMove bm = selectMove(board, depth, timeLimit, searchValues, numThreads);
+	BestMove bm = selectMove(board, depth, timeLimit, searchValues, numThreads, maxNodes);
 
 	if (bm.bestMove == 0) {
 		MoveList moves;
@@ -228,7 +228,7 @@ void startSearch(const std::string &goCmd) {
 	} else {
 		/* No time controls given — default to plys search */
 		if (depth <= 0)
-			depth = 6; /* fallback */
+			depth = 10; /* fallback */
 	}
 
 	/* When pondering, use infinite time and depth */
@@ -247,7 +247,7 @@ void startSearch(const std::string &goCmd) {
 			mainSearchThread.join();
 		}
 
-		mainSearchThread = std::thread(runSearchThread, boardCopy, timeLimit, depth, g_numThreads);
+		mainSearchThread = std::thread(runSearchThread, boardCopy, timeLimit, depth, g_numThreads, nodes);
 	} else {
 		/* Perft runs in main thread (it's fast and synchronous) */
 		auto start = std::chrono::high_resolution_clock::now();
@@ -262,10 +262,14 @@ void startSearch(const std::string &goCmd) {
 	}
 }
 
-void try_init_nnue() {
-	if (!initNNUE("quantised.bin")) {
+void try_init_nnue(const std::string &filename) {
+	if (!initNNUE(filename.c_str())) {
 		std::cout << "info string No NNUE network found, using classical evaluation" << std::endl;
 	}
+}
+
+void try_init_nnue() {
+	try_init_nnue("quantised.bin");
 }
 
 /*-------------------------------------------------------------
@@ -278,6 +282,9 @@ int main() {
 
 	/* Try to load NNUE network */
 	try_init_nnue();
+	if (g_nnueLoaded) {
+		initAccumulator(currentBoard, g_nnueAccumulator); // ← add this
+	}
 
 	//    std::string openingBookLocation = "./openingBook.bin";
 	//    loadBookToHashMap(openingBookLocation);
@@ -318,7 +325,6 @@ int main() {
 			if (mainSearchThread.joinable()) {
 				mainSearchThread.join();
 			}
-			useOpeningBook = true;
 			currentBoard = Board();
 			globalTT.clear();
 			ponderMove = 0;
@@ -355,7 +361,7 @@ int main() {
 			std::stringstream ss(line);
 			std::string cmd;
 			int numGames = 10000;
-			int searchTime = 150;
+			int search_nodes = 150;
 			std::string filename = "selfplay_data.txt";
 
 			ss >> cmd; /* "selfplay" */
@@ -364,13 +370,33 @@ int main() {
 			std::string tok;
 			while (ss >> tok) {
 				if (tok == "games") ss >> numGames;
-				else if (tok == "searchTime") ss >> searchTime;
+				else if (tok == "nodes") ss >> search_nodes;
 				else if (tok == "file") ss >> filename;
 			}
 
-			generateTrainingData(filename.c_str(), numGames, searchTime);
-		} else if (line == "reload") {
-			try_init_nnue();
+			generateTrainingData(filename.c_str(), numGames, search_nodes);
+		} else if (line.rfind("reload", 0) == 0) {
+			std::stringstream ss(line);
+			std::string cmd;
+			std::string filename = "quantised.bin";
+
+			ss >> cmd; /* "selfplay" */
+
+			/* Parse optional parameters */
+			std::string tok;
+			while (ss >> tok) {
+				if (tok == "file") ss >> filename;
+			}
+
+			/* Stop any running search */
+			stopSearch = true;
+			if (mainSearchThread.joinable()) {
+				mainSearchThread.join();
+			}
+			currentBoard = Board();
+			globalTT.clear();
+			ponderMove = 0;
+			try_init_nnue(filename);
 		}
 	}
 
