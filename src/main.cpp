@@ -15,6 +15,8 @@
 #include <atomic>
 #include <mutex>
 
+#include "Evaluation/bench.h"
+
 #define VERSION "V22.0_NNUE_Attempt2"
 
 bool debug = false;
@@ -397,6 +399,13 @@ int main() {
 			globalTT.clear();
 			ponderMove = 0;
 			try_init_nnue(filename);
+		} else if (line == "bench") {
+			/* Stop any running search first */
+			stopSearch = true;
+			if (mainSearchThread.joinable()) {
+				mainSearchThread.join();
+			}
+			runBench();
 		}
 	}
 
