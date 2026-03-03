@@ -308,6 +308,7 @@ int main() {
 
 			/* Advertise pondering support */
 			std::cout << "option name Ponder type check default false\n" << std::flush;
+			std::cout << "option name EvalFile type string default quantised.bin\n" << std::flush;
 
 			/* Future options: */
 			// std::cout << "option name Hash type spin default 16 min 1 max 4096\n";
@@ -320,7 +321,25 @@ int main() {
 			}
 			std::cout << "readyok\n" << std::flush;
 		} else if (line.rfind("setoption", 0) == 0) {
-			/* TODO: handle engine options */
+			std::stringstream ss(line);
+			std::string tok, name, value;
+
+			ss >> tok; /* "setoption" */
+			ss >> tok; /* "name"      */
+			ss >> name; /* option name */
+			ss >> tok; /* "value"     */
+			ss >> value; /* option value */
+
+			if (name == "EvalFile") {
+				stopSearch = true;
+				if (mainSearchThread.joinable()) {
+					mainSearchThread.join();
+				}
+				try_init_nnue(value);
+				if (g_nnueLoaded) {
+					initAccumulator(currentBoard, g_nnueAccumulator);
+				}
+			}
 		} else if (line == "ucinewgame") {
 			/* Stop any running search */
 			stopSearch = true;

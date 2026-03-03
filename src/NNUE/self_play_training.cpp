@@ -141,10 +141,18 @@ void generateTrainingData(const char *outputFile, int numGames, int searchNodes)
 			// Convert to white-relative for storage.
 			int whiteRelativeScore = (board.turn == 1) ? bm.score : -bm.score;
 
-			// Skip positions where a forced mate was found —
-			// distance-to-mate scores are not useful positional training signal.
+			/* Skip positions in check — noisy, not representative of quiet positions */
+			bool inCheck = isKingInCheck(board, board.turn);
+
+			/* Skip positions where the next move is a capture — eval will change drastically */
+			bool nextMoveIsCapture = (getMoveFlags(bm.bestMove) & MOVE_FLAG_CAPTURE) != 0;
+
+			/* Skip positions with extreme evals — likely tactical noise */
+			bool extremeEval = (abs(whiteRelativeScore) > 1200);
+
 			bool isMateScore = (abs(bm.score) >= MATE_SCORE - 100);
-			if (!isMateScore) {
+
+			if (!isMateScore && !inCheck && !nextMoveIsCapture && !extremeEval) {
 				records.push_back({board.generateFen(), whiteRelativeScore});
 			}
 
