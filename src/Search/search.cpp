@@ -295,51 +295,42 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 							   0, searchPath, killerMoves, historyTable,
 							   searchValues, nullMoveAllowed);
 		} else {
-			// Later moves: try null window search first
-			if (movesSearched >= 4 && plys >= 1 &&
-				!(move & MOVE_FLAG_CAPTURE) &&
-				!isKingInCheck(board, -board.turn) &&
-				!isKingInCheck(board, board.turn)) {
-				// LMR with null window
-				//int halfSize = moveList.length() >> 1;
-				int reduction = 1; //+ (movesSearched > halfSize) /*+ (movesSearched > (halfSize >> 1) + halfSize)*/;
+			int reduction = 0;
+			// LMR/Late Move Reductions
+			if (depth >= 2 && movesSearched >= 2) {
+				reduction = lmrTable[depth][movesSearched];
 
-				// Try reduced null window search
-				result = alphaBeta(board, depth - 1 - reduction, plys + 1,
-								   -alpha - 1, -alpha, // NULL WINDOW
-								   0, searchPath, killerMoves, historyTable,
-								   searchValues, nullMoveAllowed);
-
-				// If it beat alpha, re-search at full depth
-				if (-result.score > alpha) {
-					result = alphaBeta(board, depth - 1 + extension, plys + 1,
-									   -beta, -alpha, // Still null window <<< FULL WINDOW, null might be slowing
-									   0, searchPath, killerMoves, historyTable,
-									   searchValues, nullMoveAllowed);
+				// Reduce less for captures (SEE already ordered them well)
+				if (move & MOVE_FLAG_CAPTURE) {
+					reduction -= 1;
 				}
 
-				// TODO: Test when better eval
-				// If STILL beat alpha, do full window search
-				//				if (-result.score > alpha) {
-				//					result = alphaBeta(board, depth - 1, plys + 1,
-				//									   -beta, -alpha,  // FULL WINDOW
-				//									   0, searchPath, killerMoves, historyTable,
-				//									   extensionsUsed + extension);
-				//				}
-			} else {
-				// Non-LMR moves: null window then full if needed
+				// Reduce less if in check or giving check
+				if (isKingInCheck(board, board.turn) ||
+					isKingInCheck(board, -board.turn)) {
+					reduction -= 1;
+				}
+			}
+
+			// Try reduced null window search
+			result = alphaBeta(board, depth - 1 - reduction, plys + 1,
+							   -alpha - 1, -alpha, // NULL WINDOW
+							   0, searchPath, killerMoves, historyTable,
+							   searchValues, nullMoveAllowed);
+
+			// If it beat alpha, re-search at full depth
+			if (-result.score > alpha && reduction > 0) {
 				result = alphaBeta(board, depth - 1 + extension, plys + 1,
-								   -alpha - 1, -alpha, // NULL WINDOW
+								   -alpha - 1, -alpha, // Still null window <<< FULL WINDOW, null might be slowing
 								   0, searchPath, killerMoves, historyTable,
 								   searchValues, nullMoveAllowed);
+			}
 
-				// Beat alpha? Re-search with full window
-				if (-result.score > alpha /*&& -result.score < beta*/) {
-					result = alphaBeta(board, depth - 1 + extension, plys + 1,
-									   -beta, -alpha, // FULL WINDOW
-									   0, searchPath, killerMoves, historyTable,
-									   searchValues, nullMoveAllowed);
-				}
+			if (-result.score > alpha) {
+				result = alphaBeta(board, depth - 1 + extension, plys + 1,
+								   -beta, -alpha, // Full window
+								   0, searchPath, killerMoves, historyTable,
+								   searchValues, nullMoveAllowed);
 			}
 		}
 

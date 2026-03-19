@@ -17,7 +17,7 @@
 
 #include "Evaluation/bench.h"
 
-#define VERSION "V23.0_NNUE_SearchImprovements-LMR"
+#define VERSION "V23.1_NNUE_SearchImprovements"
 
 bool debug = false;
 Board currentBoard;

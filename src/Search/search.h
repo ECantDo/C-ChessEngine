@@ -285,7 +285,7 @@ inline void initLmrTable() {
 	for (int depth = 0; depth < MAX_PLY; depth++) {
 		for (int movesSearched = 0; movesSearched < MAX_PLY; movesSearched++) {
 			lmrTable[depth][movesSearched] = std::max(0, static_cast<int>(
-														  0.75 + std::log(depth) * std::log(movesSearched) / 2.0
+														  0.75 + std::log(depth) * std::log(movesSearched) / 3.0
 													  ));
 		}
 	}
