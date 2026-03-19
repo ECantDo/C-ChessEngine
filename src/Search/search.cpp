@@ -257,6 +257,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		selectNextBestMove(moveList, moveScores, i, (int) moveList.length());
 		Move move = moveList.get(i);
 		UndoInfo undo = board.makeMove(move);
+
 		/*
 		if (movesSearched > 0 &&
 			depth <= 2 &&
@@ -307,14 +308,14 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 				result = alphaBeta(board, depth - 1 - reduction, plys + 1,
 								   -alpha - 1, -alpha, // NULL WINDOW
 								   0, searchPath, killerMoves, historyTable,
-								   searchValues);
+								   searchValues, nullMoveAllowed);
 
 				// If it beat alpha, re-search at full depth
 				if (-result.score > alpha) {
 					result = alphaBeta(board, depth - 1 + extension, plys + 1,
 									   -beta, -alpha, // Still null window <<< FULL WINDOW, null might be slowing
 									   0, searchPath, killerMoves, historyTable,
-									   searchValues);
+									   searchValues, nullMoveAllowed);
 				}
 
 				// TODO: Test when better eval
@@ -330,14 +331,14 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 				result = alphaBeta(board, depth - 1 + extension, plys + 1,
 								   -alpha - 1, -alpha, // NULL WINDOW
 								   0, searchPath, killerMoves, historyTable,
-								   searchValues);
+								   searchValues, nullMoveAllowed);
 
 				// Beat alpha? Re-search with full window
 				if (-result.score > alpha /*&& -result.score < beta*/) {
 					result = alphaBeta(board, depth - 1 + extension, plys + 1,
 									   -beta, -alpha, // FULL WINDOW
 									   0, searchPath, killerMoves, historyTable,
-									   searchValues);
+									   searchValues, nullMoveAllowed);
 				}
 			}
 		}
@@ -423,7 +424,8 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 	}
 }
 
-BestMove selectMove(Board &board, int maxDepth, long timeLimitMS, SearchValues &searchValues, int numThreads, uint64_t maxNodes) {
+BestMove selectMove(Board &board, int maxDepth, long timeLimitMS, SearchValues &searchValues, int numThreads,
+					uint64_t maxNodes) {
 	stopSearch = false;
 	g_timeLimitMS = timeLimitMS;
 	g_searchStart = std::chrono::steady_clock::now();

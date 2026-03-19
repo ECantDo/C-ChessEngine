@@ -17,7 +17,7 @@
 
 #include "Evaluation/bench.h"
 
-#define VERSION "V22.0_NNUE_Attempt2"
+#define VERSION "V23.0_NNUE_SearchImprovements-LMR"
 
 bool debug = false;
 Board currentBoard;
@@ -267,6 +267,8 @@ void startSearch(const std::string &goCmd) {
 void try_init_nnue(const std::string &filename) {
 	if (!initNNUE(filename.c_str())) {
 		std::cout << "info string No NNUE network found, using classical evaluation" << std::endl;
+	} else {
+		std::cout << "info string NNUE network found, NNUE" << std::endl;
 	}
 }
 
@@ -281,6 +283,7 @@ int main() {
 	Zobrist::init();
 	globalTT.clear();
 	initMagicBitboards();
+	initLmrTable();
 
 	/* Try to load NNUE network */
 	try_init_nnue();

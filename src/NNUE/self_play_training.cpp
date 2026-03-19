@@ -124,7 +124,7 @@ void generateTrainingData(const char *outputFile, int numGames, int searchNodes)
 		bool adjudicated = false;
 		int adjudicatedScore = 0;
 
-		while (moveCount < 200) {
+		while (moveCount < 400) {
 			MoveList moves;
 			generateLegalMoves(board, moves);
 
