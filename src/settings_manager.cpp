@@ -12,6 +12,8 @@
 #include "Search/search.h"
 #include "Search/transposition_table.h"
 
+EngineSettings g_engineSettings;
+
 void printOptions() {
 	std::cout
 			<< "option name Hash type spin default 256 min 4 max 4096" << std::endl
