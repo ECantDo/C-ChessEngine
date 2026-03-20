@@ -146,12 +146,24 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		return qSearchRes;
 	}
 
+	int staticEval = evaluateBoardNNUE(board);
+
+	// Razoring
+	if (!inCheck && depth <= 3) {
+		if (staticEval < alpha - 400 - 250 * depth * depth) {
+			searchPath.pop_back();
+			BestMove qResult = quiescenceSearch(board, alpha, beta, searchValues);
+			qResult.selDepth += plys;
+			return qResult;
+		}
+	}
+
 	// ============ Reverse Futility Pruning ============
 	// How good is my static eval? Is it so far above beta that even if I make a bad move, I will still beat beta
 	if (depth <= 3 &&
 		!inCheck &&
 		abs(beta) < MATE_SCORE - 100) {
-		int staticEval = evaluateBoardNNUE(board);
+		// int staticEval = evaluateBoardNNUE(board);
 		int margin;
 		// TODO: Replace with function
 		switch (depth) {
@@ -238,6 +250,20 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 	for (int i = 0; i < moveList.length(); i++) {
 		selectNextBestMove(moveList, moveScores, i, static_cast<int>(moveList.length()));
 		Move move = moveList.get(i);
+
+		// Futility Pruning
+		if (movesSearched > 0 && !inCheck && depth <= 8 &&
+			!(move & MOVE_FLAG_CAPTURE) &&
+			!(move & MOVE_FLAG_PROMOTION) &&
+			abs(alpha) < MATE_SCORE - 100) {
+			const int lmrDepth = std::max(0, depth - lmrTable[depth][movesSearched]);
+			// int staticEval = evaluateBoardNNUE(board);
+			if (staticEval + 100 + 120 * lmrDepth <= alpha) {
+				continue;
+			}
+		}
+
+
 		UndoInfo undo = board.makeMove(move);
 
 		// Check legality - is our king now in check?
@@ -247,32 +273,6 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 			continue; // illegal move, skip
 		}
 
-		/*
-		if (movesSearched > 0 &&
-			depth <= 2 &&
-			!inCheck &&
-			!(move & MOVE_FLAG_CAPTURE) &&
-			!isKingInCheck(board, board.turn) &&  // Not in check after move
-			alpha < MATE_SCORE - 100) {
-
-			int staticEval = evaluateBoard(board);  // From opponent's perspective
-			int futilityMargin = (depth == 1) ? 150 : 300;
-
-			// If opponent's position + margin is still worse than our alpha
-			if (-staticEval + futilityMargin <= alpha) {
-				board.unmakeMove(move, undo);
-				movesSearched++;
-				continue; // Skip searching this move
-			}
-		}
-		 */
-
-
-		// Since using genPseudoLegal(), only actually checking when it's for a move I have made
-		//        if (isKingInCheck(board, -board.turn)) {
-		//            board.unmakeMove(move, undo);
-		//            continue;
-		//        }
 
 		BestMove result;
 

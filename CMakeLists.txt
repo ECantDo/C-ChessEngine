@@ -48,6 +48,8 @@ add_executable(chessEngine
 		src/NNUE/self_play_training.cpp
 		src/NNUE/self_play_training.h
 		src/Evaluation/bench.h
+		src/settings_manager.cpp
+		src/settings_manager.h
 )
 
 add_executable(testChessEngine tests/test_all.cpp

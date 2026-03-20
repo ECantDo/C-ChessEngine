@@ -15,9 +15,10 @@
 #include <atomic>
 #include <mutex>
 
+#include "settings_manager.h"
 #include "Evaluation/bench.h"
 
-#define VERSION "V23.3_SPEED"
+#define VERSION "V23.4_Razor-FP"
 
 bool debug = false;
 Board currentBoard;
@@ -31,11 +32,12 @@ Move ponderMove = 0;
 /*-------------------------------------------------------------
  * Function to run the search in a separate thread
  *-------------------------------------------------------------*/
-void runSearchThread(Board board, long timeLimit, long depth, int numThreads, uint64_t maxNodes) {
+void runSearchThread(Board board, const long timeLimit, const int depth, const int numThreads,
+					 const uint64_t maxNodes) {
 	globalTT.overwrites = 0;
 	globalTT.overwriteSameKey = 0;
 
-	std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
+	const std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
 
 	SearchValues searchValues{0, 0};
 	BestMove bm = selectMove(board, depth, timeLimit, searchValues, numThreads, maxNodes);
@@ -64,7 +66,7 @@ void runSearchThread(Board board, long timeLimit, long depth, int numThreads, ui
 				<< std::endl << std::flush;
 	}
 
-	long long elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+	const long long elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
 		std::chrono::steady_clock::now() - startTime).count();
 
 	std::string score;
@@ -261,22 +263,10 @@ void startSearch(const std::string &goCmd) {
 		const auto end = std::chrono::high_resolution_clock::now();
 		const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 		std::cout << totalNodes << std::endl << std::flush;
-		//std::cout << "Took " << duration << " ms"
-		//<< " nps " << (duration > 0 ? (totalNodes * 1000 / duration) : 0)
-		//<< std::endl << std::flush;
+		std::cout << "Took " << duration << " ms"
+				<< " nps " << (duration > 0 ? (totalNodes * 1000 / duration) : 0)
+				<< std::endl << std::flush;
 	}
-}
-
-void try_init_nnue(const std::string &filename) {
-	if (!initNNUE(filename.c_str())) {
-		std::cout << "info string No NNUE network found, using classical evaluation" << std::endl;
-	} else {
-		std::cout << "info string NNUE network found, NNUE" << std::endl;
-	}
-}
-
-void try_init_nnue() {
-	try_init_nnue("quantised.bin");
 }
 
 /*-------------------------------------------------------------
@@ -314,12 +304,7 @@ int main() {
 			std::cout << std::format("id name ECanBot-{}\n", VERSION) << std::flush;
 			std::cout << "id author ECanDo\n" << std::flush;
 
-			/* Advertise pondering support */
-			std::cout << "option name Ponder type check default false\n" << std::flush;
-			std::cout << "option name EvalFile type string default quantised.bin\n" << std::flush;
-
-			/* Future options: */
-			// std::cout << "option name Hash type spin default 16 min 1 max 4096\n";
+			printOptions();
 
 			std::cout << "uciok\n" << std::flush;
 		} else if (line == "isready") {
@@ -329,24 +314,15 @@ int main() {
 			}
 			std::cout << "readyok\n" << std::flush;
 		} else if (line.rfind("setoption", 0) == 0) {
-			std::stringstream ss(line);
-			std::string tok, name, value;
+			stopSearch = true;
+			if (mainSearchThread.joinable()) {
+				mainSearchThread.join();
+			}
 
-			ss >> tok; /* "setoption" */
-			ss >> tok; /* "name"      */
-			ss >> name; /* option name */
-			ss >> tok; /* "value"     */
-			ss >> value; /* option value */
+			setOptionHandler(line);
 
-			if (name == "EvalFile") {
-				stopSearch = true;
-				if (mainSearchThread.joinable()) {
-					mainSearchThread.join();
-				}
-				try_init_nnue(value);
-				if (g_nnueLoaded) {
-					initAccumulator(currentBoard, g_nnueAccumulator);
-				}
+			if (g_nnueLoaded) {
+				initAccumulator(currentBoard, g_nnueAccumulator);
 			}
 		} else if (line == "ucinewgame") {
 			/* Stop any running search */
@@ -407,31 +383,6 @@ int main() {
 			}
 
 			generateTrainingData(filename.c_str(), numGames, search_nodes);
-		} else if (line.rfind("reload", 0) == 0) {
-			std::stringstream ss(line);
-			std::string cmd;
-			std::string filename = "quantised.bin";
-
-			ss >> cmd; /* "selfplay" */
-
-			/* Parse optional parameters */
-			std::string tok;
-			while (ss >> tok) {
-				if (tok == "file") ss >> filename;
-			}
-
-			/* Stop any running search */
-			stopSearch = true;
-			if (mainSearchThread.joinable()) {
-				mainSearchThread.join();
-			}
-			currentBoard = Board();
-			if (g_nnueLoaded) {
-				initAccumulator(currentBoard, g_nnueAccumulator);
-			}
-			globalTT.clear();
-			ponderMove = 0;
-			try_init_nnue(filename);
 		} else if (line == "bench") {
 			/* Stop any running search first */
 			stopSearch = true;

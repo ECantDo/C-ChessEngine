@@ -11,6 +11,15 @@ NNUEParameters g_nnueParams;
 NNUEAccumulator g_nnueAccumulator; // TODO: Make per thread
 bool g_nnueLoaded = false;
 
+
+void try_init_nnue(const std::string &filename) {
+	if (!initNNUE(filename.c_str())) {
+		std::cout << "info string No NNUE network found, using classical evaluation" << std::endl;
+	} else {
+		std::cout << "info string NNUE network found, NNUE" << std::endl;
+	}
+}
+
 // Load network from binary file
 bool initNNUE(const char *filename) {
 	static_assert(NNUE_HIDDEN_SIZE % 16 == 0);

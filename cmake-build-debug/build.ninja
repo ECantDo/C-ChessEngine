@@ -161,6 +161,13 @@ build CMakeFiles/chessEngine.dir/src/NNUE/self_play_training.cpp.o: CXX_COMPILER
   OBJECT_DIR = CMakeFiles/chessEngine.dir
   OBJECT_FILE_DIR = CMakeFiles/chessEngine.dir/src/NNUE
 
+build CMakeFiles/chessEngine.dir/src/settings_manager.cpp.o: CXX_COMPILER__chessEngine_unscanned_Debug /home/ecando/Documents/CLionProjects/chessEngine/src/settings_manager.cpp || cmake_object_order_depends_target_chessEngine
+  DEP_FILE = CMakeFiles/chessEngine.dir/src/settings_manager.cpp.o.d
+  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always -O3 -mavx2 -march=native
+  INCLUDES = -I/home/ecando/Documents/CLionProjects/chessEngine/src
+  OBJECT_DIR = CMakeFiles/chessEngine.dir
+  OBJECT_FILE_DIR = CMakeFiles/chessEngine.dir/src
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target chessEngine
@@ -169,7 +176,7 @@ build CMakeFiles/chessEngine.dir/src/NNUE/self_play_training.cpp.o: CXX_COMPILER
 #############################################
 # Link the executable chessEngine
 
-build chessEngine: CXX_EXECUTABLE_LINKER__chessEngine_Debug CMakeFiles/chessEngine.dir/src/main.cpp.o CMakeFiles/chessEngine.dir/src/Board/board.cpp.o CMakeFiles/chessEngine.dir/src/Moves/generate_moves.cpp.o CMakeFiles/chessEngine.dir/src/Board/move.cpp.o CMakeFiles/chessEngine.dir/src/Board/piece.cpp.o CMakeFiles/chessEngine.dir/src/Search/search.cpp.o CMakeFiles/chessEngine.dir/src/Board/zobrist_hash.cpp.o CMakeFiles/chessEngine.dir/src/Search/transposition_table.cpp.o CMakeFiles/chessEngine.dir/src/Evaluation/evaluation.cpp.o CMakeFiles/chessEngine.dir/src/Search/quiescence_search.cpp.o CMakeFiles/chessEngine.dir/tests/MoveGeneration/test_move_generation.cpp.o CMakeFiles/chessEngine.dir/src/Evaluation/opening_book.cpp.o CMakeFiles/chessEngine.dir/src/Moves/magicBitboards.cpp.o CMakeFiles/chessEngine.dir/src/Moves/move_list.cpp.o CMakeFiles/chessEngine.dir/src/NNUE/nnue_eval.cpp.o CMakeFiles/chessEngine.dir/src/NNUE/self_play_training.cpp.o
+build chessEngine: CXX_EXECUTABLE_LINKER__chessEngine_Debug CMakeFiles/chessEngine.dir/src/main.cpp.o CMakeFiles/chessEngine.dir/src/Board/board.cpp.o CMakeFiles/chessEngine.dir/src/Moves/generate_moves.cpp.o CMakeFiles/chessEngine.dir/src/Board/move.cpp.o CMakeFiles/chessEngine.dir/src/Board/piece.cpp.o CMakeFiles/chessEngine.dir/src/Search/search.cpp.o CMakeFiles/chessEngine.dir/src/Board/zobrist_hash.cpp.o CMakeFiles/chessEngine.dir/src/Search/transposition_table.cpp.o CMakeFiles/chessEngine.dir/src/Evaluation/evaluation.cpp.o CMakeFiles/chessEngine.dir/src/Search/quiescence_search.cpp.o CMakeFiles/chessEngine.dir/tests/MoveGeneration/test_move_generation.cpp.o CMakeFiles/chessEngine.dir/src/Evaluation/opening_book.cpp.o CMakeFiles/chessEngine.dir/src/Moves/magicBitboards.cpp.o CMakeFiles/chessEngine.dir/src/Moves/move_list.cpp.o CMakeFiles/chessEngine.dir/src/NNUE/nnue_eval.cpp.o CMakeFiles/chessEngine.dir/src/NNUE/self_play_training.cpp.o CMakeFiles/chessEngine.dir/src/settings_manager.cpp.o
   FLAGS = -g
   OBJECT_DIR = CMakeFiles/chessEngine.dir
   POST_BUILD = :
