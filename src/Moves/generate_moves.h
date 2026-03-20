@@ -20,8 +20,9 @@ constexpr size_t MAX_MOVES = 256;
  * No return; pass in the array by reference to avoid copying the array
  * @param board The board position to generate moves for
  * @param moveList The array to output the moves into
+ * @param legalOnly
  */
-void generateLegalMoves(Board &board, MoveList &moveList, bool capturesOnly = false);
+void generateMoves(Board &board, MoveList &moveList, bool legalOnly = true, bool capturesOnly = false);
 
 // HELPER
 bool isEnemyPiece(const Board &board, int square, int myColor);
@@ -30,14 +31,14 @@ bool isEmpty(const Board &board, int square);
 
 bool isValidSquare(int square);
 
-inline bool isSquareAttacked(const Board &board, int square, int attackingColor) {
-	if (square < 0 || square > 63){
+inline bool isSquareAttacked(const Board &board, const int square, const int attackingColor) {
+	if (square < 0 || square > 63) {
 		std::cerr << "Trying to check if square " << square << " is attacked" << std::endl << std::flush;
 		return false;
 	}
 
 	// Pre-calculate once
-	uint64_t blockers = board.getBlackBitboard() | board.getWhiteBitboard();
+	const uint64_t blockers = board.getBlackBitboard() | board.getWhiteBitboard();
 
 	uint64_t enemyRooks, enemyBishops, enemyQueens, enemyKnights, enemyKing, enemyPawns;
 
@@ -69,10 +70,10 @@ inline bool isSquareAttacked(const Board &board, int square, int attackingColor)
 	if (enemyKing & KING_ATTACKS[square]) return true;
 
 	// 4. Sliding pieces
-	uint64_t rookAttacks = getRookAttacks(square, blockers);
+	const uint64_t rookAttacks = getRookAttacks(square, blockers);
 	if (rookAttacks & (enemyRooks | enemyQueens)) return true;
 
-	uint64_t bishopAttacks = getBishopAttacks(square, blockers);
+	const uint64_t bishopAttacks = getBishopAttacks(square, blockers);
 	if (bishopAttacks & (enemyBishops | enemyQueens)) return true;
 
 	return false;
