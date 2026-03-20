@@ -518,7 +518,7 @@ std::string Board::generateFen() const {
 //======================================================================================================================
 
 /* Takes numeric file (0-7) and rank (0-7) */
-int getBoardIndex(int file, int rank) {
+int getBoardIndex(const int file, const int rank) {
 	if (file < 0 || file > 7 || rank < 0 || rank > 7)
 		return -1;
 	return rank * 8 + file; /* RANK times 8, plus FILE */
@@ -532,8 +532,8 @@ int getBoardIndex(char file, char rank) {
 std::string getBoardPosition(int index) {
 	if (index < 0 || index >= 64) return "";
 
-	int rank = index >> 3; // index / 8;
-	int file = index & 7; // index % 8;
+	const int rank = index >> 3; // index / 8;
+	const int file = index & 7; // index % 8;
 
 	return std::string()
 		   + static_cast<char>(file + 'a')
@@ -543,7 +543,7 @@ std::string getBoardPosition(int index) {
 // =====================================================================================================================
 // Move making
 // =====================================================================================================================
-UndoInfo Board::makeMove(Move m) {
+UndoInfo Board::makeMove(const Move m) {
 	const int fromLocation = getMoveFrom(m);
 	const int toLocation = getMoveTo(m);
 	const int flags = getMoveFlags(m);
@@ -557,21 +557,21 @@ UndoInfo Board::makeMove(Move m) {
 	const bool isEnPassant = (flags & MOVE_FLAG_EN_PASSANT) != 0;
 
 	// Save undo info
-	UndoInfo undoInfo = {
+	const UndoInfo undoInfo = {
 		.capturedPiece = isEnPassant
 							 ? (turn == 1 ? BLACK_PAWN : WHITE_PAWN)
 							 : capturedPiece,
-		.enPassantSquare = (int8_t) enPassantSquare,
+		.enPassantSquare = static_cast<int8_t>(enPassantSquare),
 		.castlingRights = castling,
-		.halfMoveClock = (uint8_t) halfMoveClock,
+		.halfMoveClock = static_cast<uint8_t>(halfMoveClock),
 		.zobristHash = zobristHash,
 	};
 
 	if (g_nnueLoaded) {
 		// EP capture
 		if (isEnPassant) {
-			int captureSquare = toLocation + (turn == 1 ? -8 : 8);
-			Piece capturedPawn = undoInfo.capturedPiece; // Will be pawn since isEnPassant is true
+			const int captureSquare = toLocation + (turn == 1 ? -8 : 8);
+			const Piece capturedPawn = undoInfo.capturedPiece; // Will be pawn since isEnPassant is true
 			updateAccumulatorRemove(capturedPawn, captureSquare, g_nnueAccumulator);
 		} else if (isPiece(capturedPiece)) {
 			updateAccumulatorRemove(capturedPiece, toLocation, g_nnueAccumulator);
@@ -695,8 +695,8 @@ UndoInfo Board::makeMove(Move m) {
 	enPassantSquare = -1;
 	// Check for double pawn push
 	if (thisPiece == WHITE_PAWN || thisPiece == BLACK_PAWN) {
-		int rankFrom = fromLocation >> 3;
-		int rankTo = toLocation >> 3;
+		const int rankFrom = fromLocation >> 3;
+		const int rankTo = toLocation >> 3;
 		if (abs(rankFrom - rankTo) == 2) {
 			enPassantSquare = (fromLocation + toLocation) >> 1;
 		}
@@ -725,7 +725,7 @@ UndoInfo Board::makeMove(Move m) {
 
 	// ========== UPDATE TURN AND MOVE COUNTER ==========
 
-	turn = (int8_t) -turn;
+	turn = static_cast<int8_t>(-turn);
 
 	// Flip side to move in zobrist
 	zobristHash ^= Zobrist::sideToMove;
@@ -738,10 +738,10 @@ UndoInfo Board::makeMove(Move m) {
 	return undoInfo;
 }
 
-void Board::unmakeMove(Move m, const UndoInfo &undoInfo) {
-	int fromLocation = getMoveFrom(m);
-	int toLocation = getMoveTo(m);
-	int flags = getMoveFlags(m);
+void Board::unmakeMove(const Move m, const UndoInfo &undoInfo) {
+	const int fromLocation = getMoveFrom(m);
+	const int toLocation = getMoveTo(m);
+	const int flags = getMoveFlags(m);
 
 	// ==== NNUE Updates ====
 	if (g_nnueLoaded) {

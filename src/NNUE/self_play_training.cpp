@@ -102,14 +102,14 @@ void generateTrainingData(const char *outputFile, int numGames, int searchNodes)
 
 			for (int i = 0; i < openingMoves; i++) {
 				MoveList moveList;
-				generateLegalMoves(board, moveList);
+				generateMoves(board, moveList);
 				if (moveList.empty()) {
 					validStart = false;
 					break;
 				}
 
 				gamePath.push_back(board.zobristHash);
-				std::uniform_int_distribution<int> moveDist(0, (int) moveList.length() - 1);
+				std::uniform_int_distribution<int> moveDist(0, static_cast<int>(moveList.length()) - 1);
 				board.makeMove(moveList.get(moveDist(rng)));
 			}
 
@@ -126,7 +126,7 @@ void generateTrainingData(const char *outputFile, int numGames, int searchNodes)
 
 		while (moveCount < 400) {
 			MoveList moves;
-			generateLegalMoves(board, moves);
+			generateMoves(board, moves);
 
 			if (moves.empty()) break;
 			if (hasInsufficientMaterial(board)) break;
@@ -174,7 +174,7 @@ void generateTrainingData(const char *outputFile, int numGames, int searchNodes)
 			whiteResult = (adjudicatedScore > 0) ? 1.0f : 0.0f;
 		} else {
 			MoveList finalMoves;
-			generateLegalMoves(board, finalMoves);
+			generateMoves(board, finalMoves);
 
 			if (finalMoves.empty() && isKingInCheck(board, board.turn)) {
 				// board.turn is the side that was checkmated

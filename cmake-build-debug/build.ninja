@@ -200,8 +200,43 @@ build CMakeFiles/testChessEngine.dir/tests/Board/test_board.cpp.o: CXX_COMPILER_
   OBJECT_DIR = CMakeFiles/testChessEngine.dir
   OBJECT_FILE_DIR = CMakeFiles/testChessEngine.dir/tests/Board
 
+build CMakeFiles/testChessEngine.dir/tests/Board/test_moves.cpp.o: CXX_COMPILER__testChessEngine_unscanned_Debug /home/ecando/Documents/CLionProjects/chessEngine/tests/Board/test_moves.cpp || cmake_object_order_depends_target_testChessEngine
+  DEP_FILE = CMakeFiles/testChessEngine.dir/tests/Board/test_moves.cpp.o.d
+  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always -O3 -mavx2 -march=native
+  INCLUDES = -I/home/ecando/Documents/CLionProjects/chessEngine/src
+  OBJECT_DIR = CMakeFiles/testChessEngine.dir
+  OBJECT_FILE_DIR = CMakeFiles/testChessEngine.dir/tests/Board
+
+build CMakeFiles/testChessEngine.dir/tests/MoveGeneration/test_move_generation.cpp.o: CXX_COMPILER__testChessEngine_unscanned_Debug /home/ecando/Documents/CLionProjects/chessEngine/tests/MoveGeneration/test_move_generation.cpp || cmake_object_order_depends_target_testChessEngine
+  DEP_FILE = CMakeFiles/testChessEngine.dir/tests/MoveGeneration/test_move_generation.cpp.o.d
+  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always -O3 -mavx2 -march=native
+  INCLUDES = -I/home/ecando/Documents/CLionProjects/chessEngine/src
+  OBJECT_DIR = CMakeFiles/testChessEngine.dir
+  OBJECT_FILE_DIR = CMakeFiles/testChessEngine.dir/tests/MoveGeneration
+
+build CMakeFiles/testChessEngine.dir/tests/Board/test_zobrist.cpp.o: CXX_COMPILER__testChessEngine_unscanned_Debug /home/ecando/Documents/CLionProjects/chessEngine/tests/Board/test_zobrist.cpp || cmake_object_order_depends_target_testChessEngine
+  DEP_FILE = CMakeFiles/testChessEngine.dir/tests/Board/test_zobrist.cpp.o.d
+  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always -O3 -mavx2 -march=native
+  INCLUDES = -I/home/ecando/Documents/CLionProjects/chessEngine/src
+  OBJECT_DIR = CMakeFiles/testChessEngine.dir
+  OBJECT_FILE_DIR = CMakeFiles/testChessEngine.dir/tests/Board
+
 build CMakeFiles/testChessEngine.dir/src/Board/board.cpp.o: CXX_COMPILER__testChessEngine_unscanned_Debug /home/ecando/Documents/CLionProjects/chessEngine/src/Board/board.cpp || cmake_object_order_depends_target_testChessEngine
   DEP_FILE = CMakeFiles/testChessEngine.dir/src/Board/board.cpp.o.d
+  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always -O3 -mavx2 -march=native
+  INCLUDES = -I/home/ecando/Documents/CLionProjects/chessEngine/src
+  OBJECT_DIR = CMakeFiles/testChessEngine.dir
+  OBJECT_FILE_DIR = CMakeFiles/testChessEngine.dir/src/Board
+
+build CMakeFiles/testChessEngine.dir/src/Moves/generate_moves.cpp.o: CXX_COMPILER__testChessEngine_unscanned_Debug /home/ecando/Documents/CLionProjects/chessEngine/src/Moves/generate_moves.cpp || cmake_object_order_depends_target_testChessEngine
+  DEP_FILE = CMakeFiles/testChessEngine.dir/src/Moves/generate_moves.cpp.o.d
+  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always -O3 -mavx2 -march=native
+  INCLUDES = -I/home/ecando/Documents/CLionProjects/chessEngine/src
+  OBJECT_DIR = CMakeFiles/testChessEngine.dir
+  OBJECT_FILE_DIR = CMakeFiles/testChessEngine.dir/src/Moves
+
+build CMakeFiles/testChessEngine.dir/src/Board/move.cpp.o: CXX_COMPILER__testChessEngine_unscanned_Debug /home/ecando/Documents/CLionProjects/chessEngine/src/Board/move.cpp || cmake_object_order_depends_target_testChessEngine
+  DEP_FILE = CMakeFiles/testChessEngine.dir/src/Board/move.cpp.o.d
   FLAGS = -g -std=gnu++20 -fdiagnostics-color=always -O3 -mavx2 -march=native
   INCLUDES = -I/home/ecando/Documents/CLionProjects/chessEngine/src
   OBJECT_DIR = CMakeFiles/testChessEngine.dir
@@ -214,48 +249,6 @@ build CMakeFiles/testChessEngine.dir/src/Board/piece.cpp.o: CXX_COMPILER__testCh
   OBJECT_DIR = CMakeFiles/testChessEngine.dir
   OBJECT_FILE_DIR = CMakeFiles/testChessEngine.dir/src/Board
 
-build CMakeFiles/testChessEngine.dir/tests/Board/test_moves.cpp.o: CXX_COMPILER__testChessEngine_unscanned_Debug /home/ecando/Documents/CLionProjects/chessEngine/tests/Board/test_moves.cpp || cmake_object_order_depends_target_testChessEngine
-  DEP_FILE = CMakeFiles/testChessEngine.dir/tests/Board/test_moves.cpp.o.d
-  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always -O3 -mavx2 -march=native
-  INCLUDES = -I/home/ecando/Documents/CLionProjects/chessEngine/src
-  OBJECT_DIR = CMakeFiles/testChessEngine.dir
-  OBJECT_FILE_DIR = CMakeFiles/testChessEngine.dir/tests/Board
-
-build CMakeFiles/testChessEngine.dir/src/Board/zobrist_hash.cpp.o: CXX_COMPILER__testChessEngine_unscanned_Debug /home/ecando/Documents/CLionProjects/chessEngine/src/Board/zobrist_hash.cpp || cmake_object_order_depends_target_testChessEngine
-  DEP_FILE = CMakeFiles/testChessEngine.dir/src/Board/zobrist_hash.cpp.o.d
-  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always -O3 -mavx2 -march=native
-  INCLUDES = -I/home/ecando/Documents/CLionProjects/chessEngine/src
-  OBJECT_DIR = CMakeFiles/testChessEngine.dir
-  OBJECT_FILE_DIR = CMakeFiles/testChessEngine.dir/src/Board
-
-build CMakeFiles/testChessEngine.dir/src/Board/move.cpp.o: CXX_COMPILER__testChessEngine_unscanned_Debug /home/ecando/Documents/CLionProjects/chessEngine/src/Board/move.cpp || cmake_object_order_depends_target_testChessEngine
-  DEP_FILE = CMakeFiles/testChessEngine.dir/src/Board/move.cpp.o.d
-  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always -O3 -mavx2 -march=native
-  INCLUDES = -I/home/ecando/Documents/CLionProjects/chessEngine/src
-  OBJECT_DIR = CMakeFiles/testChessEngine.dir
-  OBJECT_FILE_DIR = CMakeFiles/testChessEngine.dir/src/Board
-
-build CMakeFiles/testChessEngine.dir/src/Moves/magicBitboards.cpp.o: CXX_COMPILER__testChessEngine_unscanned_Debug /home/ecando/Documents/CLionProjects/chessEngine/src/Moves/magicBitboards.cpp || cmake_object_order_depends_target_testChessEngine
-  DEP_FILE = CMakeFiles/testChessEngine.dir/src/Moves/magicBitboards.cpp.o.d
-  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always -O3 -mavx2 -march=native
-  INCLUDES = -I/home/ecando/Documents/CLionProjects/chessEngine/src
-  OBJECT_DIR = CMakeFiles/testChessEngine.dir
-  OBJECT_FILE_DIR = CMakeFiles/testChessEngine.dir/src/Moves
-
-build CMakeFiles/testChessEngine.dir/src/Moves/generate_moves.cpp.o: CXX_COMPILER__testChessEngine_unscanned_Debug /home/ecando/Documents/CLionProjects/chessEngine/src/Moves/generate_moves.cpp || cmake_object_order_depends_target_testChessEngine
-  DEP_FILE = CMakeFiles/testChessEngine.dir/src/Moves/generate_moves.cpp.o.d
-  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always -O3 -mavx2 -march=native
-  INCLUDES = -I/home/ecando/Documents/CLionProjects/chessEngine/src
-  OBJECT_DIR = CMakeFiles/testChessEngine.dir
-  OBJECT_FILE_DIR = CMakeFiles/testChessEngine.dir/src/Moves
-
-build CMakeFiles/testChessEngine.dir/tests/MoveGeneration/test_move_generation.cpp.o: CXX_COMPILER__testChessEngine_unscanned_Debug /home/ecando/Documents/CLionProjects/chessEngine/tests/MoveGeneration/test_move_generation.cpp || cmake_object_order_depends_target_testChessEngine
-  DEP_FILE = CMakeFiles/testChessEngine.dir/tests/MoveGeneration/test_move_generation.cpp.o.d
-  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always -O3 -mavx2 -march=native
-  INCLUDES = -I/home/ecando/Documents/CLionProjects/chessEngine/src
-  OBJECT_DIR = CMakeFiles/testChessEngine.dir
-  OBJECT_FILE_DIR = CMakeFiles/testChessEngine.dir/tests/MoveGeneration
-
 build CMakeFiles/testChessEngine.dir/src/Search/search.cpp.o: CXX_COMPILER__testChessEngine_unscanned_Debug /home/ecando/Documents/CLionProjects/chessEngine/src/Search/search.cpp || cmake_object_order_depends_target_testChessEngine
   DEP_FILE = CMakeFiles/testChessEngine.dir/src/Search/search.cpp.o.d
   FLAGS = -g -std=gnu++20 -fdiagnostics-color=always -O3 -mavx2 -march=native
@@ -263,12 +256,12 @@ build CMakeFiles/testChessEngine.dir/src/Search/search.cpp.o: CXX_COMPILER__test
   OBJECT_DIR = CMakeFiles/testChessEngine.dir
   OBJECT_FILE_DIR = CMakeFiles/testChessEngine.dir/src/Search
 
-build CMakeFiles/testChessEngine.dir/tests/Board/test_zobrist.cpp.o: CXX_COMPILER__testChessEngine_unscanned_Debug /home/ecando/Documents/CLionProjects/chessEngine/tests/Board/test_zobrist.cpp || cmake_object_order_depends_target_testChessEngine
-  DEP_FILE = CMakeFiles/testChessEngine.dir/tests/Board/test_zobrist.cpp.o.d
+build CMakeFiles/testChessEngine.dir/src/Board/zobrist_hash.cpp.o: CXX_COMPILER__testChessEngine_unscanned_Debug /home/ecando/Documents/CLionProjects/chessEngine/src/Board/zobrist_hash.cpp || cmake_object_order_depends_target_testChessEngine
+  DEP_FILE = CMakeFiles/testChessEngine.dir/src/Board/zobrist_hash.cpp.o.d
   FLAGS = -g -std=gnu++20 -fdiagnostics-color=always -O3 -mavx2 -march=native
   INCLUDES = -I/home/ecando/Documents/CLionProjects/chessEngine/src
   OBJECT_DIR = CMakeFiles/testChessEngine.dir
-  OBJECT_FILE_DIR = CMakeFiles/testChessEngine.dir/tests/Board
+  OBJECT_FILE_DIR = CMakeFiles/testChessEngine.dir/src/Board
 
 build CMakeFiles/testChessEngine.dir/src/Search/transposition_table.cpp.o: CXX_COMPILER__testChessEngine_unscanned_Debug /home/ecando/Documents/CLionProjects/chessEngine/src/Search/transposition_table.cpp || cmake_object_order_depends_target_testChessEngine
   DEP_FILE = CMakeFiles/testChessEngine.dir/src/Search/transposition_table.cpp.o.d
@@ -298,6 +291,34 @@ build CMakeFiles/testChessEngine.dir/src/Evaluation/opening_book.cpp.o: CXX_COMP
   OBJECT_DIR = CMakeFiles/testChessEngine.dir
   OBJECT_FILE_DIR = CMakeFiles/testChessEngine.dir/src/Evaluation
 
+build CMakeFiles/testChessEngine.dir/src/Moves/magicBitboards.cpp.o: CXX_COMPILER__testChessEngine_unscanned_Debug /home/ecando/Documents/CLionProjects/chessEngine/src/Moves/magicBitboards.cpp || cmake_object_order_depends_target_testChessEngine
+  DEP_FILE = CMakeFiles/testChessEngine.dir/src/Moves/magicBitboards.cpp.o.d
+  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always -O3 -mavx2 -march=native
+  INCLUDES = -I/home/ecando/Documents/CLionProjects/chessEngine/src
+  OBJECT_DIR = CMakeFiles/testChessEngine.dir
+  OBJECT_FILE_DIR = CMakeFiles/testChessEngine.dir/src/Moves
+
+build CMakeFiles/testChessEngine.dir/src/Moves/move_list.cpp.o: CXX_COMPILER__testChessEngine_unscanned_Debug /home/ecando/Documents/CLionProjects/chessEngine/src/Moves/move_list.cpp || cmake_object_order_depends_target_testChessEngine
+  DEP_FILE = CMakeFiles/testChessEngine.dir/src/Moves/move_list.cpp.o.d
+  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always -O3 -mavx2 -march=native
+  INCLUDES = -I/home/ecando/Documents/CLionProjects/chessEngine/src
+  OBJECT_DIR = CMakeFiles/testChessEngine.dir
+  OBJECT_FILE_DIR = CMakeFiles/testChessEngine.dir/src/Moves
+
+build CMakeFiles/testChessEngine.dir/src/NNUE/nnue_eval.cpp.o: CXX_COMPILER__testChessEngine_unscanned_Debug /home/ecando/Documents/CLionProjects/chessEngine/src/NNUE/nnue_eval.cpp || cmake_object_order_depends_target_testChessEngine
+  DEP_FILE = CMakeFiles/testChessEngine.dir/src/NNUE/nnue_eval.cpp.o.d
+  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always -O3 -mavx2 -march=native
+  INCLUDES = -I/home/ecando/Documents/CLionProjects/chessEngine/src
+  OBJECT_DIR = CMakeFiles/testChessEngine.dir
+  OBJECT_FILE_DIR = CMakeFiles/testChessEngine.dir/src/NNUE
+
+build CMakeFiles/testChessEngine.dir/src/NNUE/self_play_training.cpp.o: CXX_COMPILER__testChessEngine_unscanned_Debug /home/ecando/Documents/CLionProjects/chessEngine/src/NNUE/self_play_training.cpp || cmake_object_order_depends_target_testChessEngine
+  DEP_FILE = CMakeFiles/testChessEngine.dir/src/NNUE/self_play_training.cpp.o.d
+  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always -O3 -mavx2 -march=native
+  INCLUDES = -I/home/ecando/Documents/CLionProjects/chessEngine/src
+  OBJECT_DIR = CMakeFiles/testChessEngine.dir
+  OBJECT_FILE_DIR = CMakeFiles/testChessEngine.dir/src/NNUE
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target testChessEngine
@@ -306,7 +327,7 @@ build CMakeFiles/testChessEngine.dir/src/Evaluation/opening_book.cpp.o: CXX_COMP
 #############################################
 # Link the executable testChessEngine
 
-build testChessEngine: CXX_EXECUTABLE_LINKER__testChessEngine_Debug CMakeFiles/testChessEngine.dir/tests/test_all.cpp.o CMakeFiles/testChessEngine.dir/tests/Board/test_board.cpp.o CMakeFiles/testChessEngine.dir/src/Board/board.cpp.o CMakeFiles/testChessEngine.dir/src/Board/piece.cpp.o CMakeFiles/testChessEngine.dir/tests/Board/test_moves.cpp.o CMakeFiles/testChessEngine.dir/src/Board/zobrist_hash.cpp.o CMakeFiles/testChessEngine.dir/src/Board/move.cpp.o CMakeFiles/testChessEngine.dir/src/Moves/magicBitboards.cpp.o CMakeFiles/testChessEngine.dir/src/Moves/generate_moves.cpp.o CMakeFiles/testChessEngine.dir/tests/MoveGeneration/test_move_generation.cpp.o CMakeFiles/testChessEngine.dir/src/Search/search.cpp.o CMakeFiles/testChessEngine.dir/tests/Board/test_zobrist.cpp.o CMakeFiles/testChessEngine.dir/src/Search/transposition_table.cpp.o CMakeFiles/testChessEngine.dir/src/Evaluation/evaluation.cpp.o CMakeFiles/testChessEngine.dir/src/Search/quiescence_search.cpp.o CMakeFiles/testChessEngine.dir/src/Evaluation/opening_book.cpp.o
+build testChessEngine: CXX_EXECUTABLE_LINKER__testChessEngine_Debug CMakeFiles/testChessEngine.dir/tests/test_all.cpp.o CMakeFiles/testChessEngine.dir/tests/Board/test_board.cpp.o CMakeFiles/testChessEngine.dir/tests/Board/test_moves.cpp.o CMakeFiles/testChessEngine.dir/tests/MoveGeneration/test_move_generation.cpp.o CMakeFiles/testChessEngine.dir/tests/Board/test_zobrist.cpp.o CMakeFiles/testChessEngine.dir/src/Board/board.cpp.o CMakeFiles/testChessEngine.dir/src/Moves/generate_moves.cpp.o CMakeFiles/testChessEngine.dir/src/Board/move.cpp.o CMakeFiles/testChessEngine.dir/src/Board/piece.cpp.o CMakeFiles/testChessEngine.dir/src/Search/search.cpp.o CMakeFiles/testChessEngine.dir/src/Board/zobrist_hash.cpp.o CMakeFiles/testChessEngine.dir/src/Search/transposition_table.cpp.o CMakeFiles/testChessEngine.dir/src/Evaluation/evaluation.cpp.o CMakeFiles/testChessEngine.dir/src/Search/quiescence_search.cpp.o CMakeFiles/testChessEngine.dir/src/Evaluation/opening_book.cpp.o CMakeFiles/testChessEngine.dir/src/Moves/magicBitboards.cpp.o CMakeFiles/testChessEngine.dir/src/Moves/move_list.cpp.o CMakeFiles/testChessEngine.dir/src/NNUE/nnue_eval.cpp.o CMakeFiles/testChessEngine.dir/src/NNUE/self_play_training.cpp.o
   FLAGS = -g
   OBJECT_DIR = CMakeFiles/testChessEngine.dir
   POST_BUILD = :

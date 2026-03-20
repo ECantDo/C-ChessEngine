@@ -17,7 +17,7 @@
 
 #include "Evaluation/bench.h"
 
-#define VERSION "V23.1_NNUE_SearchImprovements"
+#define VERSION "V23.3_SPEED"
 
 bool debug = false;
 Board currentBoard;
@@ -42,7 +42,7 @@ void runSearchThread(Board board, long timeLimit, long depth, int numThreads, ui
 
 	if (bm.bestMove == 0) {
 		MoveList moves;
-		generateLegalMoves(board, moves);
+		generateMoves(board, moves);
 		if (!moves.empty()) {
 			bm.bestMove = moves.get(0);
 			std::cerr << "WARNING: Search returned null move, using fallback: "
@@ -126,6 +126,9 @@ void setPosition(const std::string &line) {
 
 	if (tok == "startpos") {
 		currentBoard = Board(); /* Should initialize startpos */
+		if (g_nnueLoaded) {
+			initAccumulator(currentBoard, g_nnueAccumulator);
+		}
 		if (ss >> tok && tok == "moves") {
 			while (ss >> tok) {
 				currentBoard.makeMove(stringToMove(tok, currentBoard));
@@ -252,11 +255,11 @@ void startSearch(const std::string &goCmd) {
 		mainSearchThread = std::thread(runSearchThread, boardCopy, timeLimit, depth, g_numThreads, nodes);
 	} else {
 		/* Perft runs in main thread (it's fast and synchronous) */
-		auto start = std::chrono::high_resolution_clock::now();
+		const auto start = std::chrono::high_resolution_clock::now();
 
-		uint64_t totalNodes = perft(depth, currentBoard);
-		auto end = std::chrono::high_resolution_clock::now();
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+		const uint64_t totalNodes = perft(depth, currentBoard);
+		const auto end = std::chrono::high_resolution_clock::now();
+		const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 		std::cout << totalNodes << std::endl << std::flush;
 		//std::cout << "Took " << duration << " ms"
 		//<< " nps " << (duration > 0 ? (totalNodes * 1000 / duration) : 0)
@@ -285,10 +288,12 @@ int main() {
 	initMagicBitboards();
 	initLmrTable();
 
+	currentBoard = Board();
+
 	/* Try to load NNUE network */
 	try_init_nnue();
 	if (g_nnueLoaded) {
-		initAccumulator(currentBoard, g_nnueAccumulator); // ← add this
+		initAccumulator(currentBoard, g_nnueAccumulator);
 	}
 
 	//    std::string openingBookLocation = "./openingBook.bin";
@@ -350,6 +355,9 @@ int main() {
 				mainSearchThread.join();
 			}
 			currentBoard = Board();
+			if (g_nnueLoaded) {
+				initAccumulator(currentBoard, g_nnueAccumulator);
+			}
 			globalTT.clear();
 			ponderMove = 0;
 		} else if (line.rfind("position", 0) == 0) {
@@ -418,6 +426,9 @@ int main() {
 				mainSearchThread.join();
 			}
 			currentBoard = Board();
+			if (g_nnueLoaded) {
+				initAccumulator(currentBoard, g_nnueAccumulator);
+			}
 			globalTT.clear();
 			ponderMove = 0;
 			try_init_nnue(filename);

@@ -5,7 +5,7 @@
 #include "evaluation.h"
 #include "NNUE/nnue_eval.h"
 
-int evaluatePawnShelter(Board &board, int side, int kingSquare, int kingFile, int kingRank,
+int evaluatePawnShelter(const Board &board, int side, int kingSquare, int kingFile, int kingRank,
 						uint64_t myPawns, uint64_t theirPawns) {
 
 	int totalPieces = std::popcount(board.getWhiteBitboard() | board.getBlackBitboard());

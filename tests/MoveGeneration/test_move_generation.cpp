@@ -76,7 +76,7 @@ void testMoveGeneration(int depth) {
 
 uint64_t perftDivide(Board &board, int depth) {
     MoveList moves;
-    generateLegalMoves(board, moves);
+    generateMoves(board, moves);
 
     uint64_t totalNodes = 0;
 
@@ -99,7 +99,7 @@ uint64_t perft(int depth, Board &board) {
 
     MoveList moveList{};
 
-    generateLegalMoves(board, moveList);
+    generateMoves(board, moveList);
 
     if (depth == 1) {
         return moveList.length();

@@ -5,12 +5,12 @@
 #include "quiescence_search.h"
 #include "search.h"
 
-BestMove quiescenceSearch(Board &board, int alpha, int beta, SearchValues &searchValues, int qDepth) {
+BestMove quiescenceSearch(Board &board, int alpha, const int beta, SearchValues &searchValues, const int qDepth) {
 	searchValues.nodes++;
-	const int MAX_Q_DEPTH = 32;
+	constexpr int MAX_Q_DEPTH = 32;
 
 	// If we do nothing, what's the score???
-	int standPat = evaluateBoardNNUE(board);
+	const int standPat = evaluateBoardNNUE(board);
 
 	if (standPat >= beta) {
 		return {0, beta, 1, qDepth, true, {}}; // Beta cutoff
@@ -26,28 +26,28 @@ BestMove quiescenceSearch(Board &board, int alpha, int beta, SearchValues &searc
 
 
 	MoveList captures;
-	generateLegalMoves(board, captures, true);
+	generateMoves(board, captures, true, true);
 
 	if (captures.empty()) {
 		return {0, standPat, 1, qDepth, true, {}};
 	}
 
-//    orderMoves(captures, board, 0);
+	//    orderMoves(captures, board, 0);
 
 	int bestScore = standPat;
 
 	for (int i = 0; i < captures.length(); i++) {
-		Move move = captures.get(i);
-//        std::cout << "CAPTURE! " << moveToString(move) << std::endl << std::flush;
-		int captured = abs(getPieceValue(board.pieceAtSquare(getMoveTo(move))));
+		const Move move = captures.get(i);
+		//        std::cout << "CAPTURE! " << moveToString(move) << std::endl << std::flush;
+		const int captured = abs(getPieceValue(board.pieceAtSquare(getMoveTo(move))));
 		if (standPat + captured + 200 < alpha) {
 			continue;
 		}
 
 		UndoInfo ui = board.makeMove(move);
 
-		BestMove result = quiescenceSearch(board, -beta, -alpha, searchValues, qDepth + 1);
-		int score = -result.score;
+		const BestMove result = quiescenceSearch(board, -beta, -alpha, searchValues, qDepth + 1);
+		const int score = -result.score;
 
 		board.unmakeMove(move, ui);
 

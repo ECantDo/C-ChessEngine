@@ -13,37 +13,43 @@ constexpr size_t MoveLimit = 256;
 
 class MoveList {
 private:
-    std::array<Move, MoveLimit> moves{};
-    size_t size = 0;
+	std::array<Move, MoveLimit> moves{};
+	size_t size = 0;
+
 public:
-    inline bool append(Move move){
-        if (size == MoveLimit) return false;
-        moves[size++] = move;
-        return true;
-    }
+	bool append(const Move move) {
+		if (size == MoveLimit) return false;
+		moves[size++] = move;
+		return true;
+	}
 
-    inline void clear() {
-        size = 0;
-    }
+	void clear() {
+		size = 0;
+	}
 
-    inline Move get(size_t idx){
-        if (idx >= size) return 0;
-        return moves[idx];
-    }
+	[[nodiscard]] Move get(const size_t idx) const {
+		if (idx >= size) return 0;
+		return moves[idx];
+	}
 
-    inline bool set(size_t idx, Move move){
-        if (idx >= size) return false;
-        moves[idx] = move;
-        return true;
-    }
+	[[nodiscard]] Move pop() {
+		if (size == 0) return 0;
+		return moves[--size];
+	}
 
-    inline const size_t length(){
-        return size;
-    }
+	inline bool set(const size_t idx, const Move move) {
+		if (idx >= size) return false;
+		moves[idx] = move;
+		return true;
+	}
 
-    inline const bool empty(){
-        return size == 0;
-    }
+	[[nodiscard]] size_t length() const {
+		return size;
+	}
+
+	[[nodiscard]] bool empty() const {
+		return size == 0;
+	}
 };
 
 

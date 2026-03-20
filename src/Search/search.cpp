@@ -15,8 +15,8 @@ static std::chrono::steady_clock::time_point g_searchStart;
 
 // TODO: Move Picker vs scoring all moves
 
-void scoreAllMoves(MoveList &moves, std::array<int, MoveLimit> &moveScores,
-				   const Board &board, Move previousBest, int ply,
+void scoreAllMoves(const MoveList &moves, std::array<int, MoveLimit> &moveScores,
+				   const Board &board, const Move previousBest, const int ply,
 				   Move killers[MAX_PLY][2], unsigned long long history[2][64][64]) {
 	for (int i = 0; i < moves.length(); i++) {
 		if (moves.get(i) == previousBest) {
@@ -28,7 +28,7 @@ void scoreAllMoves(MoveList &moves, std::array<int, MoveLimit> &moveScores,
 }
 
 // Basically selection sort
-void selectNextBestMove(MoveList &moves, std::array<int, MoveLimit> &moveScores, int startIdx, int endIdx) {
+void selectNextBestMove(MoveList &moves, std::array<int, MoveLimit> &moveScores, const int startIdx, const int endIdx) {
 	// No work to be done if `start == end` or `start > end`
 	if (startIdx >= endIdx) return;
 
@@ -44,24 +44,23 @@ void selectNextBestMove(MoveList &moves, std::array<int, MoveLimit> &moveScores,
 	// Check to be safe; should never happen... but to be safe.. Should always find the best move
 	if (bestIdx == -1 || bestScore == INT32_MIN) [[unlikely]] {
 		return;
-	} else {
-		Move bestMove = moves.get(bestIdx);
-		moves.set(bestIdx, moves.get(startIdx));
-		moves.set(startIdx, bestMove);
-
-		std::swap(moveScores[startIdx], moveScores[bestIdx]);
 	}
+	const Move bestMove = moves.get(bestIdx);
+	moves.set(bestIdx, moves.get(startIdx));
+	moves.set(startIdx, bestMove);
+
+	std::swap(moveScores[startIdx], moveScores[bestIdx]);
 }
 
-int calculateExtension(Board &board, Move move) {
+int calculateExtension(const Board &board, const Move move) {
 	int extension = 0;
-	bool inCheck = isKingInCheck(board, board.turn);
+	const bool inCheck = isKingInCheck(board, board.turn);
 	if (inCheck) {
 		extension += 1;
 	}
 
-	int toSquare = getMoveTo(move);
-	int pieceMoved = getPieceType(board.pieceAtSquare(getMoveFrom(move)));
+	const int toSquare = getMoveTo(move);
+	const int pieceMoved = getPieceType(board.pieceAtSquare(getMoveFrom(move)));
 	if (pieceMoved == TYPE_PAWN && (toSquare == 1 || toSquare == 6)) {
 		extension += 1;
 	}
@@ -69,7 +68,7 @@ int calculateExtension(Board &board, Move move) {
 	return extension;
 }
 
-bool hasNonPawnMaterial(Board &board) {
+bool hasNonPawnMaterial(const Board &board) {
 	// Check if there is something other than pawns on the board
 	if (board.turn == 1) {
 		return 0 !=
@@ -77,13 +76,12 @@ bool hasNonPawnMaterial(Board &board) {
 				board.whiteRooks |
 				board.whiteBishops |
 				board.whiteKnights);
-	} else {
-		return 0 !=
-			   (board.blackQueens |
-				board.blackRooks |
-				board.blackBishops |
-				board.blackKnights);
 	}
+	return 0 !=
+		   (board.blackQueens |
+			board.blackRooks |
+			board.blackBishops |
+			board.blackKnights);
 }
 
 BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move previousBest,
@@ -140,28 +138,6 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		return {ttEntry.bestMove, score, plys, plys, true, {ttEntry.bestMove}};
 	}
 
-	// ============ Generate Moves ============
-	MoveList moveList;
-	generateLegalMoves(board, moveList, false);
-
-	// ============ Legal moves is empty; check/draw ============
-	if (moveList.empty()) {
-		searchPath.pop_back();
-
-		// King in check -> Mate
-		if (inCheck) {
-			int mateScore = -MATE_SCORE + plys;
-			// Only seeing this move, or a from-here plys of 1
-
-			globalTT.store(board.zobristHash, 0, depth, -MATE_SCORE, TT_EXACT);
-			return {0, mateScore, plys, plys, true, {}};
-		}
-		// King not in check -> Draw
-		// Only seeing this move, or plys of 1
-		globalTT.store(board.zobristHash, 0, depth, 0, TT_EXACT);
-		return {0, 0, plys, plys, true, {}};
-	}
-
 	// ============ Exceeded parameters ============
 	if (depth <= 0) {
 		searchPath.pop_back();
@@ -205,11 +181,12 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		int8_t oldTurn = board.turn;
 		int oldEnPass = board.enPassantSquare;
 		uint64_t oldHash = board.zobristHash;
+		uint8_t oldCastling = board.castling;
 
 		// Set up to pretend to make a move
 		board.enPassantSquare = -1;
 		board.halfMoveClock++;
-		board.turn = (int8_t) (-board.turn);
+		board.turn = static_cast<int8_t>(-board.turn);
 		board.zobristHash ^= Zobrist::sideToMove;
 		if (oldEnPass != -1) {
 			board.zobristHash ^= Zobrist::enPassantFile[oldEnPass];
@@ -224,6 +201,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		board.halfMoveClock--;
 		board.enPassantSquare = oldEnPass;
 		board.zobristHash = oldHash;
+		board.castling = oldCastling;
 
 		if (-nullResult.score >= beta) {
 			BestMove verify = alphaBeta(board, depth - 1, plys + 1, beta - 1, beta,
@@ -236,6 +214,10 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 			}
 		}
 	}
+
+	// ============ Generate Moves ============
+	MoveList moveList;
+	generateMoves(board, moveList, false);
 
 	// ============ Order Moves ============
 	// Only setting it up for in the list
@@ -254,9 +236,16 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 	int movesSearched = 0;
 
 	for (int i = 0; i < moveList.length(); i++) {
-		selectNextBestMove(moveList, moveScores, i, (int) moveList.length());
+		selectNextBestMove(moveList, moveScores, i, static_cast<int>(moveList.length()));
 		Move move = moveList.get(i);
 		UndoInfo undo = board.makeMove(move);
+
+		// Check legality - is our king now in check?
+		const uint64_t ourKing = (board.turn == -1) ? board.whiteKing : board.blackKing;
+		if (isSquareAttacked(board, std::countr_zero(ourKing), board.turn)) {
+			board.unmakeMove(move, undo);
+			continue; // illegal move, skip
+		}
 
 		/*
 		if (movesSearched > 0 &&
@@ -390,6 +379,21 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 	}
 
 	searchPath.pop_back();
+
+	// ============ Legal moves is empty; check/draw ============
+	if (movesSearched == 0 && completed) {
+		// King in check -> Mate
+		if (inCheck) {
+			int mateScore = -MATE_SCORE + plys;
+			globalTT.store(board.zobristHash, 0, depth, -MATE_SCORE, TT_EXACT);
+			return {0, mateScore, plys, plys, true, {}};
+		}
+		// King not in check -> Draw
+		// Only seeing this move, or plys of 1
+		globalTT.store(board.zobristHash, 0, depth, 0, TT_EXACT);
+		return {0, 0, plys, plys, true, {}};
+	}
+
 	if (completed) {
 		// ==== STORE TT MOVE ====
 		TTFlag flag;
@@ -410,12 +414,11 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 
 		globalTT.store(board.zobristHash, bestMove, depth, ttScore, flag);
 		return {bestMove, bestScore, plys, maxSelDepth, true, pv};
-	} else {
-		return {bestMove, bestScore, plys, maxSelDepth, false, {}};
 	}
+	return {bestMove, bestScore, plys, maxSelDepth, false, {}};
 }
 
-BestMove selectMove(Board &board, int maxDepth, long timeLimitMS, SearchValues &searchValues, int numThreads,
+BestMove selectMove(Board &board, int maxDepth, const long timeLimitMS, SearchValues &searchValues, int numThreads,
 					uint64_t maxNodes) {
 	stopSearch = false;
 	g_timeLimitMS = timeLimitMS;
@@ -511,7 +514,7 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 			auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - g_searchStart).count();
 
 			// If we have used 60% of our time, don't start a new search
-			if (elapsed > (long long) round(g_timeLimitMS * 0.6)) {
+			if (elapsed > static_cast<long long>(round(g_timeLimitMS * 0.6))) {
 				earlyExits++;
 				break;
 			}
@@ -593,7 +596,7 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 				stableMoveCount++; // Increment here
 
 				// Exit if stable for 3 iterations and used >30% time
-				if (stableMoveCount >= 3 && elapsed > (long long) round(g_timeLimitMS * 0.3)) {
+				if (stableMoveCount >= 3 && elapsed > static_cast<long long>(round(g_timeLimitMS * 0.3))) {
 					earlyExits++;
 					stopSearch = true;
 				}
