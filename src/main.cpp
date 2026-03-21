@@ -18,7 +18,7 @@
 #include "settings_manager.h"
 #include "Evaluation/bench.h"
 
-#define VERSION "V23.4_Razor-FP"
+#define VERSION "V23.5_Aspireations"
 
 bool debug = false;
 Board currentBoard;
@@ -84,20 +84,20 @@ void runSearchThread(Board board, const long timeLimit, const int depth, const i
 
 	/* Only output info and bestmove if not pondering or if pondering was converted to regular search */
 	if (!isPondering) {
-		std::cout << "info "
-				<< score
-				<< " depth " << bm.plys
-				<< " seldepth " << bm.selDepth
-				//<< " tbhits " << searchValues.tbHits
-				<< " nodes " << searchValues.nodes
-				<< " time " << elapsed
-				<< " hashfull " << (globalTT.stored * 1000) / (globalTT.getSize() * CLUSTER_SIZE)
-				<< " nps " << (elapsed > 0 ? (searchValues.nodes * 1000 / elapsed) : 0)
-				<< " pv";
-		for (Move &m: bm.pv) {
-			std::cout << ' ' << moveToString(m);
-		}
-		std::cout << std::endl << std::flush;
+		// std::cout << "info "
+		// 		<< score
+		// 		<< " depth " << bm.plys
+		// 		<< " seldepth " << bm.selDepth
+		// 		//<< " tbhits " << searchValues.tbHits
+		// 		<< " nodes " << searchValues.nodes
+		// 		<< " time " << elapsed
+		// 		<< " hashfull " << (globalTT.stored * 1000) / (globalTT.getSize() * CLUSTER_SIZE)
+		// 		<< " nps " << (elapsed > 0 ? (searchValues.nodes * 1000 / elapsed) : 0)
+		// 		<< " pv";
+		// for (Move &m: bm.pv) {
+		// 	std::cout << ' ' << moveToString(m);
+		// }
+		// std::cout << std::endl << std::flush;
 
 		/* Store ponder move if available (second move in PV) */
 		Move ponderOutput = 0;

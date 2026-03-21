@@ -507,7 +507,9 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 	std::vector<uint64_t> searchPath;
 	searchPath.reserve(maxDepth);
 
-	for (int depth = startDepth; depth <= maxDepth; depth++) {
+	int searchAgainCounter = 0;
+
+	for (int rootDepth = startDepth; rootDepth <= maxDepth; rootDepth++) {
 		if (stopSearch) break;
 		if (g_timeLimitMS > 0) {
 			auto now = std::chrono::steady_clock::now();
@@ -515,63 +517,57 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 
 			// If we have used 60% of our time, don't start a new search
 			if (elapsed > static_cast<long long>(round(g_timeLimitMS * 0.6))) {
-				earlyExits++;
 				break;
 			}
 		}
 
 		if (totalNodes > maxNodes) {
-			earlyExits++;
 			break;
 		}
 
-		searchPath.clear();
 		BestMove result;
 		SearchValues searchValues{0, 0};
 
 		// ==== Aspiration Windows ====
 		// Search is at least 200 ms faster without it -- get a better eval?
-		if (false && depth >= 5 && abs(bestScore) < MATE_SCORE - 100) {
-			int delta = 100; // Window size; typical is 50, but I am going with 100 for now, to make sure it works
-			int alpha = bestScore - delta;
-			int beta = bestScore + delta;
 
-			while (true) {
-				result = alphaBeta(board, depth, 0, alpha, beta, bestMove, searchPath,
-								   killerMoves, historyTable, searchValues);
-				if (stopSearch || !result.completed) break;
 
-				// Is score within the window?
-				if (result.score > alpha && result.score < beta) {
-					break; // yay! It worked!
-				}
+		// if (rootDepth >= 3) {
+		int delta = 15; // Window size; typical is 50, but I am going with 100 for now, to make sure it works
+		int alpha = bestScore - delta;
+		int beta = bestScore + delta;
 
-				// Failed low; widen lower bound
-				if (result.score <= alpha) {
-					alpha = std::max(alpha - delta, -INF_SCORE);
-					// Exponentially widen the window
-					delta <<= 1; // Same as *= 2
-				}
-				// Failed high; widen upper bound
-				else if (result.score >= beta) {
-					beta = std::min(beta + delta, INF_SCORE);
-					delta <<= 1; // Same as *= 2
-				}
+		int failedHighCnt = 0;
+		while (true) {
+			searchPath.clear();
+			int adjustedDepth = std::max(1, rootDepth - failedHighCnt - 3 * (searchAgainCounter + 1) / 4);
 
-				searchPath.clear();
 
-				// Prevent inf widening
-				if (delta > 1000) {
-					alpha = -INF_SCORE;
-					beta = INF_SCORE;
-				}
-			}
-		} else {
-			// Depth < 4, or mate score, use full window.
-			result = alphaBeta(board, depth, 0, -INF_SCORE, INF_SCORE,
-							   bestMove, searchPath, killerMoves, historyTable,
-							   searchValues);
+			result = alphaBeta(board, adjustedDepth, 0, alpha, beta, bestMove, searchPath,
+							   killerMoves, historyTable, searchValues);
+			if (stopSearch || !result.completed) break;
+
+
+			// Failed high; widen upper bound
+			if (result.score <= alpha) {
+				beta = alpha;
+				alpha = std::max(result.score - delta, -INF_SCORE);
+
+				failedHighCnt = 0;
+			} else if (result.score >= beta) {
+				alpha = std::max(beta - delta, alpha);
+				beta = std::min(result.score + delta, INF_SCORE);
+				++failedHighCnt;
+			} else
+				break;
+			delta += delta / 3; // widen by 33% instead of doubling
 		}
+		// } else {
+		// 	// Depth < 6, or mate score, use full window.
+		// 	result = alphaBeta(board, rootDepth, 0, -INF_SCORE, INF_SCORE,
+		// 					   bestMove, searchPath, killerMoves, historyTable,
+		// 					   searchValues);
+		// }
 
 		if (!result.completed || stopSearch) break;
 
@@ -579,7 +575,7 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 		bestScore = result.score;
 		pv = result.pv;
 		totalNodes += searchValues.nodes;
-		completedDepth = depth;
+		completedDepth = rootDepth;
 		totalTbHits += searchValues.tbHits;
 		selDepth = result.selDepth;
 
@@ -588,7 +584,7 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 		auto now = std::chrono::steady_clock::now();
 		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
 
-		if (depth >= 5 && g_timeLimitMS > 0) {
+		if (rootDepth >= 5 && g_timeLimitMS > 0) {
 			if (bestMove == lastBestMove
 				&& abs(bestScore - lastScore) < 80
 				&& absBestScore < MATE_SCORE - 100
@@ -616,12 +612,12 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 
 
 		// Early exit on Mate; but do a search first to depth 6
-		if (mateDistance >= 0 && depth >= 6) {
+		if (mateDistance >= 0 && rootDepth >= 6) {
 			// mateDistance is in plies, mateMoves is in moves (for UCI output)
 
 			// Exit if we've searched 2+ plies deeper than the mate distance
 			// OR if it's a short mate (≤3 moves) and we've reached depth 6
-			if (depth >= mateDistance + 2 || mateDistance <= 6) {
+			if (rootDepth >= mateDistance + 2 || mateDistance <= 6) {
 				earlyExits++;
 				stopSearch = true;
 			}
@@ -642,11 +638,11 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 					<< score
 					<< " depth " << completedDepth
 					<< " seldepth " << result.selDepth
-					<< " nodes " << searchValues.nodes
+					<< " nodes " << totalNodes
 					//<< " tbhits " << searchValues.tbHits
 					<< " time " << elapsed
 					<< " hashfull " << (globalTT.stored * 1000) / (globalTT.getSize() * CLUSTER_SIZE)
-					<< " nps " << (elapsed > 0 ? (searchValues.nodes * 1000 / elapsed) : 0)
+					<< " nps " << (elapsed > 0 ? (totalNodes * 1000 / elapsed) : 0)
 					<< " pv ";
 
 			for (Move &m: pv) {
