@@ -18,7 +18,7 @@
 #include "settings_manager.h"
 #include "Evaluation/bench.h"
 
-#define VERSION "V23.5_Aspireations"
+#define VERSION "Eeternal-V3"
 
 bool debug = false;
 Board currentBoard;
@@ -301,8 +301,8 @@ int main() {
 			/* Keep at the top, the most common input */
 			startSearch(line);
 		} else if (line == "uci") {
-			std::cout << std::format("id name ECanBot-{}\n", VERSION) << std::flush;
-			std::cout << "id author ECanDo\n" << std::flush;
+			std::cout << VERSION << std::endl << std::flush;
+			std::cout << "id author ECanDo" << std::endl << std::flush;
 
 			printOptions();
 
@@ -368,8 +368,8 @@ int main() {
 		} else if (line.rfind("selfplay", 0) == 0) {
 			std::stringstream ss(line);
 			std::string cmd;
-			int numGames = 10000;
-			int search_nodes = 150;
+			int numGames = 100;
+			int search_nodes = 10000;
 			std::string filename = "selfplay_data.txt";
 
 			ss >> cmd; /* "selfplay" */

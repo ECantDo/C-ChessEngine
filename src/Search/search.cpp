@@ -231,6 +231,19 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 	MoveList moveList;
 	generateMoves(board, moveList, false);
 
+	// if (moveList.empty()) {
+	// 	// King in check -> Mate
+	// 	if (inCheck) {
+	// 		int mateScore = -MATE_SCORE + plys;
+	// 		globalTT.store(board.zobristHash, 0, depth, -MATE_SCORE, TT_EXACT);
+	// 		return {0, mateScore, plys, plys, true, {}};
+	// 	}
+	// 	// King not in check -> Draw
+	// 	// Only seeing this move, or plys of 1
+	// 	globalTT.store(board.zobristHash, 0, depth, 0, TT_EXACT);
+	// 	return {0, 0, plys, plys, true, {}};
+	// }
+
 	// ============ Order Moves ============
 	// Only setting it up for in the list
 	//	orderMoves(moveList, board, ttEntry.bestMove, plys, killerMoves, historyTable);
@@ -532,42 +545,51 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 		// Search is at least 200 ms faster without it -- get a better eval?
 
 
-		// if (rootDepth >= 3) {
-		int delta = 15; // Window size; typical is 50, but I am going with 100 for now, to make sure it works
-		int alpha = bestScore - delta;
-		int beta = bestScore + delta;
+		if (rootDepth >= 6 && abs(bestScore) < 2000) {
+			int delta = 15; // Window size; typical is 50, but I am going with 100 for now, to make sure it works
+			int alpha = bestScore - delta;
+			int beta = bestScore + delta;
 
-		int failedHighCnt = 0;
-		while (true) {
-			searchPath.clear();
-			int adjustedDepth = std::max(1, rootDepth - failedHighCnt - 3 * (searchAgainCounter + 1) / 4);
-
-
-			result = alphaBeta(board, adjustedDepth, 0, alpha, beta, bestMove, searchPath,
-							   killerMoves, historyTable, searchValues);
-			if (stopSearch || !result.completed) break;
+			int failedHighCnt = 0;
+			int fails = 0;
+			while (true) {
+				searchPath.clear();
+				int adjustedDepth = std::max(1, rootDepth - failedHighCnt - 3 * (searchAgainCounter + 1) / 4);
 
 
-			// Failed high; widen upper bound
-			if (result.score <= alpha) {
-				beta = alpha;
-				alpha = std::max(result.score - delta, -INF_SCORE);
+				result = alphaBeta(board, adjustedDepth, 0, alpha, beta, bestMove, searchPath,
+								   killerMoves, historyTable, searchValues);
+				if (stopSearch || !result.completed) break;
 
-				failedHighCnt = 0;
-			} else if (result.score >= beta) {
-				alpha = std::max(beta - delta, alpha);
-				beta = std::min(result.score + delta, INF_SCORE);
-				++failedHighCnt;
-			} else
-				break;
-			delta += delta / 3; // widen by 33% instead of doubling
+				// Failed high; widen upper bound
+				if (result.score <= alpha) {
+					beta = alpha;
+					alpha = std::max(result.score - delta, -INF_SCORE);
+
+					failedHighCnt = 0;
+				} else if (result.score >= beta) {
+					alpha = std::max(beta - delta, alpha);
+					beta = std::min(result.score + delta, INF_SCORE);
+					++failedHighCnt;
+				} else
+					break;
+
+				if (++fails >= 5) {
+					searchPath.clear();
+					result = alphaBeta(board, rootDepth, 0, -INF_SCORE, INF_SCORE,
+									   bestMove, searchPath, killerMoves, historyTable,
+									   searchValues);
+					// std::cout << "Fails 4" << std::endl << std::flush;
+					break;
+				}
+				delta += delta / 3; // widen by 33% instead of doubling
+			}
+		} else {
+			// Depth < 6, or mate score, use full window.
+			result = alphaBeta(board, rootDepth, 0, -INF_SCORE, INF_SCORE,
+							   bestMove, searchPath, killerMoves, historyTable,
+							   searchValues);
 		}
-		// } else {
-		// 	// Depth < 6, or mate score, use full window.
-		// 	result = alphaBeta(board, rootDepth, 0, -INF_SCORE, INF_SCORE,
-		// 					   bestMove, searchPath, killerMoves, historyTable,
-		// 					   searchValues);
-		// }
 
 		if (!result.completed || stopSearch) break;
 
@@ -584,22 +606,23 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 		auto now = std::chrono::steady_clock::now();
 		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
 
-		if (rootDepth >= 5 && g_timeLimitMS > 0) {
-			if (bestMove == lastBestMove
-				&& abs(bestScore - lastScore) < 80
-				&& absBestScore < MATE_SCORE - 100
-			) {
-				stableMoveCount++; // Increment here
-
-				// Exit if stable for 3 iterations and used >30% time
-				if (stableMoveCount >= 3 && elapsed > static_cast<long long>(round(g_timeLimitMS * 0.3))) {
-					earlyExits++;
-					stopSearch = true;
-				}
-			} else {
-				stableMoveCount = 0; // Reset only when NOT stable
-			}
-		}
+		// Stable
+		// if (rootDepth >= 5 && g_timeLimitMS > 0) {
+		// 	if (bestMove == lastBestMove
+		// 		&& abs(bestScore - lastScore) < 80
+		// 		&& absBestScore < MATE_SCORE - 100
+		// 	) {
+		// 		stableMoveCount++; // Increment here
+		//
+		// 		// Exit if stable for 3 iterations and used >30% time
+		// 		if (stableMoveCount >= 3 && elapsed > static_cast<long long>(round(g_timeLimitMS * 0.3))) {
+		// 			earlyExits++;
+		// 			stopSearch = true;
+		// 		}
+		// 	} else {
+		// 		stableMoveCount = 0; // Reset only when NOT stable
+		// 	}
+		// }
 
 		// Mate distance calculation; Mate distance will be -1 if there is not a forced mate
 		// greater than 1 otherwise

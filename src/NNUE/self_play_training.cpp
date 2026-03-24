@@ -26,10 +26,10 @@ bool hasInsufficientMaterial(const Board &board) {
 		return true;
 	}
 
-	uint64_t whitePieces = board.getWhiteBitboard();
-	uint64_t blackPieces = board.getBlackBitboard();
-	int whiteCount = std::popcount(whitePieces);
-	int blackCount = std::popcount(blackPieces);
+	const uint64_t whitePieces = board.getWhiteBitboard();
+	const uint64_t blackPieces = board.getBlackBitboard();
+	const int whiteCount = std::popcount(whitePieces);
+	const int blackCount = std::popcount(blackPieces);
 
 	if (whiteCount == 1 && blackCount == 1) return true;
 
@@ -66,12 +66,13 @@ struct PositionRecord {
 // generateTrainingData
 // =====================================================================================================================
 void generateTrainingData(const char *outputFile, int numGames, int searchNodes) {
+	bool printInfo = g_printInfo;
 	g_printInfo = false;
 
 	std::ofstream file(outputFile, std::ios::app);
 	if (!file) {
 		std::cerr << "Failed to open output file: " << outputFile << std::endl;
-		g_printInfo = true;
+		g_printInfo = printInfo;
 		return;
 	}
 
@@ -85,10 +86,10 @@ void generateTrainingData(const char *outputFile, int numGames, int searchNodes)
 	for (int game = 0; game < numGames; game++) {
 		Board board;
 		std::vector<PositionRecord> records;
-		records.reserve(120);
+		records.reserve(400);
 
 		std::vector<uint64_t> gamePath;
-		gamePath.reserve(200);
+		gamePath.reserve(400);
 
 		// ---- Random opening (4-8 random half-moves) ----
 		std::uniform_int_distribution<int> openingDist(8, 10);
@@ -112,11 +113,15 @@ void generateTrainingData(const char *outputFile, int numGames, int searchNodes)
 				std::uniform_int_distribution<int> moveDist(0, static_cast<int>(moveList.length()) - 1);
 				board.makeMove(moveList.get(moveDist(rng)));
 			}
+			SearchValues sv = {0, 0};
+			const BestMove bm = selectMove(board, 32, 50, sv, 1, 8000);
 
-			if (validStart && abs(evaluateBoard(board)) > 1000) {
+			if (validStart && abs(bm.score) > 1000) {
 				validStart = false;
 			}
 		}
+
+		globalTT.clear();
 
 		// ---- Play game ----
 		int moveCount = 0;
@@ -148,7 +153,7 @@ void generateTrainingData(const char *outputFile, int numGames, int searchNodes)
 			bool nextMoveIsCapture = (getMoveFlags(bm.bestMove) & MOVE_FLAG_CAPTURE) != 0;
 
 			/* Skip positions with extreme evals — likely tactical noise */
-			bool extremeEval = (abs(whiteRelativeScore) > 1200);
+			bool extremeEval = (abs(whiteRelativeScore) > 3000);
 
 			bool isMateScore = (abs(bm.score) >= MATE_SCORE - 100);
 
@@ -194,7 +199,7 @@ void generateTrainingData(const char *outputFile, int numGames, int searchNodes)
 					<< "\n";
 		}
 
-		totalPositions += (long long) records.size();
+		totalPositions += static_cast<long long>(records.size());
 
 		std::cout << "info string Game " << (game + 1) << "/" << numGames
 				<< "  positions=" << records.size()
@@ -207,5 +212,5 @@ void generateTrainingData(const char *outputFile, int numGames, int searchNodes)
 	file.close();
 	std::cout << "info string Done. " << totalPositions
 			<< " positions written to " << outputFile << std::endl << std::flush;
-	g_printInfo = true;
+	g_printInfo = printInfo;
 }

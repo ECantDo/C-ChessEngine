@@ -46,7 +46,7 @@ inline void runBench() {
 		}
 
 		SearchValues sv{0, 0};
-		selectMove(board, BENCH_DEPTH, 0, sv, 1, UINT64_MAX);
+		selectMove(board, BENCH_DEPTH, 0, sv, 1, -1);
 		totalNodes += sv.nodes;
 	}
 
