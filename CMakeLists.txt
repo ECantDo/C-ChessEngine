@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.28)
 project(chessEngine)
 
 set(CMAKE_CXX_STANDARD 20)
-#set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g -mavx2 -march=native")
 
 include_directories(${CMAKE_SOURCE_DIR}/src)
 
@@ -108,17 +107,26 @@ add_executable(testChessEngine tests/test_all.cpp
 		src/NNUE/self_play_training.h
 		src/Evaluation/bench.h
 )
+if (NOT DEFINED TARGET_ARCH)
+	set(TARGET_ARCH "native")
+endif()
 
-if (CMAKE_CROSSCOMPILING)
-	target_compile_options(chessEngine PRIVATE -O3 -mavx2)
-	target_link_options(chessEngine PRIVATE -static)
-else ()
-	target_compile_options(chessEngine PRIVATE
-			-O3
-			-mavx2
-			-march=native
-	)
-endif ()
+target_compile_options(chessEngine PRIVATE
+		-O3
+		-mavx2
+		-march=${TARGET_ARCH}
+)
+
+#if (CMAKE_CROSSCOMPILING)
+#	target_compile_options(chessEngine PRIVATE -O3 -mavx2)
+#	target_link_options(chessEngine PRIVATE -static)
+#else ()
+#	target_compile_options(chessEngine PRIVATE
+#			-O3
+#			-mavx2
+#			-march=native
+#	)
+#endif ()
 
 target_compile_options(testChessEngine PRIVATE
 		-O3

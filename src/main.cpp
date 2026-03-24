@@ -272,7 +272,7 @@ void startSearch(const std::string &goCmd) {
 /*-------------------------------------------------------------
  * UCI main loop
  *-------------------------------------------------------------*/
-int main() {
+int main(int argc, char *argv[]) {
 	Zobrist::init();
 	globalTT.clear();
 	initMagicBitboards();
@@ -284,6 +284,28 @@ int main() {
 	try_init_nnue();
 	if (g_nnueLoaded) {
 		initAccumulator(currentBoard, g_nnueAccumulator);
+	}
+
+	if (argc > 1) {
+		if (std::string(argv[1]) == "bench") {
+			runBench();
+			return 0;
+		} else if (std::string(argv[1]) == "datagen") {
+			int numGames = 128;
+			int searchNodes = 5000;
+			std::string filename = "selfplay_data.txt";
+
+			/* Parse: ./chessEngine datagen games 500 nodes 5000 file out.txt */
+			for (int i = 2; i < argc - 1; i++) {
+				std::string tok(argv[i]);
+				if (tok == "games") numGames = std::stoi(argv[++i]);
+				else if (tok == "nodes") searchNodes = std::stoi(argv[++i]);
+				else if (tok == "file") filename = argv[++i];
+			}
+
+			generateTrainingData(filename.c_str(), numGames, searchNodes);
+			return 0;
+		}
 	}
 
 	//    std::string openingBookLocation = "./openingBook.bin";
@@ -369,7 +391,7 @@ int main() {
 			std::stringstream ss(line);
 			std::string cmd;
 			int numGames = 100;
-			int search_nodes = 10000;
+			int search_nodes = 5000;
 			std::string filename = "selfplay_data.txt";
 
 			ss >> cmd; /* "selfplay" */
