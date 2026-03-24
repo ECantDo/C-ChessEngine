@@ -20,16 +20,20 @@ longer without them.
 
 ### Search
 
-| Technique                          | Description                                                                                                        |
-|------------------------------------|--------------------------------------------------------------------------------------------------------------------|
-| Alpha-Beta                         | Core negamax search with pruning                                                                                   |
-| Iterative Deepening                | Searches incrementally deeper each iteration                                                                       |
-| Aspiration Windows                 | Narrows the search window around the previous score                                                                | 
-| Null Move Prounting                | Skips a move to detect positions that are likely too good                                                          |
-| Late Move Reductions (LMR)         | Reduces depth for moves unlikely to be best                                                                        |
-| Quiescenc Search                   | Extends search on captures to avoid the horizon effect and to evaluate in a quiet position                         |
-| Killer Moves                       | Remembers quiet moves that caused cutoffs at each ply                                                              |
-| Search-based Legal Move Generation | Move generation only generates pseudo-legal moves, and search is resposible for checking if they are legal to make |
+| Technique                          | Description                                                                                        |
+|------------------------------------|----------------------------------------------------------------------------------------------------|
+| Alpha-Beta                         | Core negamax search with pruning                                                                   |
+| Aspiration Windows                 | Narrows the search window around the previous score to reduce search space                         |
+| Futility Pruning                   | Skips moves near the leaves that have no realistic chance of raising alpha                         |
+| Iterative Deepening                | Searches incrementally deeper each iteration, reusing results from shallower searches              |
+| Killer Moves                       | Remembers quiet moves that caused cutoffs at each ply to try them earlier next time                |
+| Late Move Reductions (LMR)         | Reduces depth for moves ordered later, which are unlikely to be best                               |
+| Null Move Pruning                  | Skips a move to detect positions so good they cause a beta cutoff regardless                       |
+| Quiescence Search                  | Extends search on captures to avoid the horizon effect and evaluate only quiet positions           |
+| Razoring                           | Drops into quiescence search early when static eval is far below alpha at low depths               |
+| Reverse Futility Pruning           | Prunes nodes where static eval exceeds beta by a margin, assuming the position is already too good |
+| Search Extensions                  | Extends search depth in critical situations such as check or pawn promotions                       |
+| Search-based Legal Move Generation | Move generation only generates pseudo-legal moves, and search is responsible for checking legality |
 
 ### Evaluation
 
