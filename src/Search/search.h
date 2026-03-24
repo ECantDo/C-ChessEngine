@@ -166,11 +166,11 @@ inline uint64_t leastValuableAttacker(const Board &board, uint64_t attackers,
 // `move`  – the capture move being evaluated
 // `board` – position BEFORE the move is made
 // Returns net material swing from the perspective of the side making the move.
-inline int see(Move move, const Board &board) {
-	int toSq = getMoveTo(move);
-	int fromSq = getMoveFrom(move);
+inline int see(const Move move, const Board &board) {
+	const int toSq = getMoveTo(move);
+	const int fromSq = getMoveFrom(move);
 
-	Piece captured = board.pieceAtSquare(toSq);
+	const Piece captured = board.pieceAtSquare(toSq);
 	if (captured == NONE) return 0;
 
 	int gain[32];

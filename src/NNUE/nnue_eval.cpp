@@ -6,10 +6,14 @@
 #include <iostream>
 #include "nnue_eval.h"
 #include <cstring>
+#define INCBIN_PREFIX g_
+#define INCBIN_STYLE INCBIN_STYLE_SNAKE
+#include "incbin.h"
 
 NNUEParameters g_nnueParams;
 NNUEAccumulator g_nnueAccumulator; // TODO: Make per thread
 bool g_nnueLoaded = false;
+INCBIN(nnue, "quantised.bin");
 
 
 void try_init_nnue(const std::string &filename) {
@@ -18,6 +22,24 @@ void try_init_nnue(const std::string &filename) {
 	} else {
 		std::cout << "info string NNUE network found, NNUE" << std::endl;
 	}
+}
+
+bool initNNUEEmbedded() {
+	static_assert(NNUE_HIDDEN_SIZE % 16 == 0);
+
+	const char *ptr = reinterpret_cast<const char *>(g_nnue_data);
+
+	memcpy(g_nnueParams.inputWeights, ptr, sizeof(g_nnueParams.inputWeights));
+	ptr += sizeof(g_nnueParams.inputWeights);
+	memcpy(g_nnueParams.inputBiases, ptr, sizeof(g_nnueParams.inputBiases));
+	ptr += sizeof(g_nnueParams.inputBiases);
+	memcpy(g_nnueParams.outputWeights, ptr, sizeof(g_nnueParams.outputWeights));
+	ptr += sizeof(g_nnueParams.outputWeights);
+	memcpy(&g_nnueParams.outputBias, ptr, sizeof(g_nnueParams.outputBias));
+
+	g_nnueLoaded = true;
+	std::cout << "Loaded embedded NNUE" << std::endl << std::flush;
+	return true;
 }
 
 // Load network from binary file
@@ -30,28 +52,23 @@ bool initNNUE(const char *filename) {
 		return false;
 	}
 
-	// Bullet outputs a raw struct dump — no magic header, no size fields.
-	// Order matches the Network struct in simple.rs:
-	//   feature_weights  [768][HIDDEN_SIZE]  i16  quantised × QA
-	//   feature_bias     [HIDDEN_SIZE]       i16  quantised × QA
-	//   output_weights   [2*HIDDEN_SIZE]     i16  quantised × QB
-	//   output_bias      [1]                 i16  quantised × QA*QB
-	file.read(reinterpret_cast<char *>(g_nnueParams.inputWeights),
-			  sizeof(g_nnueParams.inputWeights));
-	file.read(reinterpret_cast<char *>(g_nnueParams.inputBiases),
-			  sizeof(g_nnueParams.inputBiases));
-	file.read(reinterpret_cast<char *>(g_nnueParams.outputWeights),
-			  sizeof(g_nnueParams.outputWeights));
-	file.read(reinterpret_cast<char *>(&g_nnueParams.outputBias),
-			  sizeof(g_nnueParams.outputBias));
-
-	if (!file.good()) {
-		std::cerr << "Failed to read NNUE weights" << std::endl;
+	std::vector<char> buffer(std::istreambuf_iterator<char>(file), {});
+	if (!file.good() && !file.eof()) {
+		std::cerr << "Failed to read NNUE file" << std::endl;
 		return false;
 	}
 
+	const char *ptr = buffer.data();
+
+	memcpy(g_nnueParams.inputWeights, ptr, sizeof(g_nnueParams.inputWeights));
+	ptr += sizeof(g_nnueParams.inputWeights);
+	memcpy(g_nnueParams.inputBiases, ptr, sizeof(g_nnueParams.inputBiases));
+	ptr += sizeof(g_nnueParams.inputBiases);
+	memcpy(g_nnueParams.outputWeights, ptr, sizeof(g_nnueParams.outputWeights));
+	ptr += sizeof(g_nnueParams.outputWeights);
+	memcpy(&g_nnueParams.outputBias, ptr, sizeof(g_nnueParams.outputBias));
+
 	g_nnueLoaded = true;
-	std::cout << "NNUE network loaded successfully" << std::endl;
 	return true;
 }
 

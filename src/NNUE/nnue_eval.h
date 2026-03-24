@@ -43,8 +43,12 @@ extern bool g_nnueLoaded;
 
 void try_init_nnue(const std::string &filename);
 
+bool initNNUEEmbedded();
+
 inline void try_init_nnue() {
-	try_init_nnue("quantised.bin");
+	if (!initNNUEEmbedded()) {
+		try_init_nnue("quantised.bin");
+	}
 }
 
 bool initNNUE(const char *filename);
