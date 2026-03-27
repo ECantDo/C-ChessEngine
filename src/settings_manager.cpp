@@ -18,7 +18,9 @@ void printOptions() {
 	std::cout
 			<< "option name Hash type spin default 256 min 4 max 4096" << std::endl
 			<< "option name Threads type spin default 1 max 1" << std::endl
-			<< "option name EvalFile type string default quantised.bin" << std::endl;
+			<< "option name EvalFile type string default quantised.bin" << std::endl
+			// << "option name MaxDepth type spin default 128" << std::endl
+			<< std::flush;
 }
 
 void setOptionHandler(const std::string &line) {
@@ -51,5 +53,12 @@ void setOptionHandler(const std::string &line) {
 		threads = std::clamp(threads, 1, 1);
 		g_engineSettings.threads = threads;
 		std::cerr << "Number of threads set to " << threads << std::endl;
+	}
+
+	if (name == "MaxDepth") {
+		int maxDepth = std::stoi(value);
+		maxDepth = std::clamp(maxDepth, 1, MAX_PLY);
+		g_engineSettings.maxDepth = maxDepth;
+		std::cout << "Max depth set to " << maxDepth << std::endl << std::flush;
 	}
 }

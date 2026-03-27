@@ -164,21 +164,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		!inCheck &&
 		abs(beta) < MATE_SCORE - 100) {
 		// int staticEval = evaluateBoardNNUE(board);
-		int margin;
-		// TODO: Replace with function
-		switch (depth) {
-			case 1:
-				margin = 150;
-				break;
-			case 2:
-				margin = 300;
-				break;
-			case 3:
-				margin = 600;
-				break;
-			default:
-				margin = 1000;
-		}
+		const int margin = depth * 150;
 
 		if (staticEval - margin >= beta) {
 			searchPath.pop_back();

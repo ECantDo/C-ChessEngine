@@ -9,6 +9,7 @@
 struct EngineSettings {
 	int hashSizeMB = 256;
 	int threads = 1;
+	int maxDepth = 128;
 };
 
 extern EngineSettings g_engineSettings;

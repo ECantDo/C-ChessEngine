@@ -186,7 +186,7 @@ void startSearch(const std::string &goCmd) {
 	bool isPeft = false;
 
 	long movetime = -1; /* exact time to use (ms) */
-	long depth = -1; /* plys limit */
+	int depth = -1; /* plys limit */
 	long nodes = -1; /* node limit */
 
 	long wtime = -1, btime = -1; /* remaining time (ms) */
@@ -210,6 +210,8 @@ void startSearch(const std::string &goCmd) {
 			isPeft = true;
 		}
 	}
+
+	depth = std::min(depth, g_engineSettings.maxDepth);
 
 	/*---------------------------------------------------------
 	 * If no limits were explicitly given, derive a time limit
