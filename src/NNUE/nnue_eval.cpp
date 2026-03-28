@@ -24,11 +24,8 @@ void try_init_nnue(const std::string &filename) {
 	}
 }
 
-bool initNNUEEmbedded() {
-	static_assert(NNUE_HIDDEN_SIZE % 16 == 0);
 
-	const char *ptr = reinterpret_cast<const char *>(g_nnue_data);
-
+static void loadFromPtr(const char *ptr) {
 	memcpy(g_nnueParams.inputWeights, ptr, sizeof(g_nnueParams.inputWeights));
 	ptr += sizeof(g_nnueParams.inputWeights);
 	memcpy(g_nnueParams.inputBiases, ptr, sizeof(g_nnueParams.inputBiases));
@@ -38,6 +35,15 @@ bool initNNUEEmbedded() {
 	memcpy(&g_nnueParams.outputBias, ptr, sizeof(g_nnueParams.outputBias));
 
 	g_nnueLoaded = true;
+}
+
+bool initNNUEEmbedded() {
+	static_assert(NNUE_HIDDEN_SIZE % 16 == 0);
+
+	const char *ptr = reinterpret_cast<const char *>(g_nnue_data);
+
+	loadFromPtr(ptr);
+
 	std::cout << "Loaded embedded NNUE" << std::endl << std::flush;
 	return true;
 }
@@ -52,7 +58,7 @@ bool initNNUE(const char *filename) {
 		return false;
 	}
 
-	std::vector<char> buffer(std::istreambuf_iterator<char>(file), {});
+	const std::vector<char> buffer(std::istreambuf_iterator<char>(file), {});
 	if (!file.good() && !file.eof()) {
 		std::cerr << "Failed to read NNUE file" << std::endl;
 		return false;
@@ -60,13 +66,7 @@ bool initNNUE(const char *filename) {
 
 	const char *ptr = buffer.data();
 
-	memcpy(g_nnueParams.inputWeights, ptr, sizeof(g_nnueParams.inputWeights));
-	ptr += sizeof(g_nnueParams.inputWeights);
-	memcpy(g_nnueParams.inputBiases, ptr, sizeof(g_nnueParams.inputBiases));
-	ptr += sizeof(g_nnueParams.inputBiases);
-	memcpy(g_nnueParams.outputWeights, ptr, sizeof(g_nnueParams.outputWeights));
-	ptr += sizeof(g_nnueParams.outputWeights);
-	memcpy(&g_nnueParams.outputBias, ptr, sizeof(g_nnueParams.outputBias));
+	loadFromPtr(ptr);
 
 	g_nnueLoaded = true;
 	return true;
