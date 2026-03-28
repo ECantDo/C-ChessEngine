@@ -43,7 +43,7 @@ bool hasInsufficientMaterial(const Board &board) {
 
 // Score is from white's perspective (as your evaluator returns).
 // Returns true if the game should be ended early due to a lopsided position.
-static bool shouldAdjudicate(int whiteRelativeScore, int &adjudicationCount) {
+static bool shouldAdjudicate(const int whiteRelativeScore, int &adjudicationCount) {
 	// Require 4 consecutive plies with |eval| > 1000cp before adjudicating.
 	// This avoids cutting off positions that just had a big capture.
 	if (abs(whiteRelativeScore) > 1000) {
@@ -153,7 +153,7 @@ void generateTrainingData(const char *outputFile, int numGames, int searchNodes)
 			bool nextMoveIsCapture = (getMoveFlags(bm.bestMove) & MOVE_FLAG_CAPTURE) != 0;
 
 			/* Skip positions with extreme evals — likely tactical noise */
-			bool extremeEval = (abs(whiteRelativeScore) > 3000);
+			bool extremeEval = (abs(whiteRelativeScore) > 1000);
 
 			bool isMateScore = (abs(bm.score) >= MATE_SCORE - 100);
 

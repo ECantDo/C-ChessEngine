@@ -14,6 +14,7 @@
 
 constexpr int NNUE_INPUT_SIZE = 768;
 constexpr int NNUE_HIDDEN_SIZE = 128;
+constexpr int NUM_OUTPUT_BUCKETS = 4;
 constexpr int32_t QA = 255;
 constexpr int32_t QB = 64;
 constexpr int32_t SCALE = 400;
@@ -27,8 +28,8 @@ struct alignas(64) NNUEParameters {
 	NNUEBias inputBiases[NNUE_HIDDEN_SIZE]; // 1 bias per node
 
 	// 2 perspectives
-	NNUEWeight outputWeights[NNUE_HIDDEN_SIZE * 2];
-	int16_t outputBias;
+	NNUEWeight outputWeights[NUM_OUTPUT_BUCKETS][NNUE_HIDDEN_SIZE * 2];
+	int16_t outputBias[NUM_OUTPUT_BUCKETS];
 };
 
 struct alignas(64) NNUEAccumulator {
@@ -60,6 +61,12 @@ void initAccumulator(const Board &board, NNUEAccumulator &accumulator);
 void updateAccumulatorAdd(Piece piece, int square, NNUEAccumulator &accumulator);
 
 void updateAccumulatorRemove(Piece piece, int square, NNUEAccumulator &accumulator);
+
+inline int getOutputBucket(const Board &board) {
+	constexpr int devisor = 32 / NUM_OUTPUT_BUCKETS;
+	const int pieces = (std::popcount(board.getWhiteBitboard() | board.getBlackBitboard()) - 1) / devisor;
+	return pieces;
+}
 
 static inline void addWeightsSIMD(
 	int16_t *accumulator,

@@ -24,20 +24,32 @@ void try_init_nnue(const std::string &filename) {
 	}
 }
 
+static void loadFromPtr(const char *ptr) {
+	memcpy(g_nnueParams.inputWeights, ptr, sizeof(g_nnueParams.inputWeights));
+	ptr += sizeof(g_nnueParams.inputWeights);
+	memcpy(g_nnueParams.inputBiases, ptr, sizeof(g_nnueParams.inputBiases));
+	ptr += sizeof(g_nnueParams.inputBiases);
+
+	constexpr int OUT_WEIGHTS = NNUE_HIDDEN_SIZE * 2;
+	NNUEWeight raw[OUT_WEIGHTS * NUM_OUTPUT_BUCKETS];
+	memcpy(raw, ptr, sizeof(raw));
+	ptr += sizeof(raw);
+
+	for (int w = 0; w < OUT_WEIGHTS; w++)
+		for (int b = 0; b < NUM_OUTPUT_BUCKETS; b++)
+			g_nnueParams.outputWeights[b][w] = raw[w * NUM_OUTPUT_BUCKETS + b];
+
+	memcpy(g_nnueParams.outputBias, ptr, sizeof(g_nnueParams.outputBias));
+	g_nnueLoaded = true;
+}
+
 bool initNNUEEmbedded() {
 	static_assert(NNUE_HIDDEN_SIZE % 16 == 0);
 
 	const char *ptr = reinterpret_cast<const char *>(g_nnue_data);
 
-	memcpy(g_nnueParams.inputWeights, ptr, sizeof(g_nnueParams.inputWeights));
-	ptr += sizeof(g_nnueParams.inputWeights);
-	memcpy(g_nnueParams.inputBiases, ptr, sizeof(g_nnueParams.inputBiases));
-	ptr += sizeof(g_nnueParams.inputBiases);
-	memcpy(g_nnueParams.outputWeights, ptr, sizeof(g_nnueParams.outputWeights));
-	ptr += sizeof(g_nnueParams.outputWeights);
-	memcpy(&g_nnueParams.outputBias, ptr, sizeof(g_nnueParams.outputBias));
+	loadFromPtr(ptr);
 
-	g_nnueLoaded = true;
 	std::cout << "Loaded embedded NNUE" << std::endl << std::flush;
 	return true;
 }
@@ -52,7 +64,7 @@ bool initNNUE(const char *filename) {
 		return false;
 	}
 
-	std::vector<char> buffer(std::istreambuf_iterator<char>(file), {});
+	const std::vector<char> buffer(std::istreambuf_iterator<char>(file), {});
 	if (!file.good() && !file.eof()) {
 		std::cerr << "Failed to read NNUE file" << std::endl;
 		return false;
@@ -60,13 +72,7 @@ bool initNNUE(const char *filename) {
 
 	const char *ptr = buffer.data();
 
-	memcpy(g_nnueParams.inputWeights, ptr, sizeof(g_nnueParams.inputWeights));
-	ptr += sizeof(g_nnueParams.inputWeights);
-	memcpy(g_nnueParams.inputBiases, ptr, sizeof(g_nnueParams.inputBiases));
-	ptr += sizeof(g_nnueParams.inputBiases);
-	memcpy(g_nnueParams.outputWeights, ptr, sizeof(g_nnueParams.outputWeights));
-	ptr += sizeof(g_nnueParams.outputWeights);
-	memcpy(&g_nnueParams.outputBias, ptr, sizeof(g_nnueParams.outputBias));
+	loadFromPtr(ptr);
 
 	g_nnueLoaded = true;
 	return true;
@@ -80,39 +86,39 @@ void initAccumulator(const Board &board, NNUEAccumulator &accumulator) {
 
 	// Add pieces to the board
 	for (int sq = 0; sq < 64; sq++) {
-		Piece piece = board.pieceAtSquare(sq);
+		const Piece piece = board.pieceAtSquare(sq);
 		if (piece != NONE) {
 			updateAccumulatorAdd(piece, sq, accumulator);
 		}
 	}
 }
 
-void updateAccumulatorAdd(const Piece piece, int square, NNUEAccumulator &accumulator) {
-	int featureIdx = getInputFeatureIndex(piece, square);
+void updateAccumulatorAdd(const Piece piece, const int square, NNUEAccumulator &accumulator) {
+	const int featureIdx = getInputFeatureIndex(piece, square);
 	if (featureIdx < 0) return;
 
 	const int16_t *weights = g_nnueParams.inputWeights[featureIdx];
 	addWeightsSIMD(accumulator.white, weights);
 
-	Piece mirroredPiece = flipColor(piece);
-	int mirroredSquare = square ^ 56; // Flip rank
-	int mirroredFeatureIdx = getInputFeatureIndex(mirroredPiece, mirroredSquare);
+	const Piece mirroredPiece = flipColor(piece);
+	const int mirroredSquare = square ^ 56; // Flip rank
+	const int mirroredFeatureIdx = getInputFeatureIndex(mirroredPiece, mirroredSquare);
 
 	weights = g_nnueParams.inputWeights[mirroredFeatureIdx];
 	addWeightsSIMD(accumulator.black, weights);
 }
 
 // Remove a piece from the accumulator
-void updateAccumulatorRemove(Piece piece, int square, NNUEAccumulator &accumulator) {
-	int featureIdx = getInputFeatureIndex(piece, square);
+void updateAccumulatorRemove(const Piece piece, const int square, NNUEAccumulator &accumulator) {
+	const int featureIdx = getInputFeatureIndex(piece, square);
 	if (featureIdx < 0) return;
 
 	const int16_t *weights = g_nnueParams.inputWeights[featureIdx];
 	subWeightsSIMD(accumulator.white, weights);
 
-	Piece mirroredPiece = flipColor(piece);
-	int mirroredSquare = square ^ 56; // Flip rank
-	int mirroredFeatureIdx = getInputFeatureIndex(mirroredPiece, mirroredSquare);
+	const Piece mirroredPiece = flipColor(piece);
+	const int mirroredSquare = square ^ 56; // Flip rank
+	const int mirroredFeatureIdx = getInputFeatureIndex(mirroredPiece, mirroredSquare);
 
 	weights = g_nnueParams.inputWeights[mirroredFeatureIdx];
 	subWeightsSIMD(accumulator.black, weights);
@@ -123,17 +129,19 @@ int evaluateNNUE(const Board &board, const NNUEAccumulator &acc) {
 	const int16_t *us = (board.turn == 1) ? acc.white : acc.black;
 	const int16_t *them = (board.turn == 1) ? acc.black : acc.white;
 
+	const int bucket = getOutputBucket(board);
+
 	int32_t output = 0;
 
 	for (int i = 0; i < NNUE_HIDDEN_SIZE; i++) {
-		int32_t u = screlu(us[i]);
-		int32_t t = screlu(them[i]);
-		output += u * (int32_t) g_nnueParams.outputWeights[i];
-		output += t * (int32_t) g_nnueParams.outputWeights[NNUE_HIDDEN_SIZE + i];
+		const int32_t u = screlu(us[i]);
+		const int32_t t = screlu(them[i]);
+		output += u * static_cast<int32_t>(g_nnueParams.outputWeights[bucket][i]);
+		output += t * static_cast<int32_t>(g_nnueParams.outputWeights[bucket][NNUE_HIDDEN_SIZE + i]);
 	}
 
 	output /= QA; // QA²·QB → QA·QB
-	output += static_cast<int32_t>(g_nnueParams.outputBias);
+	output += static_cast<int32_t>(g_nnueParams.outputBias[bucket]);
 	output *= SCALE;
 	output /= QA * QB; // remove quantisation entirely
 
