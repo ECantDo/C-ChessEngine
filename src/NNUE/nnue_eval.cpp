@@ -8,12 +8,14 @@
 #include <cstring>
 #define INCBIN_PREFIX g_
 #define INCBIN_STYLE INCBIN_STYLE_SNAKE
+#include <iomanip>
+
 #include "incbin.h"
 
 NNUEParameters g_nnueParams;
 NNUEAccumulator g_nnueAccumulator; // TODO: Make per thread
 bool g_nnueLoaded = false;
-INCBIN(nnue, "quantised.bin");
+INCBIN(nnue, "(768-1024)x2-1-8.bin");
 
 
 void try_init_nnue(const std::string &filename) {
@@ -25,21 +27,21 @@ void try_init_nnue(const std::string &filename) {
 }
 
 static void loadFromPtr(const char *ptr) {
+	// Step 1; load in input weights
 	memcpy(g_nnueParams.inputWeights, ptr, sizeof(g_nnueParams.inputWeights));
 	ptr += sizeof(g_nnueParams.inputWeights);
+
+	// Step 2; load in input biases
 	memcpy(g_nnueParams.inputBiases, ptr, sizeof(g_nnueParams.inputBiases));
 	ptr += sizeof(g_nnueParams.inputBiases);
 
-	constexpr int OUT_WEIGHTS = NNUE_HIDDEN_SIZE * 2;
-	NNUEWeight raw[OUT_WEIGHTS * NUM_OUTPUT_BUCKETS];
-	memcpy(raw, ptr, sizeof(raw));
-	ptr += sizeof(raw);
+	// Step 3: output weights (bucket-contiguous in file, matches struct layout)
+	memcpy(g_nnueParams.outputWeights, ptr, sizeof(g_nnueParams.outputWeights));
+	ptr += sizeof(g_nnueParams.outputWeights);
 
-	for (int w = 0; w < OUT_WEIGHTS; w++)
-		for (int b = 0; b < NUM_OUTPUT_BUCKETS; b++)
-			g_nnueParams.outputWeights[b][w] = raw[w * NUM_OUTPUT_BUCKETS + b];
-
+	// Step 4: output biases
 	memcpy(g_nnueParams.outputBias, ptr, sizeof(g_nnueParams.outputBias));
+
 	g_nnueLoaded = true;
 }
 
@@ -124,10 +126,59 @@ void updateAccumulatorRemove(const Piece piece, const int square, NNUEAccumulato
 	subWeightsSIMD(accumulator.black, weights);
 }
 
+void evaluateNNUE_Debug(const Board &board, const NNUEAccumulator &accumulator) {
+	const int16_t *us = (board.turn == 1) ? accumulator.white : accumulator.black;
+	const int16_t *them = (board.turn == 1) ? accumulator.black : accumulator.white;
+
+	const int activeBucket = getOutputBucket(board);
+	const int pieces = std::popcount(board.getWhiteBitboard() | board.getBlackBitboard());
+
+	// Header
+	std::cout << "buckets\n";
+	std::cout << "+------------+------------+\n";
+	std::cout << "|   Bucket   | Evaluation |\n";
+	std::cout << "+------------+------------+\n";
+
+	for (int b = 0; b < NUM_OUTPUT_BUCKETS; b++) {
+		int32_t output = 0;
+
+		for (int i = 0; i < NNUE_HIDDEN_SIZE; i++) {
+			const int32_t u = screlu(us[i]);
+			const int32_t t = screlu(them[i]);
+			output += u * static_cast<int32_t>(g_nnueParams.outputWeights[b][i]);
+			output += t * static_cast<int32_t>(g_nnueParams.outputWeights[b][NNUE_HIDDEN_SIZE + i]);
+		}
+
+		output /= QA;
+		output += static_cast<int32_t>(g_nnueParams.outputBias[b]);
+		output *= SCALE;
+		output /= QA * QB;
+
+		// Format: * prefix for active bucket, padded bucket number, padded eval
+		bool active = (b == activeBucket);
+		double evalPawns = output / 100.0;
+
+		// Bucket cell: "* 3" or "  3", left-padded to 10 chars
+		std::string bucketLabel = (active ? "* " : "  ") + std::to_string(b);
+		// Eval cell: "+ 1.23" or "- 1.23", right-padded to 10 chars
+		std::string sign = (evalPawns >= 0) ? "+" : "-";
+		char evalBuf[16];
+		std::snprintf(evalBuf, sizeof(evalBuf), "%.2f", std::abs(evalPawns));
+		std::string evalLabel = sign + " " + evalBuf;
+
+		// Pad bucket to 10 chars, eval to 10 chars
+		std::cout << "| " << std::left << std::setw(10) << bucketLabel
+				<< "| " << std::setw(10) << evalLabel << "|\n";
+	}
+
+	std::cout << "+------------+------------+\n";
+	std::cout << "* = active bucket (material: " << pieces << " pieces)\n";
+}
+
 // Evaluate the position using the accumulator
-int evaluateNNUE(const Board &board, const NNUEAccumulator &acc) {
-	const int16_t *us = (board.turn == 1) ? acc.white : acc.black;
-	const int16_t *them = (board.turn == 1) ? acc.black : acc.white;
+int evaluateNNUE(const Board &board, const NNUEAccumulator &accumulator) {
+	const int16_t *us = (board.turn == 1) ? accumulator.white : accumulator.black;
+	const int16_t *them = (board.turn == 1) ? accumulator.black : accumulator.white;
 
 	const int bucket = getOutputBucket(board);
 

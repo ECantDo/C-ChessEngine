@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.28)
-project(chessEngine)
+project(chessEngine_bucketTest)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -7,7 +7,7 @@ include_directories(${CMAKE_SOURCE_DIR}/src)
 
 find_package(Threads REQUIRED)
 
-add_executable(chessEngine
+add_executable(chessEngine_bucketTest
 		src/main.cpp
 
 		src/Board/board.h
@@ -111,7 +111,7 @@ if (NOT DEFINED TARGET_ARCH)
 	set(TARGET_ARCH "native")
 endif()
 
-target_compile_options(chessEngine PRIVATE
+target_compile_options(chessEngine_bucketTest PRIVATE
 		-O3
 		-mavx2
 		-march=${TARGET_ARCH}
@@ -134,5 +134,5 @@ target_compile_options(testChessEngine PRIVATE
 		-march=native
 )
 
-target_link_libraries(chessEngine PRIVATE Threads::Threads)
+target_link_libraries(chessEngine_bucketTest PRIVATE Threads::Threads)
 

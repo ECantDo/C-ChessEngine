@@ -384,8 +384,19 @@ int main(int argc, char *argv[]) {
 			currentBoard.printBoard();
 			std::cout << currentBoard.generateFen() << std::endl << std::flush;
 		} else if (line == "eval") {
-			std::cout << "Evaluation: " << evaluateBoardNNUE(currentBoard) << std::endl;
-			std::cout << "FEN: " << currentBoard.generateFen() << std::endl << std::flush;
+			if (debug) {
+				std::cout << "Output biases:";
+				for (const short outputBias : g_nnueParams.outputBias) {
+					std::cout << " " << outputBias;
+				}
+				std:: cout << std::endl;
+				evaluateNNUE_Debug(currentBoard, g_nnueAccumulator);
+				std::cout << std::flush;
+
+			} else {
+				std::cout << "Evaluation: " << evaluateBoardNNUE(currentBoard) << std::endl;
+				std::cout << "FEN: " << currentBoard.generateFen() << std::endl << std::flush;
+			}
 		} else if (line.rfind("debug", 0) == 0) {
 			//            rootDebugAlphaBeta(currentBoard, 6);
 			parseDebug(line);

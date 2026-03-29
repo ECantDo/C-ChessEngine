@@ -13,8 +13,8 @@
 #include "Board/board.h"
 
 constexpr int NNUE_INPUT_SIZE = 768;
-constexpr int NNUE_HIDDEN_SIZE = 128;
-constexpr int NUM_OUTPUT_BUCKETS = 4;
+constexpr int NNUE_HIDDEN_SIZE = 1024;
+constexpr int NUM_OUTPUT_BUCKETS = 8;
 constexpr int32_t QA = 255;
 constexpr int32_t QB = 64;
 constexpr int32_t SCALE = 400;
@@ -53,6 +53,8 @@ inline void try_init_nnue() {
 }
 
 bool initNNUE(const char *filename);
+
+void evaluateNNUE_Debug(const Board &board, const NNUEAccumulator &accumulator);
 
 int evaluateNNUE(const Board &board, const NNUEAccumulator &accumulator);
 
