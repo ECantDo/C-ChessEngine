@@ -219,7 +219,7 @@ inline int see(const Move move, const Board &board) {
 }
 
 
-inline int scoreMoveForOrdering(Move m, const Board &board, int ply,
+inline int scoreMoveForOrdering(const Move m, const Board &board, const int ply,
 								Move killers[MAX_PLY][2],
 								unsigned long long history[2][64][64]) {
 	const int flags = getMoveFlags(m);
