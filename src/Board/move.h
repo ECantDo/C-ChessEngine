@@ -12,7 +12,7 @@
 class Board;
 
 // TODO: Refactor EVERYTHING to use uint16
-typedef uint32_t Move;
+typedef int32_t Move;
 
 /* Flag constants */
 // #define MOVE_FLAG_CAPTURE 0x10

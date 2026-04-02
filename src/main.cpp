@@ -18,7 +18,7 @@
 #include "settings_manager.h"
 #include "Evaluation/bench.h"
 
-#define VERSION "Eeternal-V3"
+#define VERSION "V25_Dev"
 
 bool debug = false;
 Board currentBoard;
