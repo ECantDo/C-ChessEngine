@@ -13,7 +13,7 @@
 NNUEParameters g_nnueParams;
 NNUEAccumulator g_nnueAccumulator; // TODO: Make per thread
 bool g_nnueLoaded = false;
-INCBIN(nnue, "quantised.bin");
+INCBIN(nnue, "(768-128)x2-1.bin");
 
 
 void try_init_nnue(const std::string &filename) {

@@ -230,16 +230,16 @@ inline int scoreMoveForOrdering(Move m, const Board &board, int ply,
 
 	// ── 1. Promotions ────────────────────────────────────────────────────────
 	if (flags & MOVE_FLAG_PROMOTION) {
-		switch (const int promoType = flags & 0x3) {
-			case PROMOTE_TO_QUEEN: score += 9000000;
+		switch (flags & 0b11) {
+			case PROMOTE_TO_QUEEN: score += 900000;
 				break;
-			case PROMOTE_TO_ROOK: score += 5000000;
+			case PROMOTE_TO_ROOK: score += 500000;
 				break;
-			case PROMOTE_TO_BISHOP: score += 3300000;
+			case PROMOTE_TO_BISHOP: score += 330000;
 				break;
-			case PROMOTE_TO_KNIGHT: score += 3200000;
+			case PROMOTE_TO_KNIGHT: score += 320000;
 				break;
-			default: score += 3000000;
+			default: score += 300000;
 				break;
 		}
 		// Fall through to also score the capture component if any
