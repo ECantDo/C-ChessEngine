@@ -20,7 +20,7 @@
 #include "Moves/generate_moves.h"
 #include "Moves/move_list.h"
 
-#define VERSION "V25_Dev"
+#define VERSION "Eeternal-V3.2"
 
 bool debug = false;
 Board currentBoard;
