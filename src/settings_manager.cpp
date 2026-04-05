@@ -9,7 +9,6 @@
 #include <sstream>
 
 #include "NNUE/nnue_eval.h"
-#include "Search/search.h"
 #include "Search/transposition_table.h"
 
 EngineSettings g_engineSettings;
@@ -18,8 +17,8 @@ void printOptions() {
 	std::cout
 			<< "option name Hash type spin default 256 min 4 max 4096" << std::endl
 			<< "option name Threads type spin default 1 max 1" << std::endl
-			<< "option name EvalFile type string default quantised.bin" << std::endl
-			// << "option name MaxDepth type spin default 128" << std::endl
+			<< "option name EvalFile type string default (768-128)x2-1.bin" << std::endl
+			<< "option name MaxDepth type spin default " << MAX_PLY << " min 1 max " << MAX_PLY << std::endl
 			<< std::flush;
 }
 

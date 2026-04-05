@@ -17,6 +17,8 @@
 
 #include "settings_manager.h"
 #include "Evaluation/bench.h"
+#include "Moves/generate_moves.h"
+#include "Moves/move_list.h"
 
 #define VERSION "V25_Dev"
 
@@ -32,12 +34,16 @@ Move ponderMove = 0;
 /*-------------------------------------------------------------
  * Function to run the search in a separate thread
  *-------------------------------------------------------------*/
-void runSearchThread(Board board, const long timeLimit, const int depth, const int numThreads,
+void runSearchThread(Board board, const long timeLimit, int depth, const int numThreads,
 					 const uint64_t maxNodes) {
 	globalTT.overwrites = 0;
 	globalTT.overwriteSameKey = 0;
 
 	const std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
+
+	if (depth > g_engineSettings.maxDepth) {
+		depth = g_engineSettings.maxDepth;
+	}
 
 	SearchValues searchValues{0, 0};
 	BestMove bm = selectMove(board, depth, timeLimit, searchValues, numThreads, maxNodes);
@@ -84,21 +90,6 @@ void runSearchThread(Board board, const long timeLimit, const int depth, const i
 
 	/* Only output info and bestmove if not pondering or if pondering was converted to regular search */
 	if (!isPondering) {
-		// std::cout << "info "
-		// 		<< score
-		// 		<< " depth " << bm.plys
-		// 		<< " seldepth " << bm.selDepth
-		// 		//<< " tbhits " << searchValues.tbHits
-		// 		<< " nodes " << searchValues.nodes
-		// 		<< " time " << elapsed
-		// 		<< " hashfull " << (globalTT.stored * 1000) / (globalTT.getSize() * CLUSTER_SIZE)
-		// 		<< " nps " << (elapsed > 0 ? (searchValues.nodes * 1000 / elapsed) : 0)
-		// 		<< " pv";
-		// for (Move &m: bm.pv) {
-		// 	std::cout << ' ' << moveToString(m);
-		// }
-		// std::cout << std::endl << std::flush;
-
 		/* Store ponder move if available (second move in PV) */
 		Move ponderOutput = 0;
 		if (bm.pv.size() >= 2) {
