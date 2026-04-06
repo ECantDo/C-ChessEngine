@@ -119,12 +119,13 @@ incrementally as pieces move, keeping it extremely fast.
 
 ## Version History
 
-| Version     | Highlights                                                                                    | \*ELO : Blitz |
-|-------------|-----------------------------------------------------------------------------------------------|---------------|
-| Eeternal-V3 | Better NNUE integration, 128 HL neurons                                                       | _not tested_  |
-| Eeternal-V2 | NNUE integration, 64 HL neurons; all above features implemented; All mostly working (untuned) | 2100          |
-| Eeternal-V1 | Pure HCE (Hand Crafted Evaluation); all above features implemented; with some of them broken  | 1800          |
-| Java Bot    | Pure HCE, and very little of the above features                                               | 1500          |
+| Version       | Highlights                                                                                    | Elo          | Elo calc VS            |
+|---------------|-----------------------------------------------------------------------------------------------|--------------|------------------------|
+| Eeternal-V3.2 | Minor tuning, and some settings fixes                                                         | 2721         | Stash 21, +19 +/- 10.4 |
+| Eeternal-V3   | Fixed NNUE integration, 128 HL neurons                                                        | _not tested_ | N/A                    |
+| Eeternal-V2   | NNUE integration, 64 HL neurons; all above features implemented; All mostly working (untuned) | \*2100       | N/A                    |
+| Eeternal-V1   | Pure HCE (Hand Crafted Evaluation); all above features implemented; with some of them broken  | \*1800       | N/A                    |
+| Java Bot      | Pure HCE, and very little of the above features                                               | \*1500       | N/A                    |
 
 \*Approximations based on LiChess games
 
