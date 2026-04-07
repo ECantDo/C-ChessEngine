@@ -8,6 +8,8 @@
 #include <cstring>
 #define INCBIN_PREFIX g_
 #define INCBIN_STYLE INCBIN_STYLE_SNAKE
+#include <cassert>
+
 #include "incbin.h"
 
 NNUEParameters g_nnueParams;
@@ -40,7 +42,7 @@ static void loadFromPtr(const char *ptr) {
 bool initNNUEEmbedded() {
 	static_assert(NNUE_HIDDEN_SIZE % 16 == 0);
 
-	const char *ptr = reinterpret_cast<const char *>(g_nnue_data);
+	const auto ptr = reinterpret_cast<const char *>(g_nnue_data);
 
 	loadFromPtr(ptr);
 
@@ -87,49 +89,49 @@ void initAccumulator(const Board &board, NNUEAccumulator &accumulator) {
 	}
 }
 
-void updateAccumulatorAdd(const Piece piece, int square, NNUEAccumulator &accumulator) {
-	int featureIdx = getInputFeatureIndex(piece, square);
-	if (featureIdx < 0) return;
+void updateAccumulatorAdd(const Piece piece, const int square, NNUEAccumulator &accumulator) {
+	const int featureIdx = getInputFeatureIndex(piece, square);
+	assert(featureIdx < 0);
 
 	const int16_t *weights = g_nnueParams.inputWeights[featureIdx];
 	addWeightsSIMD(accumulator.white, weights);
 
-	Piece mirroredPiece = flipColor(piece);
-	int mirroredSquare = square ^ 56; // Flip rank
-	int mirroredFeatureIdx = getInputFeatureIndex(mirroredPiece, mirroredSquare);
+	const Piece mirroredPiece = flipColor(piece);
+	const int mirroredSquare = square ^ 56; // Flip rank
+	const int mirroredFeatureIdx = getInputFeatureIndex(mirroredPiece, mirroredSquare);
 
 	weights = g_nnueParams.inputWeights[mirroredFeatureIdx];
 	addWeightsSIMD(accumulator.black, weights);
 }
 
 // Remove a piece from the accumulator
-void updateAccumulatorRemove(Piece piece, int square, NNUEAccumulator &accumulator) {
-	int featureIdx = getInputFeatureIndex(piece, square);
-	if (featureIdx < 0) return;
+void updateAccumulatorRemove(const Piece piece, const int square, NNUEAccumulator &accumulator) {
+	const int featureIdx = getInputFeatureIndex(piece, square);
+	assert(featureIdx < 0);
 
 	const int16_t *weights = g_nnueParams.inputWeights[featureIdx];
 	subWeightsSIMD(accumulator.white, weights);
 
-	Piece mirroredPiece = flipColor(piece);
-	int mirroredSquare = square ^ 56; // Flip rank
-	int mirroredFeatureIdx = getInputFeatureIndex(mirroredPiece, mirroredSquare);
+	const Piece mirroredPiece = flipColor(piece);
+	const int mirroredSquare = square ^ 56; // Flip rank
+	const int mirroredFeatureIdx = getInputFeatureIndex(mirroredPiece, mirroredSquare);
 
 	weights = g_nnueParams.inputWeights[mirroredFeatureIdx];
 	subWeightsSIMD(accumulator.black, weights);
 }
 
 // Evaluate the position using the accumulator
-int evaluateNNUE(const Board &board, const NNUEAccumulator &acc) {
-	const int16_t *us = (board.turn == 1) ? acc.white : acc.black;
-	const int16_t *them = (board.turn == 1) ? acc.black : acc.white;
+int evaluateNNUE(const Board &board, const NNUEAccumulator &accumulator) {
+	const int16_t *us = (board.turn == 1) ? accumulator.white : accumulator.black;
+	const int16_t *them = (board.turn == 1) ? accumulator.black : accumulator.white;
 
 	int32_t output = 0;
 
 	for (int i = 0; i < NNUE_HIDDEN_SIZE; i++) {
-		int32_t u = screlu(us[i]);
-		int32_t t = screlu(them[i]);
-		output += u * (int32_t) g_nnueParams.outputWeights[i];
-		output += t * (int32_t) g_nnueParams.outputWeights[NNUE_HIDDEN_SIZE + i];
+		const int32_t u = screlu(us[i]);
+		const int32_t t = screlu(them[i]);
+		output += u * static_cast<int32_t>(g_nnueParams.outputWeights[i]);
+		output += t * static_cast<int32_t>(g_nnueParams.outputWeights[NNUE_HIDDEN_SIZE + i]);
 	}
 
 	output /= QA; // QA²·QB → QA·QB

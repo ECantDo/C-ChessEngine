@@ -3,11 +3,15 @@
 //
 
 #include "quiescence_search.h"
+
+#include <cassert>
+
 #include "search.h"
 
 BestMove quiescenceSearch(Board &board, int alpha, const int beta, SearchValues &searchValues, const int qDepth) {
 	searchValues.nodes++;
 	constexpr int MAX_Q_DEPTH = 32;
+	assert(alpha >= -INF_SCORE && alpha < beta && beta < INF_SCORE);
 
 	// If we do nothing, what's the score???
 	const int standPat = evaluateBoardNNUE(board);
@@ -23,7 +27,6 @@ BestMove quiescenceSearch(Board &board, int alpha, const int beta, SearchValues 
 	if (qDepth >= MAX_Q_DEPTH) {
 		return {0, standPat, qDepth, qDepth, true, {}};
 	}
-
 
 	MoveList captures;
 	generateMoves(board, captures, true, true);
