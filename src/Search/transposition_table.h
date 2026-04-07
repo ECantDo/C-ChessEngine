@@ -53,7 +53,7 @@ public:
 	std::atomic<unsigned long long> overwrites{0};
 	std::atomic<unsigned long long> stored{0};
 
-	explicit TranspositionTable(size_t sizeMB)
+	explicit TranspositionTable(const size_t sizeMB)
 		: size((sizeMB * 1024 * 1024) / sizeof(TTCluster)),
 		  table(new TTCluster[size]),
 		  numLocks((size / LOCK_SIZE_FACTOR) + 1),
@@ -70,9 +70,9 @@ public:
 
 	void clear();
 
-	void store(uint64_t key, Move bestMove, int depth, int score, TTFlag flag) {
-		size_t index = key % size;
-		size_t lockIndex = index / LOCK_SIZE_FACTOR;
+	void store(const uint64_t key, const Move bestMove, const int depth, const int score, const TTFlag flag) {
+		const size_t index = key % size;
+		const size_t lockIndex = index / LOCK_SIZE_FACTOR;
 
 		// Lock this section of the table - other threads must wait
 		std::lock_guard<std::mutex> lock(locks[lockIndex]);
@@ -105,21 +105,21 @@ public:
 				&& flag != TT_EXACT) {
 				return; // Don't overwrite exact with bound
 			}
-			overwriteSameKey++;
+			++overwriteSameKey;
 			writeIndex = matchingIdx;
 			goto writeToTable;
 		}
 
 		// Not same position, and there is blank, just write to blank
 		if (blankIdx != -1) {
-			stored++;
+			++stored;
 			writeIndex = blankIdx;
 			goto writeToTable;
 		}
 		// Otherwise, shift values to the left; sudo-aging
 		// and write to the right-most position, or the youngest spot
 		writeIndex = CLUSTER_SIZE - 1;
-		overwrites++;
+		++overwrites;
 		for (int8_t i = 0; i < writeIndex; i++) {
 			cluster.entry[i] = cluster.entry[i + 1];
 		}
@@ -150,9 +150,9 @@ public:
 	 * @param entry
 	 * @return
 	 */
-	bool probe(uint64_t key, int depth, int alpha, int beta, TTEntry &entry) {
-		size_t index = key % size;
-		size_t lockIndex = index / LOCK_SIZE_FACTOR;
+	bool probe(const uint64_t key, const int depth, const int alpha, const int beta, TTEntry &entry) {
+		const size_t index = key % size;
+		const size_t lockIndex = index / LOCK_SIZE_FACTOR;
 
 		// Lock on read - prevent writing from another thread
 		std::lock_guard<std::mutex> lock(locks[lockIndex]);
@@ -160,13 +160,13 @@ public:
 		TTCluster &cluster = table[index];
 		// Find position
 		int8_t eIdx = 0;
-		for (eIdx; eIdx < CLUSTER_SIZE; eIdx++) {
+		for (; eIdx < CLUSTER_SIZE; eIdx++) {
 			if (cluster.entry[eIdx].zobristKey == key) break;
 		}
 		// Miss
 		if (eIdx == CLUSTER_SIZE) return false;
 
-		TTEntry &e = cluster.entry[eIdx];
+		const TTEntry &e = cluster.entry[eIdx];
 
 		// From this point forwards, we can always use what is stored in the table; Might not be
 		entry = e;

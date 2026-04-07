@@ -82,16 +82,19 @@ void initAccumulator(const Board &board, NNUEAccumulator &accumulator) {
 
 	// Add pieces to the board
 	for (int sq = 0; sq < 64; sq++) {
-		Piece piece = board.pieceAtSquare(sq);
-		if (piece != NONE) {
+		if (const Piece piece = board.pieceAtSquare(sq);
+			piece != NONE) {
 			updateAccumulatorAdd(piece, sq, accumulator);
 		}
 	}
 }
 
 void updateAccumulatorAdd(const Piece piece, const int square, NNUEAccumulator &accumulator) {
+	assert(piece != NONE);
+	assert(square >= 0 && square < 64);
 	const int featureIdx = getInputFeatureIndex(piece, square);
-	assert(featureIdx < 0);
+
+	assert(featureIdx >= 0);
 
 	const int16_t *weights = g_nnueParams.inputWeights[featureIdx];
 	addWeightsSIMD(accumulator.white, weights);
@@ -106,8 +109,10 @@ void updateAccumulatorAdd(const Piece piece, const int square, NNUEAccumulator &
 
 // Remove a piece from the accumulator
 void updateAccumulatorRemove(const Piece piece, const int square, NNUEAccumulator &accumulator) {
+	assert(piece != NONE);
+	assert(square >= 0 && square < 64);
 	const int featureIdx = getInputFeatureIndex(piece, square);
-	assert(featureIdx < 0);
+	assert(featureIdx >= 0);
 
 	const int16_t *weights = g_nnueParams.inputWeights[featureIdx];
 	subWeightsSIMD(accumulator.white, weights);

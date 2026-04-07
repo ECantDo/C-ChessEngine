@@ -61,7 +61,7 @@ void updateAccumulatorAdd(Piece piece, int square, NNUEAccumulator &accumulator)
 
 void updateAccumulatorRemove(Piece piece, int square, NNUEAccumulator &accumulator);
 
-static inline void addWeightsSIMD(
+static void addWeightsSIMD(
 	int16_t *accumulator,
 	const int16_t *weights
 ) {
@@ -110,7 +110,7 @@ static inline void subWeightsSIMD(
 	}
 }
 
-inline int getInputFeatureIndex(Piece piece, int square) {
+inline int getInputFeatureIndex(const Piece piece, const int square) {
 	// Simple encoding: piece type (0-11) × 64 squares
 	int pieceIndex;
 

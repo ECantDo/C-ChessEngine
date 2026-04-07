@@ -10,7 +10,6 @@
 #include <fstream>
 #include <iomanip>
 #include <unordered_map>
-#include "Evaluation/opening_book.h"
 #include "Board/move.h"
 #include "Board/board.h"
 

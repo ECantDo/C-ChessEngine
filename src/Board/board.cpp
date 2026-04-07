@@ -525,11 +525,11 @@ int getBoardIndex(const int file, const int rank) {
 }
 
 /* Takes algebraic notation like 'b' and '7' */
-int getBoardIndex(char file, char rank) {
+int getBoardIndex(const char file, const char rank) {
 	return getBoardIndex(file - 'a', rank - '1');
 }
 
-std::string getBoardPosition(int index) {
+std::string getBoardPosition(const int index) {
 	if (index < 0 || index >= 64) return "";
 
 	const int rank = index >> 3; // index / 8;
@@ -793,7 +793,7 @@ void Board::unmakeMove(const Move m, const UndoInfo &undoInfo) {
 	}
 
 	/* Flip turn back first */
-	turn = (int8_t) -turn;
+	turn = static_cast<int8_t>(-turn);
 
 	/* Decrement fullmove if we're back to black's turn */
 	if (turn == -1) {

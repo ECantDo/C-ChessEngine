@@ -3,6 +3,9 @@
 //
 
 #include "search.h"
+
+#include <cassert>
+
 #include "Moves/move_list.h"
 #include "NNUE/nnue_eval.h"
 
@@ -30,7 +33,8 @@ void scoreAllMoves(const MoveList &moves, std::array<int, MoveLimit> &moveScores
 // Basically selection sort
 void selectNextBestMove(MoveList &moves, std::array<int, MoveLimit> &moveScores, const int startIdx, const int endIdx) {
 	// No work to be done if `start == end` or `start > end`
-	if (startIdx >= endIdx) return;
+	assert(startIdx < endIdx);
+	// if (startIdx >= endIdx) return;
 
 	int bestIdx = -1;
 	int bestScore = INT32_MIN;
@@ -216,19 +220,6 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 	// ============ Generate Moves ============
 	MoveList moveList;
 	generateMoves(board, moveList, false);
-
-	// if (moveList.empty()) {
-	// 	// King in check -> Mate
-	// 	if (inCheck) {
-	// 		int mateScore = -MATE_SCORE + plys;
-	// 		globalTT.store(board.zobristHash, 0, depth, -MATE_SCORE, TT_EXACT);
-	// 		return {0, mateScore, plys, plys, true, {}};
-	// 	}
-	// 	// King not in check -> Draw
-	// 	// Only seeing this move, or plys of 1
-	// 	globalTT.store(board.zobristHash, 0, depth, 0, TT_EXACT);
-	// 	return {0, 0, plys, plys, true, {}};
-	// }
 
 	// ============ Order Moves ============
 	// Only setting it up for in the list
