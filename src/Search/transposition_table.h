@@ -11,7 +11,6 @@
 #include <atomic>
 #include "Board/move.h"
 
-#define LOCK_SIZE_FACTOR 512
 #define CLUSTER_SIZE 3
 
 enum TTFlag : uint8_t {
@@ -27,7 +26,7 @@ struct TTEntry {
 	int score;
 	uint8_t flag;
 
-	TTEntry() : zobristKey(0), bestMove(0), score(0), depth(0), flag(0) {
+	TTEntry() : zobristKey(0), bestMove(0), depth(0), score(0), flag(0) {
 	}
 };
 
@@ -44,9 +43,7 @@ struct TTCluster {
 class TranspositionTable {
 private:
 	size_t size;
-	size_t numLocks;
 	TTCluster *table;
-	std::vector<std::mutex> locks;
 
 public:
 	std::atomic<unsigned long long> overwriteSameKey{0}; // Make atomic
@@ -55,12 +52,7 @@ public:
 
 	explicit TranspositionTable(const size_t sizeMB)
 		: size((sizeMB * 1024 * 1024) / sizeof(TTCluster)),
-		  table(new TTCluster[size]),
-		  numLocks((size / LOCK_SIZE_FACTOR) + 1),
-		  locks(numLocks), // Construct vector with numLocks default-constructed mutexes
-		  overwrites(0),
-		  overwriteSameKey(0),
-		  stored(0) {
+		  table(new TTCluster[size]) {
 	}
 
 	~TranspositionTable() {
@@ -72,10 +64,8 @@ public:
 
 	void store(const uint64_t key, const Move bestMove, const int depth, const int score, const TTFlag flag) {
 		const size_t index = key % size;
-		const size_t lockIndex = index / LOCK_SIZE_FACTOR;
 
 		// Lock this section of the table - other threads must wait
-		std::lock_guard<std::mutex> lock(locks[lockIndex]);
 		TTCluster &cluster = table[index];
 		int8_t writeIndex = -1;
 
@@ -152,10 +142,8 @@ public:
 	 */
 	bool probe(const uint64_t key, const int depth, const int alpha, const int beta, TTEntry &entry) {
 		const size_t index = key % size;
-		const size_t lockIndex = index / LOCK_SIZE_FACTOR;
 
 		// Lock on read - prevent writing from another thread
-		std::lock_guard<std::mutex> lock(locks[lockIndex]);
 
 		TTCluster &cluster = table[index];
 		// Find position

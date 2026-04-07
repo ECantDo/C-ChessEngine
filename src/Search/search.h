@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <chrono>
 #include <atomic>
+#include <cassert>
 #include <thread>
 
 
@@ -291,5 +292,42 @@ inline void initLmrTable() {
 	}
 }
 
+// TODO: Move Picker vs scoring all moves
+
+inline void scoreAllMoves(const MoveList &moves, std::array<int, MoveLimit> &moveScores,
+						  const Board &board, const Move previousBest, const int ply,
+						  Move killers[MAX_PLY][2], unsigned long long history[2][64][64]) {
+	for (int i = 0; i < moves.length(); i++) {
+		if (moves.get(i) == previousBest) {
+			moveScores[i] = 100000000; // Ensure this is the first move, likely is the best
+		} else {
+			moveScores[i] = scoreMoveForOrdering(moves.get(i), board, ply, killers, history);
+		}
+	}
+}
+
+// Basically selection sort
+inline void selectNextBestMove(MoveList &moves, std::array<int, MoveLimit> &moveScores, const int startIdx,
+							   const int endIdx) {
+	// No work to be done if `start == end` or `start > end`
+	assert(startIdx < endIdx);
+
+	int bestIdx = -1;
+	int bestScore = INT32_MIN;
+	for (int i = startIdx; i < endIdx; i++) {
+		if (moveScores[i] > bestScore) {
+			bestScore = moveScores[i];
+			bestIdx = i;
+		}
+	}
+
+	// Check to be safe; should never happen... but to be safe.. Should always find the best move
+	assert(bestScore != -1 && bestScore != INT32_MIN);
+
+	const Move bestMove = moves.get(bestIdx);
+	moves.set(bestIdx, moves.get(startIdx));
+	moves.set(startIdx, bestMove);
+	std::swap(moveScores[startIdx], moveScores[bestIdx]);
+}
 
 #endif //CHESSENGINE_SEARCH_H
