@@ -64,7 +64,7 @@ BestMove selectMove(Board &board, int maxDepth, long timeLimitMS, SearchValues &
 
 bool isKingInCheck(const Board &board, int color);
 
-bool insufficientMaterial(Board &board);
+bool insufficientMaterial(const Board &board);
 
 ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThreads, uint64_t maxNodes);
 
@@ -267,7 +267,7 @@ inline int scoreMoveForOrdering(const Move m, const Board &board, const int ply,
 	// ── 3. Quiet move bonuses
 
 	// Killer moves
-	if (ply < MAX_PLY) {
+	if (ply < MAX_PLY && killers != nullptr) {
 		if (m == killers[ply][0]) score += 90000;
 		else if (m == killers[ply][1]) score += 80000;
 	}
@@ -276,8 +276,10 @@ inline int scoreMoveForOrdering(const Move m, const Board &board, const int ply,
 	if (flags & MOVE_FLAG_CASTLING) score += 50000;
 
 	// History heuristic
-	const int color = (board.turn == 1) ? 0 : 1;
-	score += std::min(static_cast<int>(history[color][from][to]), 70000);
+	if (history != nullptr) {
+		const int color = (board.turn == 1) ? 0 : 1;
+		score += std::min(static_cast<int>(history[color][from][to]), 70000);
+	}
 
 	return score;
 }

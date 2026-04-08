@@ -123,7 +123,7 @@ public:
 	[[nodiscard]] bool isRepetitionInSearch(const std::vector<uint64_t> &searchPath) const {
 		// Start from the most recent board position, and go back until the half move clock is 0
 		// -- as that is where repetitions can start from
-		int startIdx = (int) (searchPath.size() + gameHistory.size() - halfMoveClock);
+		int startIdx = static_cast<int>(searchPath.size() + gameHistory.size() - halfMoveClock);
 
 		// Count the number of times this board position has been reached
 		int reps = 0;
@@ -137,7 +137,7 @@ public:
 		}
 
 		//
-		startIdx = std::max((int) (searchPath.size() - halfMoveClock), 0);
+		startIdx = std::max(static_cast<int>(searchPath.size() - halfMoveClock), 0);
 		for (int i = startIdx; i < searchPath.size(); i++) {
 			if (searchPath[i] == zobristHash) {
 				reps++;
@@ -150,6 +150,16 @@ public:
 
 		return false;
 	}
+
+	[[nodiscard]] bool insufficientMaterial() const {
+		return (whitePawns | blackPawns | whiteRooks | blackRooks |
+				whiteBishops | blackBishops | whiteKnights | blackKnights |
+				whiteQueens | blackQueens) == 0;
+	}
+
+	[[nodiscard]] bool isKingInCheck() const;
+
+	[[nodiscard]] bool isKingInCheck(const int color) const;
 };
 
 /**

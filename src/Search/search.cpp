@@ -16,23 +16,6 @@ std::atomic<bool> stopSearch{false};
 static long g_timeLimitMS = 0;
 static std::chrono::steady_clock::time_point g_searchStart;
 
-
-int calculateExtension(const Board &board, const Move move) {
-	int extension = 0;
-	const bool inCheck = isKingInCheck(board, board.turn);
-	if (inCheck) {
-		extension += 1;
-	}
-
-	const int toSquare = getMoveTo(move);
-	const int pieceMoved = getPieceType(board.pieceAtSquare(getMoveFrom(move)));
-	if (pieceMoved == TYPE_PAWN && (toSquare == 1 || toSquare == 6)) {
-		extension += 1;
-	}
-
-	return extension;
-}
-
 bool hasNonPawnMaterial(const Board &board) {
 	// Check if there is something other than pawns on the board
 	if (board.turn == 1) {
@@ -55,7 +38,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 				   SearchValues &searchValues, bool nullMoveAllowed = true) {
 	searchValues.nodes++;
 
-	bool inCheck = isKingInCheck(board, board.turn);
+	bool inCheck = board.isKingInCheck(); //isKingInCheck(board, board.turn);
 
 
 	// ============ Check for Draw ============
@@ -73,7 +56,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 	}
 
 	// Draw on insufficient material (one of the)
-	if (insufficientMaterial(board)) {
+	if (board.insufficientMaterial()) {
 		searchPath.pop_back();
 		return {0, 0, plys, plys, true, {}}; /* Draw score = 0 */
 	}
@@ -218,18 +201,32 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		UndoInfo undo = board.makeMove(move);
 
 		// Check legality - is our king now in check?
-		const uint64_t ourKing = (board.turn == -1) ? board.whiteKing : board.blackKing;
-		if (isSquareAttacked(board, std::countr_zero(ourKing), board.turn)) {
+		if (board.isKingInCheck(-board.turn)) {
 			board.unmakeMove(move, undo);
-			continue; // illegal move, skip
+			continue;
 		}
+		// const uint64_t ourKing = (board.turn == -1) ? board.whiteKing : board.blackKing;
+		// if (isSquareAttacked(board, std::countr_zero(ourKing), board.turn)) {
+		// 	board.unmakeMove(move, undo);
+		// 	continue; // illegal move, skip
+		// }
 
 
 		BestMove result;
 
-		int extension = calculateExtension(board, move);
+		// ====== Extensions ======
+		int extension = 0; // calculateExtension(board, move);
+		const bool otherInCheck = board.isKingInCheck();
+		if (otherInCheck) {
+			++extension;
+		}
+		const int toSquare = getMoveTo(move);
+		const int pieceMoved = getPieceType(board.pieceAtSquare(getMoveFrom(move)));
+		if (pieceMoved == TYPE_PAWN && (toSquare == 1 || toSquare == 6)) {
+			extension += 1;
+		}
 
-		// Get PV node
+		// ====== Get PV node ======
 		if (movesSearched == 0) {
 			result = alphaBeta(board, depth - 1 + extension, plys + 1, -beta, -alpha,
 							   0, searchPath, killerMoves, historyTable,
@@ -246,8 +243,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 				}
 
 				// Reduce less if in check or giving check
-				if (isKingInCheck(board, board.turn) ||
-					isKingInCheck(board, -board.turn)) {
+				if (otherInCheck) {
 					reduction -= 1;
 				}
 			}
@@ -623,16 +619,4 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 	stopSearch = true;
 
 	return {bestMove, bestScore, completedDepth, selDepth, pv, totalNodes, totalTbHits};
-}
-
-
-bool isKingInCheck(const Board &board, int color) {
-	uint64_t king = color == 1 ? board.whiteKing : board.blackKing;
-	return isSquareAttacked(board, std::countr_zero(king), -color);
-}
-
-bool insufficientMaterial(Board &board) {
-	return (board.whitePawns | board.blackPawns | board.whiteRooks | board.blackRooks |
-			board.whiteBishops | board.blackBishops | board.whiteKnights | board.blackKnights |
-			board.whiteQueens | board.blackQueens) == 0;
 }

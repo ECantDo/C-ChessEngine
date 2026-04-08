@@ -879,3 +879,13 @@ uint64_t Board::computeZobristHash() const {
 
 	return hash;
 }
+
+ bool Board::isKingInCheck() const {
+	const uint64_t king = turn == 1 ? whiteKing : blackKing;
+	return isSquareAttacked(*this, std::countr_zero(king), -turn);
+}
+
+bool Board::isKingInCheck(const int color) const {
+	const uint64_t king = color == 1 ? whiteKing : blackKing;
+	return isSquareAttacked(*this, std::countr_zero(king), -color);
+}

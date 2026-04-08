@@ -8,10 +8,19 @@
 
 #include "search.h"
 
+constexpr int MAX_Q_DEPTH = 32;
+
+
 BestMove quiescenceSearch(Board &board, int alpha, const int beta, SearchValues &searchValues, const int qDepth) {
 	searchValues.nodes++;
-	constexpr int MAX_Q_DEPTH = 32;
 	assert(alpha >= -INF_SCORE && alpha < beta && beta <= INF_SCORE);
+
+	// Check for a draw
+	if (board.insufficientMaterial()) {
+		return {0, 0, 1, qDepth, true, {}};
+	}
+
+	const bool inCheck = board.isKingInCheck();
 
 	// TT Probe
 	// TTEntry ttEntry;
@@ -22,47 +31,56 @@ BestMove quiescenceSearch(Board &board, int alpha, const int beta, SearchValues 
 	// int alphaOrig = alpha;
 
 	// If we do nothing, what's the score???
-	const int standPat = evaluateBoardNNUE(board);
+	int standPat;
+	if (inCheck) {
+		standPat = -MATE_SCORE + qDepth;
+	} else {
+		standPat = evaluateBoardNNUE(board);
 
-	if (standPat >= beta) {
-		// globalTT.store(board.zobristHash, 0, 0, beta, TT_BETA);
-		return {0, beta, 1, qDepth, true, {}}; // Beta cutoff
+		if (standPat >= beta) {
+			// globalTT.store(board.zobristHash, 0, 0, beta, TT_BETA);
+			return {0, beta, 1, qDepth, true, {}}; // Beta cutoff
+		}
+
+		if (standPat > alpha) {
+			alpha = standPat;
+		}
 	}
 
-	if (standPat > alpha) {
-		alpha = standPat;
-	}
+
 	// Stop quiescence if too deep
-	if (qDepth >= MAX_Q_DEPTH) {
-		return {0, standPat, qDepth, qDepth, true, {}};
-	}
+	// if (qDepth >= MAX_Q_DEPTH) {
+	// 	return {0, standPat, qDepth, qDepth, true, {}};
+	// }
 
-	MoveList captures;
-	generateMoves(board, captures, true, true);
+	MoveList moveList;
+	generateMoves(board, moveList, true, !inCheck);
 
-	if (captures.empty()) {
+	if (moveList.empty()) {
 		// Don't store TT, since there are still quite moves - need to implement draw/checkmates
 		return {0, standPat, 1, qDepth, true, {}};
 	}
 
 	std::array<int, MoveLimit> moveScores{};
-	for (int i = 0; i < captures.length(); i++) {
-		moveScores[i] = scoreMoveForOrdering(captures.get(i), board, 0, nullptr, nullptr);
+	for (int i = 0; i < moveList.length(); i++) {
+		moveScores[i] = scoreMoveForOrdering(moveList.get(i), board, 0, nullptr, nullptr);
 	}
 
 	int bestScore = standPat;
 	// Move bestMove = 0;
 
-	for (int i = 0; i < captures.length(); i++) {
-		selectNextBestMove(captures, moveScores, i, static_cast<int>(captures.length()));
-		const Move move = captures.get(i);
+	for (int i = 0; i < moveList.length(); i++) {
+		selectNextBestMove(moveList, moveScores, i, static_cast<int>(moveList.length()));
+		const Move move = moveList.get(i);
 
-		// // 1. SEE pruning - skip losing captures
-		if (see(move, board) < 0) continue;
+		if (!inCheck) {
+			// // 1. SEE pruning - skip losing captures
+			if (see(move, board) < 0) continue;
 
-		// 2. Delta pruning - skip if even a winning capture can't raise alpha
-		const int captured = abs(getPieceValue(board.pieceAtSquare(getMoveTo(move))));
-		if (standPat + captured + 200 < alpha) continue;
+			// 2. Delta pruning - skip if even a winning capture can't raise alpha
+			const int captured = abs(getPieceValue(board.pieceAtSquare(getMoveTo(move))));
+			if (standPat + captured + 200 < alpha) continue;
+		}
 
 		//
 		UndoInfo ui = board.makeMove(move);
@@ -84,5 +102,6 @@ BestMove quiescenceSearch(Board &board, int alpha, const int beta, SearchValues 
 	// else flag = TT_EXACT;
 	//
 	// globalTT.store(board.zobristHash, bestMove, 0, bestScore, flag);
+
 	return {0, bestScore, 1, qDepth, true, {}};
 }

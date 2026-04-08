@@ -58,7 +58,7 @@ struct UndoInfo {
  * @return
  */
 inline Move encodeMove(const int from, const int to, const int flags) {
-	return static_cast<Move>((flags << 12) | (to << 6) | from);
+	return flags << 12 | to << 6 | from;
 }
 
 inline int getMoveFrom(const Move m) {
@@ -75,6 +75,6 @@ inline int getMoveFlags(const Move m) {
 
 std::string moveToString(Move m);
 
-Move stringToMove(std::string &str, const Board &board);
+Move stringToMove(const std::string &str, const Board &board);
 
 #endif //CHESSENGINE_MOVE_H

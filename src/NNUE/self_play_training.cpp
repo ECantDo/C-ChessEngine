@@ -147,7 +147,7 @@ void generateTrainingData(const char *outputFile, int numGames, int searchNodes)
 			int whiteRelativeScore = (board.turn == 1) ? bm.score : -bm.score;
 
 			/* Skip positions in check — noisy, not representative of quiet positions */
-			bool inCheck = isKingInCheck(board, board.turn);
+			bool inCheck = board.isKingInCheck();
 
 			/* Skip positions where the next move is a capture — eval will change drastically */
 			bool nextMoveIsCapture = (getMoveFlags(bm.bestMove) & MOVE_FLAG_CAPTURE) != 0;
@@ -181,7 +181,7 @@ void generateTrainingData(const char *outputFile, int numGames, int searchNodes)
 			MoveList finalMoves;
 			generateMoves(board, finalMoves);
 
-			if (finalMoves.empty() && isKingInCheck(board, board.turn)) {
+			if (finalMoves.empty() && board.isKingInCheck()) {
 				// board.turn is the side that was checkmated
 				whiteResult = (board.turn == 1) ? 0.0f : 1.0f;
 			}
