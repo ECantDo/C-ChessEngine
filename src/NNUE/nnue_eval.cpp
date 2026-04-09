@@ -132,22 +132,64 @@ void updateAccumulatorRemove(const Piece piece, const int square, NNUEAccumulato
 
 // Evaluate the position using the accumulator
 Score evaluateNNUE(const Board &board, const NNUEAccumulator &accumulator) {
-	const int16_t *us = (board.turn == 1) ? accumulator.white : accumulator.black;
-	const int16_t *them = (board.turn == 1) ? accumulator.black : accumulator.white;
+    const int16_t *us   = (board.turn == 1) ? accumulator.white : accumulator.black;
+    const int16_t *them = (board.turn == 1) ? accumulator.black : accumulator.white;
+    const int16_t *w0   = g_nnueParams.outputWeights;
+    const int16_t *w1   = g_nnueParams.outputWeights + NNUE_HIDDEN_SIZE;
 
-	int32_t output = 0;
+    const __m256i zero = _mm256_setzero_si256();
+    const __m256i qa   = _mm256_set1_epi16(QA);
 
-	for (int i = 0; i < NNUE_HIDDEN_SIZE; i++) {
-		const int32_t u = screlu(us[i]);
-		const int32_t t = screlu(them[i]);
-		output += u * static_cast<int32_t>(g_nnueParams.outputWeights[i]);
-		output += t * static_cast<int32_t>(g_nnueParams.outputWeights[NNUE_HIDDEN_SIZE + i]);
-	}
+    __m256i sum = _mm256_setzero_si256();
 
-	output /= QA; // QA²·QB → QA·QB
-	output += static_cast<int32_t>(g_nnueParams.outputBias);
-	output *= SCALE;
-	output /= QA * QB; // remove quantisation entirely
+    for (int i = 0; i < NNUE_HIDDEN_SIZE; i += 16) {
+        // ── "us" half ──────────────────────────────────────────────────
+        __m256i u  = _mm256_load_si256(reinterpret_cast<const __m256i *>(us + i));
+        __m256i wu = _mm256_load_si256(reinterpret_cast<const __m256i *>(w0 + i));
 
-	return static_cast<Score>(output);
+        u = _mm256_max_epi16(u, zero);
+        u = _mm256_min_epi16(u, qa);          // clamp to [0, 255]
+
+        __m256i u_sq    = _mm256_mullo_epi16(u, u);   // clamp², safe: 255²=65025 < 65535
+
+    	__m256i u_sq_lo = _mm256_cvtepu16_epi32(_mm256_castsi256_si128(u_sq));   // unsigned extend
+    	__m256i u_sq_hi = _mm256_cvtepu16_epi32(_mm256_extracti128_si256(u_sq, 1));
+    	__m256i wu_lo   = _mm256_cvtepi16_epi32(_mm256_castsi256_si128(wu));     // weights stay signed
+    	__m256i wu_hi   = _mm256_cvtepi16_epi32(_mm256_extracti128_si256(wu, 1));
+
+    	sum = _mm256_add_epi32(sum, _mm256_mullo_epi32(u_sq_lo, wu_lo));
+    	sum = _mm256_add_epi32(sum, _mm256_mullo_epi32(u_sq_hi, wu_hi));
+
+        // ── "them" half ────────────────────────────────────────────────
+        __m256i t  = _mm256_load_si256(reinterpret_cast<const __m256i *>(them + i));
+        __m256i wt = _mm256_load_si256(reinterpret_cast<const __m256i *>(w1 + i));
+
+        t = _mm256_max_epi16(t, zero);
+        t = _mm256_min_epi16(t, qa);
+
+        __m256i t_sq    = _mm256_mullo_epi16(t, t);
+
+        __m256i t_sq_lo = _mm256_cvtepu16_epi32(_mm256_castsi256_si128(t_sq));
+        __m256i t_sq_hi = _mm256_cvtepu16_epi32(_mm256_extracti128_si256(t_sq, 1));
+        __m256i wt_lo   = _mm256_cvtepi16_epi32(_mm256_castsi256_si128(wt));
+        __m256i wt_hi   = _mm256_cvtepi16_epi32(_mm256_extracti128_si256(wt, 1));
+
+        sum = _mm256_add_epi32(sum, _mm256_mullo_epi32(t_sq_lo, wt_lo));
+        sum = _mm256_add_epi32(sum, _mm256_mullo_epi32(t_sq_hi, wt_hi));
+    }
+
+    // Horizontal reduction: 8 int32 lanes → scalar
+    __m128i lo = _mm256_castsi256_si128(sum);
+    __m128i hi = _mm256_extracti128_si256(sum, 1);
+    __m128i s  = _mm_add_epi32(lo, hi);
+    s = _mm_add_epi32(s, _mm_srli_si128(s, 8));
+    s = _mm_add_epi32(s, _mm_srli_si128(s, 4));
+    int32_t output = _mm_cvtsi128_si32(s);
+
+    output /= QA;
+    output += static_cast<int32_t>(g_nnueParams.outputBias);
+    output *= SCALE;
+    output /= QA * QB;
+
+    return static_cast<Score>(output);
 }

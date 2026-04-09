@@ -4,13 +4,12 @@
 
 #include "transposition_table.h"
 
+#include <cstring>
+
 TranspositionTable globalTT(256);
 
 void TranspositionTable::clear() {
-	std::destroy_n(table, size);
-	std::free(table);
-	table = static_cast<TTCluster*>(std::aligned_alloc(64, size * sizeof(TTCluster)));
-	new (table) TTCluster[size];
+	memset(table, 0, size * sizeof(TTCluster));
 	overwrites = 0;
 	stored = 0;
 }
