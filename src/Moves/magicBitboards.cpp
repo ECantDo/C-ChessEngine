@@ -215,8 +215,8 @@ void initAttackTables() {
 
 void initPawnMoveTables() {
 	for (int sq = 0; sq < 64; ++sq) {
-		int rank = sq >> 3;
-		int file = sq & 7;
+		const int rank = sq >> 3;
+		const int file = sq & 7;
 
 		// White pawn pushes
 		if (rank < 7) PAWN_PUSHES[WHITE][sq] = 1ULL << (sq + 8);

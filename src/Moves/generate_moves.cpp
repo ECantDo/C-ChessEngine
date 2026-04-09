@@ -258,7 +258,8 @@ void generatePawnMoves(const Board &board, MoveList &moveList, const bool captur
 	uint64_t pawnBitboard;
 	uint64_t myPieces, theirPieces;
 	int direction; /* +8 for white (moving up), -8 for black (moving down) */
-	int startRank, promotionRank;
+	int startRank;
+	Color color;
 
 	if (board.turn == 1) {
 		/* White */
@@ -267,7 +268,7 @@ void generatePawnMoves(const Board &board, MoveList &moveList, const bool captur
 		pawnBitboard = board.whitePawns;
 		direction = 8;
 		startRank = 1; /* Rank 2 in 0-indexed */
-		promotionRank = 7; /* Rank 8 */
+		color = WHITE;
 	} else {
 		/* Black */
 		myPieces = board.getBlackBitboard();
@@ -275,7 +276,7 @@ void generatePawnMoves(const Board &board, MoveList &moveList, const bool captur
 		pawnBitboard = board.blackPawns;
 		direction = -8;
 		startRank = 6; /* Rank 7 in 0-indexed */
-		promotionRank = 0; /* Rank 1 */
+		color = BLACK;
 	}
 
 	const uint64_t occupied = myPieces | theirPieces;
@@ -292,7 +293,8 @@ void generatePawnMoves(const Board &board, MoveList &moveList, const bool captur
 			const int oneForward = pawnSquare + direction;
 
 			if (isValidSquare(oneForward) && !(occupied & (1ULL << oneForward))) {
-				if (pawnRank + (direction >> 3) == promotionRank) {
+
+				if (oneForward >= 56 || oneForward < 8) {
 					// Add promotion moves
 					moveList.append(encodeMove(pawnSquare, oneForward, MOVE_FLAG_PROMOTION | PROMOTE_TO_QUEEN));
 					moveList.append(encodeMove(pawnSquare, oneForward, MOVE_FLAG_PROMOTION | PROMOTE_TO_ROOK));
@@ -304,60 +306,41 @@ void generatePawnMoves(const Board &board, MoveList &moveList, const bool captur
 
 					// === 2. Double Forwards ===
 					if (pawnRank == startRank) {
-						int twoForward = pawnSquare + (direction << 1); // Fast mult by 2
+						const int twoForward = pawnSquare + (direction << 1); // Fast mult by 2
 						if (!(occupied & (1ULL << twoForward))) {
 							moveList.append(encodeMove(pawnSquare, twoForward, 0));
 						}
 					}
 				}
+
 			}
 		}
 
 		// === 3. CAPTURES ===
-		int captureOffsets[2] = {direction - 1, direction + 1};
 
-		for (int captureOffset: captureOffsets) {
-			int captureSquare = pawnSquare + captureOffset;
+		uint64_t pawnCaptures = PAWN_ATTACKS[color][pawnSquare];
 
-			// Check for going off the end
-			if (!isValidSquare(captureSquare)) continue;
+		pawnCaptures &= theirPieces | (board.enPassantSquare >= 0 ? 1ULL << board.enPassantSquare : 0);
+		while (pawnCaptures) {
+			const int captureSquare = std::countr_zero(pawnCaptures);
+			pawnCaptures &= pawnCaptures - 1;
 
-			// Check for wrap
-			int captureFile = captureSquare % 8;
-			if (abs(captureFile - pawnFile) != 1) continue;
-
-			if (theirPieces & (1ULL << captureSquare)) {
-				if (pawnRank + (direction / 8) == promotionRank) {
-					//Promotion captures
-					moveList.append(encodeMove(pawnSquare, captureSquare,
-											   MOVE_FLAG_PROMOTION | MOVE_FLAG_CAPTURE | PROMOTE_TO_QUEEN));
-					moveList.append(encodeMove(pawnSquare, captureSquare,
-											   MOVE_FLAG_PROMOTION | MOVE_FLAG_CAPTURE | PROMOTE_TO_ROOK));
-					moveList.append(encodeMove(pawnSquare, captureSquare,
-											   MOVE_FLAG_PROMOTION | MOVE_FLAG_CAPTURE | PROMOTE_TO_BISHOP));
-					moveList.append(encodeMove(pawnSquare, captureSquare,
-											   MOVE_FLAG_PROMOTION | MOVE_FLAG_CAPTURE | PROMOTE_TO_KNIGHT));
-				} else {
-					// Normal capture
-					moveList.append(encodeMove(pawnSquare, captureSquare, MOVE_FLAG_CAPTURE));
+			if (captureSquare >= 56 || captureSquare < 8) {
+				// Capture and promote
+				constexpr int flags = MOVE_FLAG_CAPTURE | MOVE_FLAG_PROMOTION;
+				moveList.append(encodeMove(pawnSquare, captureSquare, flags | PROMOTE_TO_QUEEN));
+				moveList.append(encodeMove(pawnSquare, captureSquare, flags | PROMOTE_TO_ROOK));
+				moveList.append(encodeMove(pawnSquare, captureSquare, flags | PROMOTE_TO_BISHOP));
+				moveList.append(encodeMove(pawnSquare, captureSquare, flags | PROMOTE_TO_KNIGHT));
+			} else {
+				// Normal capture
+				int flag = MOVE_FLAG_CAPTURE;
+				if (captureSquare == board.enPassantSquare) {
+					flag |= MOVE_FLAG_EN_PASSANT;
 				}
+				moveList.append(encodeMove(pawnSquare, captureSquare, flag));
 			}
 		}
-
-		// === 4. En Passant ===
-		if (board.enPassantSquare >= 0 && board.enPassantSquare < 64) {
-			const int epSquare = board.enPassantSquare;
-			const int epFile = epSquare % 8;
-
-			// Check if we can capture
-			if (abs(epFile - pawnFile) == 1 && epSquare == pawnSquare + direction - 1) {
-				moveList.append(encodeMove(pawnSquare, epSquare, MOVE_FLAG_EN_PASSANT | MOVE_FLAG_CAPTURE));
-			} else if (abs(epFile - pawnFile) == 1 && epSquare == pawnSquare + direction + 1) {
-				moveList.append(encodeMove(pawnSquare, epSquare, MOVE_FLAG_EN_PASSANT | MOVE_FLAG_CAPTURE));
-			}
-		}
-
-		// And that's pawns... goodness... the simplest piece has the most rules...
 	}
 }
 
