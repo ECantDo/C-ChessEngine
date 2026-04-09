@@ -5,8 +5,8 @@
 #ifndef CHESSENGINE_SEARCH_H
 #define CHESSENGINE_SEARCH_H
 
-#define MATE_SCORE 100000 // 100_000
-#define INF_SCORE  200000 // 200_000
+#define MATE_SCORE 30000 // 30_000
+#define INF_SCORE  31000 // 31_000
 
 #include <string>
 #include <numeric>

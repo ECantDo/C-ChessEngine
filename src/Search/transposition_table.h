@@ -9,9 +9,16 @@
 #include <mutex>
 #include <vector>
 #include <atomic>
+#include <cassert>
+#include <iostream>
+#include <ostream>
+
 #include "Board/move.h"
 
 #define CLUSTER_SIZE 3
+
+typedef int16_t Score;
+typedef uint8_t Depth;
 
 enum TTFlag : uint8_t {
 	TT_EXACT = 0,
@@ -63,6 +70,9 @@ public:
 	void clear();
 
 	void store(const uint64_t key, const Move bestMove, const int depth, const int score, const TTFlag flag) {
+		assert(depth >= 0);
+		assert(std::abs(score) <= 0x7FFF);
+
 		const size_t index = key % size;
 
 		// Lock this section of the table - other threads must wait

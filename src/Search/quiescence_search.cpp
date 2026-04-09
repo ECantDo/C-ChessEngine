@@ -39,7 +39,7 @@ BestMove quiescenceSearch(Board &board, int alpha, const int beta, SearchValues 
 
 		if (standPat >= beta) {
 			// globalTT.store(board.zobristHash, 0, 0, beta, TT_BETA);
-			return {0, beta, 1, qDepth, true, {}}; // Beta cutoff
+			return {0, standPat, 1, qDepth, true, {}}; // Beta cutoff
 		}
 
 		if (standPat > alpha) {

@@ -32,7 +32,7 @@ bool hasNonPawnMaterial(const Board &board) {
 			board.blackKnights);
 }
 
-BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move previousBest,
+BestMove alphaBeta(Board &board, Depth depth, int plys, int alpha, int beta, Move previousBest,
 				   std::vector<uint64_t> &searchPath, Move killerMoves[MAX_PLY][2],
 				   unsigned long long historyTable[2][64][64],
 				   SearchValues &searchValues, bool nullMoveAllowed = true) {
@@ -90,6 +90,12 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 	if (depth <= 0) {
 		searchPath.pop_back();
 		BestMove qSearchRes = quiescenceSearch(board, alpha, beta, searchValues);
+		if (qSearchRes.score > MATE_SCORE - 100) {
+			qSearchRes.score -= plys;
+		} else if (qSearchRes.score <= -MATE_SCORE + 100) {
+			qSearchRes.score += plys;
+		}
+		assert(std::abs(qSearchRes.score) <= MATE_SCORE);
 		qSearchRes.selDepth += plys;
 		return qSearchRes;
 	}
@@ -174,7 +180,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 	Move bestMove; // = moveList.get(0);
 
 
-	int bestScore = -INF_SCORE;
+	int bestScore = -MATE_SCORE;
 	int maxSelDepth = plys;
 	std::vector<Move> pv;
 
@@ -271,8 +277,9 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 		}
 
 		int score = -result.score;
-
 		board.unmakeMove(move, undo);
+		assert(std::abs(score) <= MATE_SCORE);
+
 		movesSearched++;
 
 		if (result.selDepth > maxSelDepth) {
@@ -319,7 +326,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 			break;
 		}
 
-		if (stopSearch) {
+		if (stopSearch || !result.completed) {
 			completed = false;
 			break;
 		}
@@ -342,6 +349,7 @@ BestMove alphaBeta(Board &board, int depth, int plys, int alpha, int beta, Move 
 	}
 
 	if (completed) {
+		assert(std::abs(bestScore) <= MATE_SCORE);
 		// ==== STORE TT MOVE ====
 		TTFlag flag;
 		if (bestScore <= alphaOrig) {
