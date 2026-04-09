@@ -101,9 +101,9 @@ uint64_t perft(const int depth, Board &board) {
 
 	generateMoves(board, moveList);
 
-	if (depth == 1) {
-		return moveList.length();
-	}
+	// if (depth == 1) {
+	// 	return moveList.length();
+	// }
 
 
 	uint64_t nodes = 0;
