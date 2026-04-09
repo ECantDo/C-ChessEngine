@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <immintrin.h>
 #include "Board/board.h"
+#include "Search/transposition_table.h"
 
 constexpr int NNUE_INPUT_SIZE = 768;
 constexpr int NNUE_HIDDEN_SIZE = 128;
@@ -53,7 +54,7 @@ inline void try_init_nnue() {
 
 bool initNNUE(const char *filename);
 
-int evaluateNNUE(const Board &board, const NNUEAccumulator &accumulator);
+Score evaluateNNUE(const Board &board, const NNUEAccumulator &accumulator);
 
 void initAccumulator(const Board &board, NNUEAccumulator &accumulator);
 

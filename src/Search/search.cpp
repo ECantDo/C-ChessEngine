@@ -32,7 +32,7 @@ bool hasNonPawnMaterial(const Board &board) {
 			board.blackKnights);
 }
 
-BestMove alphaBeta(Board &board, Depth depth, int plys, int alpha, int beta, Move previousBest,
+BestMove alphaBeta(Board &board, Depth depth, Depth plys, Score alpha, Score beta, Move previousBest,
 				   std::vector<uint64_t> &searchPath, Move killerMoves[MAX_PLY][2],
 				   unsigned long long historyTable[2][64][64],
 				   SearchValues &searchValues, bool nullMoveAllowed = true) {
@@ -63,14 +63,14 @@ BestMove alphaBeta(Board &board, Depth depth, int plys, int alpha, int beta, Mov
 
 	// ============ TT Storage consts ============
 
-	int alphaOrig = alpha; // For the TT
-	int betaOrig = beta;
+	Score alphaOrig = alpha; // For the TT
+	Score betaOrig = beta;
 
 	// ============ TT Probe ============
 	TTEntry ttEntry;
 	// The plys is how many nodes from here it has been searched
 	if (globalTT.probe(board.zobristHash, depth, alpha, beta, ttEntry)) {
-		int score = ttEntry.score;
+		Score score = ttEntry.score;
 
 		//        // Adjust mate scores relative to current position
 		if (score >= MATE_SCORE - 100) {
@@ -100,7 +100,7 @@ BestMove alphaBeta(Board &board, Depth depth, int plys, int alpha, int beta, Mov
 		return qSearchRes;
 	}
 
-	int staticEval = evaluateBoardNNUE(board);
+	Score staticEval = evaluateBoardNNUE(board);
 
 	// Razoring
 	if (!inCheck && depth <= 3) {
@@ -123,7 +123,7 @@ BestMove alphaBeta(Board &board, Depth depth, int plys, int alpha, int beta, Mov
 		if (staticEval - margin >= beta) {
 			searchPath.pop_back();
 			searchValues.nodes++;
-			return {0, staticEval - margin, plys, plys, true, {}};
+			return {0, static_cast<Score>(staticEval - margin), plys, plys, true, {}};
 		}
 	}
 
@@ -180,7 +180,7 @@ BestMove alphaBeta(Board &board, Depth depth, int plys, int alpha, int beta, Mov
 	Move bestMove; // = moveList.get(0);
 
 
-	int bestScore = -MATE_SCORE;
+	Score bestScore = -MATE_SCORE;
 	int maxSelDepth = plys;
 	std::vector<Move> pv;
 
@@ -276,7 +276,7 @@ BestMove alphaBeta(Board &board, Depth depth, int plys, int alpha, int beta, Mov
 			}
 		}
 
-		int score = -result.score;
+		Score score = -result.score;
 		board.unmakeMove(move, undo);
 		assert(std::abs(score) <= MATE_SCORE);
 
@@ -338,7 +338,7 @@ BestMove alphaBeta(Board &board, Depth depth, int plys, int alpha, int beta, Mov
 	if (movesSearched == 0 && completed) {
 		// King in check -> Mate
 		if (inCheck) {
-			int mateScore = -MATE_SCORE + plys;
+			Score mateScore = plys - MATE_SCORE;
 			globalTT.store(board.zobristHash, 0, depth, -MATE_SCORE, TT_EXACT);
 			return {0, mateScore, plys, plys, true, {}};
 		}
@@ -360,7 +360,7 @@ BestMove alphaBeta(Board &board, Depth depth, int plys, int alpha, int beta, Mov
 			flag = TT_EXACT;
 		}
 
-		int ttScore = bestScore;
+		Score ttScore = bestScore;
 		if (ttScore >= MATE_SCORE - 100) {
 			ttScore += plys;
 		} else if (ttScore <= -MATE_SCORE + 100) {
@@ -434,7 +434,7 @@ std::mutex g_outputMutex; // Global
 
 ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThreads, uint64_t maxNodes) {
 	Move bestMove = 0;
-	int bestScore = 0;
+	Score bestScore = 0;
 	std::vector<Move> pv;
 	unsigned long long totalNodes = 0, totalTbHits = 0;
 	int completedDepth = 0;
@@ -455,7 +455,7 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 
 	// Early exit tracking
 	Move lastBestMove = 0;
-	int lastScore = 0;
+	Score lastScore = 0;
 	int stableMoveCount = 0;
 	int selDepth = 0;
 
@@ -489,8 +489,8 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 
 		if (rootDepth >= 6 && abs(bestScore) < 2000) {
 			int delta = 15; // Window size; typical is 50, but I am going with 100 for now, to make sure it works
-			int alpha = bestScore - delta;
-			int beta = bestScore + delta;
+			Score alpha = bestScore - delta;
+			Score beta = bestScore + delta;
 
 			int failedHighCnt = 0;
 			int fails = 0;
@@ -510,7 +510,7 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 
 					failedHighCnt = 0;
 				} else if (result.score >= beta) {
-					alpha = std::max(beta - delta, alpha);
+					alpha = std::max(static_cast<Score>(beta - delta), alpha);
 					beta = std::min(result.score + delta, INF_SCORE);
 					++failedHighCnt;
 				} else
@@ -543,7 +543,7 @@ ThreadResult searchThread(Board board, int maxDepth, int threadId, int totalThre
 		totalTbHits += searchValues.tbHits;
 		selDepth = result.selDepth;
 
-		int absBestScore = abs(bestScore);
+		Score absBestScore = abs(bestScore);
 		// Print UCI info
 		auto now = std::chrono::steady_clock::now();
 		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();

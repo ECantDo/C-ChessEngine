@@ -31,7 +31,7 @@ BestMove quiescenceSearch(Board &board, int alpha, const int beta, SearchValues 
 	// int alphaOrig = alpha;
 
 	// If we do nothing, what's the score???
-	int standPat;
+	Score standPat;
 	if (inCheck) {
 		standPat = -MATE_SCORE + qDepth;
 	} else {
@@ -66,7 +66,7 @@ BestMove quiescenceSearch(Board &board, int alpha, const int beta, SearchValues 
 		moveScores[i] = scoreMoveForOrdering(moveList.get(i), board, 0, nullptr, nullptr);
 	}
 
-	int bestScore = standPat;
+	Score bestScore = standPat;
 	// Move bestMove = 0;
 
 	for (int i = 0; i < moveList.length(); i++) {
@@ -85,7 +85,7 @@ BestMove quiescenceSearch(Board &board, int alpha, const int beta, SearchValues 
 		//
 		UndoInfo ui = board.makeMove(move);
 		const BestMove result = quiescenceSearch(board, -beta, -alpha, searchValues, qDepth + 1);
-		const int score = -result.score;
+		const Score score = -result.score;
 		board.unmakeMove(move, ui);
 
 		if (score > bestScore) {

@@ -365,7 +365,7 @@ int evaluateMaterial(const Board &board) {
 	return score;
 }
 
-int evaluateBoardNNUE(Board &board) {
+Score evaluateBoardNNUE(Board &board) {
 	if (!g_nnueLoaded) {
 		return evaluateBoard(board);
 	}

@@ -7,8 +7,11 @@
 TranspositionTable globalTT(256);
 
 void TranspositionTable::clear() {
-	delete[] table;
-	table = new TTCluster[size];
+	std::destroy_n(table, size);
+	std::free(table);
+	table = static_cast<TTCluster*>(std::aligned_alloc(64, size * sizeof(TTCluster)));
+	new (table) TTCluster[size];
 	overwrites = 0;
 	stored = 0;
 }
+

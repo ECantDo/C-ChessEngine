@@ -36,7 +36,7 @@ inline int lmrTable[MAX_PLY][MAX_PLY];
 
 struct BestMove {
 	Move bestMove;
-	int score;
+	Score score;
 	int plys;
 	int selDepth;
 	bool completed;
@@ -50,7 +50,7 @@ struct SearchValues {
 
 struct ThreadResult {
 	Move bestMove;
-	int bestScore;
+	Score bestScore;
 	int depth;
 	int selDepth;
 	std::vector<Move> pv;

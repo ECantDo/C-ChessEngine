@@ -7,6 +7,7 @@
 
 #include "Board/board.h"
 #include "Moves/generate_moves.h"
+#include "Search/transposition_table.h"
 
 #define FILE_MASK 0x0101010101010101ULL
 #define RANK_MASK 0xFFULL
@@ -14,7 +15,7 @@
 // =====================================================================================================================
 // Main Evaluation Functions
 // =====================================================================================================================
-int evaluateBoardNNUE(Board &board);
+Score evaluateBoardNNUE(Board &board);
 
 int evaluateBoard(Board &board);
 
@@ -25,9 +26,9 @@ int getEndGamePieceSquareValue(Piece piece, int square);
 // =====================================================================================================================
 // Helper Functions
 // =====================================================================================================================
-inline int flipIndex(int index) {
-	int rank = index >> 3;
-	int file = index & 0x7;
+inline int flipIndex(const int index) {
+	const int rank = index >> 3;
+	const int file = index & 0x7;
 	return (7 - rank) * 8 + file;
 }
 

@@ -15,10 +15,10 @@
 
 #include "Board/move.h"
 
-#define CLUSTER_SIZE 3
+#define CLUSTER_SIZE 4
 
 typedef int16_t Score;
-typedef uint8_t Depth;
+typedef int8_t Depth;
 
 enum TTFlag : uint8_t {
 	TT_EXACT = 0,
@@ -29,11 +29,11 @@ enum TTFlag : uint8_t {
 struct TTEntry {
 	uint64_t zobristKey;
 	Move bestMove;
-	int depth;
-	int score;
+	Score score;
+	Depth depth;
 	uint8_t flag;
 
-	TTEntry() : zobristKey(0), bestMove(0), depth(0), score(0), flag(0) {
+	TTEntry() : zobristKey(0), bestMove(0), score(0), depth(0), flag(0) {
 	}
 };
 
@@ -58,18 +58,20 @@ public:
 	std::atomic<unsigned long long> stored{0};
 
 	explicit TranspositionTable(const size_t sizeMB)
-		: size((sizeMB * 1024 * 1024) / sizeof(TTCluster)),
-		  table(new TTCluster[size]) {
+	: size((sizeMB * 1024 * 1024) / sizeof(TTCluster)),
+	  table(static_cast<TTCluster*>(std::aligned_alloc(64, size * sizeof(TTCluster)))) {
+		new (table) TTCluster[size]; // placement new to run constructors
 	}
 
 	~TranspositionTable() {
-		delete[] table;
+		std::destroy_n(table, size);
+		std::free(table);
 		table = nullptr;
 	}
 
 	void clear();
 
-	void store(const uint64_t key, const Move bestMove, const int depth, const int score, const TTFlag flag) {
+	void store(const uint64_t key, const Move bestMove, const Depth depth, const Score score, const TTFlag flag) {
 		assert(depth >= 0);
 		assert(std::abs(score) <= 0x7FFF);
 

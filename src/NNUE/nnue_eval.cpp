@@ -126,7 +126,7 @@ void updateAccumulatorRemove(const Piece piece, const int square, NNUEAccumulato
 }
 
 // Evaluate the position using the accumulator
-int evaluateNNUE(const Board &board, const NNUEAccumulator &accumulator) {
+Score evaluateNNUE(const Board &board, const NNUEAccumulator &accumulator) {
 	const int16_t *us = (board.turn == 1) ? accumulator.white : accumulator.black;
 	const int16_t *them = (board.turn == 1) ? accumulator.black : accumulator.white;
 
@@ -144,5 +144,5 @@ int evaluateNNUE(const Board &board, const NNUEAccumulator &accumulator) {
 	output *= SCALE;
 	output /= QA * QB; // remove quantisation entirely
 
-	return output;
+	return static_cast<Score>(output);
 }
