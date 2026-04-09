@@ -17,6 +17,7 @@ NNUEAccumulator g_nnueAccumulator; // TODO: Make per thread
 bool g_nnueLoaded = false;
 INCBIN(nnue, "(768-128)x2-1.bin");
 
+uint16_t SQR_TABLE[QA + 1] = {0};
 
 void try_init_nnue(const std::string &filename) {
 	if (!initNNUE(filename.c_str())) {
@@ -35,6 +36,10 @@ static void loadFromPtr(const char *ptr) {
 	memcpy(g_nnueParams.outputWeights, ptr, sizeof(g_nnueParams.outputWeights));
 	ptr += sizeof(g_nnueParams.outputWeights);
 	memcpy(&g_nnueParams.outputBias, ptr, sizeof(g_nnueParams.outputBias));
+
+	for (int i = 0; i < QA + 1; i++) {
+		SQR_TABLE[i] = static_cast<uint16_t>(i * i);
+	}
 
 	g_nnueLoaded = true;
 }

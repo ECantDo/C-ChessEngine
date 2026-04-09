@@ -556,6 +556,11 @@ UndoInfo Board::makeMove(const Move m) {
 	const bool isCastling = (flags & MOVE_FLAG_CASTLING) != 0;
 	const bool isEnPassant = (flags & MOVE_FLAG_EN_PASSANT) != 0;
 
+	Piece finalPiece = thisPiece;
+	if (isPromotion) {
+		finalPiece = getPromotedPiece(flags, turn);
+	}
+
 	// Save undo info
 	const UndoInfo undoInfo = {
 		.capturedPiece = isEnPassant
@@ -567,26 +572,12 @@ UndoInfo Board::makeMove(const Move m) {
 		.zobristHash = zobristHash,
 	};
 
-	if (g_nnueLoaded) {
-		// EP capture
-		if (isEnPassant) {
-			const int captureSquare = toLocation + (turn == 1 ? -8 : 8);
-			const Piece capturedPawn = undoInfo.capturedPiece; // Will be pawn since isEnPassant is true
-			updateAccumulatorRemove(capturedPawn, captureSquare, g_nnueAccumulator);
-		} else if (isPiece(capturedPiece)) {
-			updateAccumulatorRemove(capturedPiece, toLocation, g_nnueAccumulator);
-		}
+	// Remove from source
+	updateAccumulatorRemove(thisPiece, fromLocation, g_nnueAccumulator);
 
-		// Remove from source
-		updateAccumulatorRemove(thisPiece, fromLocation, g_nnueAccumulator);
+	// Add to destination
+	updateAccumulatorAdd(finalPiece, toLocation, g_nnueAccumulator);
 
-		// Add to destination
-		Piece finalPiece = thisPiece;
-		if (isPromotion) {
-			finalPiece = getPromotedPiece(flags, turn);
-		}
-		updateAccumulatorAdd(finalPiece, toLocation, g_nnueAccumulator);
-	}
 
 	// ========== UPDATE ZOBRIST HASH (Part 1: Removals) ==========
 
@@ -603,30 +594,25 @@ UndoInfo Board::makeMove(const Move m) {
 
 	// Remove captured piece
 	if (isEnPassant) {
-		int offset;
-		Piece remove;
-		if (turn == 1) {
-			offset = -8;
-			remove = BLACK_PAWN;
-		} else {
-			offset = 8;
-			remove = WHITE_PAWN;
-		}
+		const int captureSquare = toLocation + (turn == 1 ? -8 : 8);
+		const Piece capturedPawn = undoInfo.capturedPiece;
+		zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(undoInfo.capturedPiece)][captureSquare];
+		removePieceAtSquare(captureSquare, capturedPawn);
 
-		int capturedPawnSquare = toLocation + offset;
-		zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(undoInfo.capturedPiece)][capturedPawnSquare];
-		removePieceAtSquare(capturedPawnSquare, remove);
+		updateAccumulatorRemove(capturedPawn, captureSquare, g_nnueAccumulator);
 	} else if (isPiece(capturedPiece)) {
 		zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(capturedPiece)][toLocation];
 		removePieceAtSquare(toLocation, capturedPiece);
+
+		updateAccumulatorRemove(capturedPiece, toLocation, g_nnueAccumulator);
 	}
 
 	// ========== MOVE THE PIECE ==========
 
-	Piece finalPiece = thisPiece;
-	if (isPromotion) {
-		finalPiece = getPromotedPiece(flags, turn);
-	}
+	// Piece finalPiece = thisPiece;
+	// if (isPromotion) {
+	// 	finalPiece = getPromotedPiece(flags, turn);
+	// }
 
 	removePieceAtSquare(fromLocation, thisPiece);
 	addPieceAtSquare(toLocation, finalPiece);
@@ -641,40 +627,40 @@ UndoInfo Board::makeMove(const Move m) {
 			removePieceAtSquare(7, WHITE_ROOK);
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(WHITE_ROOK)][7];
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(WHITE_ROOK)][5];
-			if (g_nnueLoaded) {
-				updateAccumulatorRemove(WHITE_ROOK, 7, g_nnueAccumulator);
-				updateAccumulatorAdd(WHITE_ROOK, 5, g_nnueAccumulator);
-			}
+			// if (g_nnueLoaded) {
+			updateAccumulatorRemove(WHITE_ROOK, 7, g_nnueAccumulator);
+			updateAccumulatorAdd(WHITE_ROOK, 5, g_nnueAccumulator);
+			// }
 		} else if (toLocation == 2) {
 			// White queenside
 			addPieceAtSquare(3, WHITE_ROOK);
 			removePieceAtSquare(0, WHITE_ROOK);
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(WHITE_ROOK)][0];
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(WHITE_ROOK)][3];
-			if (g_nnueLoaded) {
-				updateAccumulatorRemove(WHITE_ROOK, 0, g_nnueAccumulator);
-				updateAccumulatorAdd(WHITE_ROOK, 3, g_nnueAccumulator);
-			}
+			// if (g_nnueLoaded) {
+			updateAccumulatorRemove(WHITE_ROOK, 0, g_nnueAccumulator);
+			updateAccumulatorAdd(WHITE_ROOK, 3, g_nnueAccumulator);
+			// }
 		} else if (toLocation == 62) {
 			// Black kingside
 			addPieceAtSquare(61, BLACK_ROOK);
 			removePieceAtSquare(63, BLACK_ROOK);
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(BLACK_ROOK)][63];
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(BLACK_ROOK)][61];
-			if (g_nnueLoaded) {
-				updateAccumulatorRemove(BLACK_ROOK, 63, g_nnueAccumulator);
-				updateAccumulatorAdd(BLACK_ROOK, 61, g_nnueAccumulator);
-			}
+			// if (g_nnueLoaded) {
+			updateAccumulatorRemove(BLACK_ROOK, 63, g_nnueAccumulator);
+			updateAccumulatorAdd(BLACK_ROOK, 61, g_nnueAccumulator);
+			// }
 		} else if (toLocation == 58) {
 			// Black queenside
 			addPieceAtSquare(59, BLACK_ROOK);
 			removePieceAtSquare(56, BLACK_ROOK);
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(BLACK_ROOK)][56];
 			zobristHash ^= Zobrist::pieceSquare[Zobrist::getZobristIndex(BLACK_ROOK)][59];
-			if (g_nnueLoaded) {
-				updateAccumulatorRemove(BLACK_ROOK, 56, g_nnueAccumulator);
-				updateAccumulatorAdd(BLACK_ROOK, 59, g_nnueAccumulator);
-			}
+			// if (g_nnueLoaded) {
+			updateAccumulatorRemove(BLACK_ROOK, 56, g_nnueAccumulator);
+			updateAccumulatorAdd(BLACK_ROOK, 59, g_nnueAccumulator);
+			// }
 		}
 	}
 
@@ -744,7 +730,7 @@ void Board::unmakeMove(const Move m, const UndoInfo &undoInfo) {
 	const int flags = getMoveFlags(m);
 
 	// ==== NNUE Updates ====
-	if (g_nnueLoaded) {
+	// if (g_nnueLoaded) {
 		// Handle castling rook first
 		if (flags & MOVE_FLAG_CASTLING) {
 			if (toLocation == 6) {
@@ -790,7 +776,7 @@ void Board::unmakeMove(const Move m, const UndoInfo &undoInfo) {
 				updateAccumulatorAdd(undoInfo.capturedPiece, toLocation, g_nnueAccumulator);
 			}
 		}
-	}
+	// }
 
 	/* Flip turn back first */
 	turn = static_cast<int8_t>(-turn);
@@ -880,7 +866,7 @@ uint64_t Board::computeZobristHash() const {
 	return hash;
 }
 
- bool Board::isKingInCheck() const {
+bool Board::isKingInCheck() const {
 	const uint64_t king = turn == 1 ? whiteKing : blackKing;
 	return isSquareAttacked(*this, std::countr_zero(king), -turn);
 }

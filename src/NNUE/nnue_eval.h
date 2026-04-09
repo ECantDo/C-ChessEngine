@@ -15,9 +15,11 @@
 
 constexpr int NNUE_INPUT_SIZE = 768;
 constexpr int NNUE_HIDDEN_SIZE = 128;
-constexpr int32_t QA = 255;
-constexpr int32_t QB = 64;
-constexpr int32_t SCALE = 400;
+constexpr int16_t QA = 255; // don't go above 255
+constexpr int16_t QB = 64;
+constexpr int16_t SCALE = 400;
+
+extern uint16_t SQR_TABLE[QA + 1];
 
 // int16 for speed :3
 using NNUEWeight = int16_t;
@@ -159,9 +161,9 @@ inline int getInputFeatureIndex(const Piece piece, const int square) {
 	return pieceIndex * 64 + square;
 }
 
-inline int32_t screlu(int16_t x) {
-	int32_t y = std::clamp(static_cast<int32_t>(x), 0, QA);
-	return y * y;
+inline uint16_t screlu(const int16_t x) {
+	const uint16_t y = std::clamp(x, static_cast<int16_t>(0), QA);
+	return SQR_TABLE[y];
 }
 
 #endif //CHESSENGINE_NNUE_EVAL_H
