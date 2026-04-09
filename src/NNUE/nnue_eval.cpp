@@ -40,6 +40,7 @@ static void loadFromPtr(const char *ptr) {
 }
 
 bool initNNUEEmbedded() {
+	g_nnueLoaded = false;
 	static_assert(NNUE_HIDDEN_SIZE % 16 == 0);
 
 	const auto ptr = reinterpret_cast<const char *>(g_nnue_data);
@@ -52,6 +53,7 @@ bool initNNUEEmbedded() {
 
 // Load network from binary file
 bool initNNUE(const char *filename) {
+	g_nnueLoaded = false;
 	static_assert(NNUE_HIDDEN_SIZE % 16 == 0);
 
 	std::ifstream file(filename, std::ios::binary);
@@ -69,8 +71,6 @@ bool initNNUE(const char *filename) {
 	const char *ptr = buffer.data();
 
 	loadFromPtr(ptr);
-
-	g_nnueLoaded = true;
 	return true;
 }
 

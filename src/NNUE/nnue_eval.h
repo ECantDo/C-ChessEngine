@@ -48,7 +48,7 @@ bool initNNUEEmbedded();
 
 inline void try_init_nnue() {
 	if (!initNNUEEmbedded()) {
-		try_init_nnue("quantised.bin");
+		std::cout << "initNNUEEmbedded() failed, please use setoption EvalFile ..." << std::endl << std::flush;
 	}
 }
 
