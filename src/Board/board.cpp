@@ -201,7 +201,7 @@ void Board::printBoard() const {
 	}
 }
 
-uint64_t Board::getBitboard(Piece piece) const {
+uint64_t Board::getBitboard(const Piece piece) const {
 	switch (piece) {
 		case WHITE_PAWN:
 			return whitePawns;
@@ -232,7 +232,7 @@ uint64_t Board::getBitboard(Piece piece) const {
 	}
 }
 
-uint64_t *Board::getBitboardPointer(Piece piece) {
+uint64_t *Board::getBitboardPointer(const Piece piece) {
 	switch (piece) {
 		case WHITE_PAWN:
 			return &whitePawns;

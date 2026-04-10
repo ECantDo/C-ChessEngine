@@ -32,4 +32,10 @@ namespace Zobrist {
             enPassantFile[i] = dist(rng);
         }
     }
+
+    int getZobristIndex(const Piece piece) {
+        assert(piece != NONE);
+        return PIECE_SQUARE_INDEXES[piece];
+    }
+
 }
