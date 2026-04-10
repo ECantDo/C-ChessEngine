@@ -19,7 +19,8 @@ constexpr int16_t QA = 255; // don't go above 255
 constexpr int16_t QB = 64;
 constexpr int16_t SCALE = 400;
 
-extern uint16_t SQR_TABLE[QA + 1];
+
+extern uint8_t PIECE_SQUARE_INDEXES[BLACK_KING + 1];
 
 // int16 for speed :3
 using NNUEWeight = int16_t;
@@ -43,6 +44,8 @@ struct alignas(64) NNUEAccumulator {
 extern NNUEParameters g_nnueParams;
 extern NNUEAccumulator g_nnueAccumulator;
 extern bool g_nnueLoaded;
+
+void initNNUE_LUTs();
 
 void try_init_nnue(const std::string &filename);
 
@@ -115,55 +118,9 @@ static inline void subWeightsSIMD(
 
 inline int getInputFeatureIndex(const Piece piece, const int square) {
 	// Simple encoding: piece type (0-11) × 64 squares
-	int pieceIndex;
-
-	switch (piece) {
-		case WHITE_PAWN:
-			pieceIndex = 0;
-			break;
-		case WHITE_KNIGHT:
-			pieceIndex = 1;
-			break;
-		case WHITE_BISHOP:
-			pieceIndex = 2;
-			break;
-		case WHITE_ROOK:
-			pieceIndex = 3;
-			break;
-		case WHITE_QUEEN:
-			pieceIndex = 4;
-			break;
-		case WHITE_KING:
-			pieceIndex = 5;
-			break;
-		case BLACK_PAWN:
-			pieceIndex = 6;
-			break;
-		case BLACK_KNIGHT:
-			pieceIndex = 7;
-			break;
-		case BLACK_BISHOP:
-			pieceIndex = 8;
-			break;
-		case BLACK_ROOK:
-			pieceIndex = 9;
-			break;
-		case BLACK_QUEEN:
-			pieceIndex = 10;
-			break;
-		case BLACK_KING:
-			pieceIndex = 11;
-			break;
-		default:
-			return -1;
-	}
-
+	const int pieceIndex = PIECE_SQUARE_INDEXES[piece];
+	assert(pieceIndex < 12);
 	return pieceIndex * 64 + square;
-}
-
-inline uint16_t screlu(const int16_t x) {
-	const uint16_t y = std::clamp(x, static_cast<int16_t>(0), QA);
-	return SQR_TABLE[y];
 }
 
 #endif //CHESSENGINE_NNUE_EVAL_H

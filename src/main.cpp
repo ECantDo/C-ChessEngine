@@ -270,6 +270,7 @@ int main(int argc, char *argv[]) {
 	globalTT.clear();
 	initMagicBitboards();
 	initLmrTable();
+	initNNUE_LUTs();
 
 	currentBoard = Board();
 
@@ -283,7 +284,8 @@ int main(int argc, char *argv[]) {
 		if (std::string(argv[1]) == "bench") {
 			runBench();
 			return 0;
-		} else if (std::string(argv[1]) == "datagen") {
+		}
+		if (std::string(argv[1]) == "datagen") {
 			int numGames = 128;
 			int searchNodes = 5000;
 			std::string filename = "selfplay_data.txt";
