@@ -55,53 +55,57 @@ enum PieceType : uint8_t {
 
 // All pieces array (for iteration)
 constexpr std::array<Piece, 12> ALL_PIECES = {
-		WHITE_PAWN, WHITE_KNIGHT, WHITE_BISHOP, WHITE_ROOK, WHITE_QUEEN, WHITE_KING,
-		BLACK_PAWN, BLACK_KNIGHT, BLACK_BISHOP, BLACK_ROOK, BLACK_QUEEN, BLACK_KING
+	WHITE_PAWN, WHITE_KNIGHT, WHITE_BISHOP, WHITE_ROOK, WHITE_QUEEN, WHITE_KING,
+	BLACK_PAWN, BLACK_KNIGHT, BLACK_BISHOP, BLACK_ROOK, BLACK_QUEEN, BLACK_KING
 };
+
+extern int16_t PIECE_VALUE_LUT[BLACK_KING + 1];
+
+void initPieceLUTs();
 
 // Functions
 int getPieceValue(Piece piece);
 
 // Inline helper functions
-inline constexpr bool isWhite(Piece piece) {
+inline constexpr bool isWhite(const Piece piece) {
 	return (piece & WHITE_MASK) != 0;
 }
 
-inline constexpr bool isBlack(Piece piece) {
+inline constexpr bool isBlack(const Piece piece) {
 	return (piece & BLACK_MASK) != 0;
 }
 
-inline constexpr bool isPiece(Piece piece) {
+inline constexpr bool isPiece(const Piece piece) {
 	return piece != NONE;
 }
 
-inline constexpr PieceType getPieceType(Piece piece) {
+inline constexpr PieceType getPieceType(const Piece piece) {
 	return static_cast<PieceType>(piece & TYPE_MASK);
 }
 
-inline constexpr bool isPawn(Piece piece) {
+inline constexpr bool isPawn(const Piece piece) {
 	return getPieceType(piece) == TYPE_PAWN;
 }
 
-inline constexpr bool isKing(Piece piece) {
+inline constexpr bool isKing(const Piece piece) {
 	return getPieceType(piece) == TYPE_KING;
 }
 
-inline constexpr bool isRook(Piece piece) {
+inline constexpr bool isRook(const Piece piece) {
 	return getPieceType(piece) == TYPE_ROOK;
 }
 
 // Get piece with opposite color
-inline constexpr Piece flipColor(Piece piece) {
+inline constexpr Piece flipColor(const Piece piece) {
 	return static_cast<Piece>(piece ^ COLOR_MASK);
 }
 
 // Create piece from color and type
-inline constexpr Piece makePiece(bool isWhite, PieceType type) {
+inline constexpr Piece makePiece(const bool isWhite, const PieceType type) {
 	return static_cast<Piece>((isWhite ? WHITE_MASK : BLACK_MASK) | type);
 }
 
-inline constexpr Piece charToPiece(char pieceChar) {
+inline constexpr Piece charToPiece(const char pieceChar) {
 	switch (pieceChar) {
 		case 'P':
 			return WHITE_PAWN;
@@ -133,7 +137,7 @@ inline constexpr Piece charToPiece(char pieceChar) {
 	}
 }
 
-inline constexpr char pieceToChar(Piece piece) {
+inline constexpr char pieceToChar(const Piece piece) {
 	switch (piece) {
 		case WHITE_PAWN:
 			return 'P';

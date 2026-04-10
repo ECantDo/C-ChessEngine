@@ -4,32 +4,29 @@
 
 #include "piece.h"
 
-int getPieceValue(Piece piece) {
-    // NONE_PIECE, <BLACK/WHITE>_KING; all worth 0, caught by the default case
-    switch (piece) {
-        case WHITE_PAWN:
-            return 100;
-        case WHITE_KNIGHT:
-            return 310;
-        case WHITE_ROOK:
-            return 500;
-        case WHITE_BISHOP:
-            return 330;
-        case WHITE_QUEEN:
-            return 950;
+#include <cstring>
 
-        case BLACK_PAWN:
-            return -100;
-        case BLACK_KNIGHT:
-            return -310;
-        case BLACK_ROOK:
-            return -500;
-        case BLACK_BISHOP:
-            return -330;
-        case BLACK_QUEEN:
-            return -950;
+int16_t PIECE_VALUE_LUT[BLACK_KING + 1] = {};
 
-        default:
-            return 0;
-    }
+void initPieceLUTs() {
+	memset(PIECE_VALUE_LUT, 0, sizeof(PIECE_VALUE_LUT));
+	PIECE_VALUE_LUT[WHITE_PAWN] = 100;
+	PIECE_VALUE_LUT[BLACK_PAWN] = -100;
+
+	PIECE_VALUE_LUT[WHITE_KNIGHT] = 310;
+	PIECE_VALUE_LUT[BLACK_KNIGHT] = -310;
+
+	PIECE_VALUE_LUT[WHITE_BISHOP] = 330;
+	PIECE_VALUE_LUT[BLACK_BISHOP] = -330;
+
+	PIECE_VALUE_LUT[WHITE_ROOK] = 500;
+	PIECE_VALUE_LUT[BLACK_ROOK] = -500;
+
+	PIECE_VALUE_LUT[WHITE_QUEEN] = 950;
+	PIECE_VALUE_LUT[BLACK_QUEEN] = -950;
+}
+
+
+int getPieceValue(const Piece piece) {
+	return PIECE_VALUE_LUT[piece];
 }
