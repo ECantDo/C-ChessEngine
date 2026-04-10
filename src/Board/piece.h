@@ -66,6 +66,8 @@ void initPieceLUTs();
 // Functions
 int getPieceValue(Piece piece);
 
+int getPieceValueType(const PieceType piece);
+
 // Inline helper functions
 inline constexpr bool isWhite(const Piece piece) {
 	return (piece & WHITE_MASK) != 0;
