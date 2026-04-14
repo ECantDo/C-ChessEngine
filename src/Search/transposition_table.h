@@ -17,6 +17,25 @@
 
 #define CLUSTER_SIZE 4
 
+#ifdef _WIN32
+#include <malloc.h>
+
+inline void *aligned_alloc_cross(const size_t alignment, const size_t size) {
+	return _aligned_malloc(size, alignment);
+}
+
+inline void aligned_free_cross(void *ptr) {
+	_aligned_free(ptr);
+}
+#else
+inline void *aligned_alloc_cross(const size_t alignment, const size_t size) {
+	return std::aligned_alloc(alignment, size);
+}
+inline void aligned_free_cross(void *ptr) {
+	free(ptr);
+}
+#endif
+
 typedef int16_t Score;
 typedef int8_t Depth;
 
@@ -37,7 +56,7 @@ struct TTEntry {
 	}
 };
 
-struct TTCluster {
+struct alignas(64) TTCluster {
 	TTEntry entry[CLUSTER_SIZE];
 
 	TTCluster() : entry() {
@@ -59,14 +78,16 @@ public:
 
 	explicit TranspositionTable(const size_t sizeMB)
 	: size((sizeMB * 1024 * 1024) / sizeof(TTCluster)),
-	  table(static_cast<TTCluster*>(std::aligned_alloc(64, size * sizeof(TTCluster)))) {
-		new (table) TTCluster[size]; // placement new to run constructors
+	  table(static_cast<TTCluster*>(aligned_alloc_cross(64, size * sizeof(TTCluster)))) {
+		new (table) TTCluster[size];
 	}
 
 	~TranspositionTable() {
-		std::destroy_n(table, size);
-		std::free(table);
-		table = nullptr;
+		if (table) {
+			for (size_t i = 0; i < size; i++)
+				table[i].~TTCluster();
+			aligned_free_cross(table);
+		}
 	}
 
 	void clear();
@@ -200,6 +221,10 @@ public:
 		}
 
 		return false;
+	}
+
+	void prefetch(const uint64_t key) const {
+		__builtin_prefetch(&table[key % size], 0, 1);
 	}
 };
 

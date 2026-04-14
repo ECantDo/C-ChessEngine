@@ -211,6 +211,8 @@ BestMove alphaBeta(Board &board, Depth depth, Depth plys, Score alpha, Score bet
 			board.unmakeMove(move, undo);
 			continue;
 		}
+		globalTT.prefetch(board.zobristHash);
+
 		// const uint64_t ourKing = (board.turn == -1) ? board.whiteKing : board.blackKing;
 		// if (isSquareAttacked(board, std::countr_zero(ourKing), board.turn)) {
 		// 	board.unmakeMove(move, undo);

@@ -6,7 +6,7 @@
 
 #include <cstring>
 
-TranspositionTable globalTT(256);
+TranspositionTable globalTT(16);
 
 void TranspositionTable::clear() {
 	memset(table, 0, size * sizeof(TTCluster));

@@ -7,22 +7,16 @@ include_directories(${CMAKE_SOURCE_DIR}/src)
 
 find_package(Threads REQUIRED)
 
-add_executable(chessEngine
+set(SOURCES
 		src/main.cpp
-
 		src/Board/board.h
 		src/Board/board.cpp
-
 		src/Moves/generate_moves.h
 		src/Moves/generate_moves.cpp
-
 		src/Board/move.h
 		src/Board/move.cpp
-
 		src/Board/piece.h
 		src/Board/piece.cpp
-
-
 		src/Search/search.h
 		src/Search/search.cpp
 		src/Board/zobrist_hash.cpp
@@ -33,7 +27,6 @@ add_executable(chessEngine
 		src/Evaluation/evaluation.h
 		src/Search/quiescence_search.cpp
 		src/Search/quiescence_search.h
-
 		tests/MoveGeneration/test_move_generation.cpp
 		tests/MoveGeneration/test_move_generation.h
 		src/Evaluation/opening_book.cpp
@@ -51,7 +44,12 @@ add_executable(chessEngine
 		src/settings_manager.h
 )
 
-add_executable(testChessEngine tests/test_all.cpp
+add_executable(chessEngine ${SOURCES})
+
+add_executable(testChessEngine
+		${SOURCES}
+
+		tests/test_all.cpp
 		tests/test_all.cpp
 
 		tests/Board/test_board.cpp
@@ -66,46 +64,6 @@ add_executable(testChessEngine tests/test_all.cpp
 
 		tests/Board/test_zobrist.cpp
 		tests/Board/test_zobrist.h
-
-		# Engine files
-
-		src/Board/board.h
-		src/Board/board.cpp
-
-		src/Moves/generate_moves.h
-		src/Moves/generate_moves.cpp
-
-		src/Board/move.h
-		src/Board/move.cpp
-
-		src/Board/piece.h
-		src/Board/piece.cpp
-
-
-		src/Search/search.h
-		src/Search/search.cpp
-		src/Board/zobrist_hash.cpp
-		src/Board/zobrist_hash.h
-		src/Search/transposition_table.h
-		src/Search/transposition_table.cpp
-		src/Evaluation/evaluation.cpp
-		src/Evaluation/evaluation.h
-		src/Search/quiescence_search.cpp
-		src/Search/quiescence_search.h
-
-		tests/MoveGeneration/test_move_generation.cpp
-		tests/MoveGeneration/test_move_generation.h
-		src/Evaluation/opening_book.cpp
-		src/Evaluation/opening_book.h
-		src/Moves/magicBitboards.cpp
-		src/Moves/magicBitboards.h
-		src/Moves/move_list.cpp
-		src/Moves/move_list.h
-		src/NNUE/nnue_eval.h
-		src/NNUE/nnue_eval.cpp
-		src/NNUE/self_play_training.cpp
-		src/NNUE/self_play_training.h
-		src/Evaluation/bench.h
 )
 if (NOT DEFINED TARGET_ARCH)
 	set(TARGET_ARCH "native")
@@ -117,17 +75,6 @@ target_compile_options(chessEngine PRIVATE
 		-march=${TARGET_ARCH}
 )
 
-#if (CMAKE_CROSSCOMPILING)
-#	target_compile_options(chessEngine PRIVATE -O3 -mavx2)
-#	target_link_options(chessEngine PRIVATE -static)
-#else ()
-#	target_compile_options(chessEngine PRIVATE
-#			-O3
-#			-mavx2
-#			-march=native
-#	)
-#endif ()
-
 target_compile_options(testChessEngine PRIVATE
 		-O3
 		-mavx2
@@ -136,3 +83,7 @@ target_compile_options(testChessEngine PRIVATE
 
 target_link_libraries(chessEngine PRIVATE Threads::Threads)
 
+
+if (MINGW)
+	target_link_options(chessEngine PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
